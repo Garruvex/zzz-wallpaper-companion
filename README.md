@@ -10,9 +10,7 @@ The companion does not bundle [yt-dlp](https://github.com/yt-dlp/yt-dlp). On fir
 
 1. **Get the wallpaper** from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) and apply it in Wallpaper Engine.
 
-2. **Download** the [latest release](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest) for your PC:
-   - Most PCs: [zzz-wallpaper-companion-windows-amd64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-amd64.exe)
-   - ARM Windows (e.g. Surface): [zzz-wallpaper-companion-windows-arm64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-arm64.exe)
+2. **Download** the [latest release](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest) for your PC (`amd64` for most PCs, `arm64` for ARM Windows such as Surface).
 
 3. **Run** the executable. No installer — put it anywhere you like.
 
