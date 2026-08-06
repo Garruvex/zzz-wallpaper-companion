@@ -1,0 +1,6 @@
+/dist/
+/.cache/
+*.log
+settings.json
+yt-dlp.exe
+yt-dlp.exe.old
