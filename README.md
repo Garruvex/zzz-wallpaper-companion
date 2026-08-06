@@ -1,2 +1,185 @@
-# zzz-wallpaper-companion
-a companion app for zzz wallpaper in wallpaper engine
+# ZZZ Wallpaper Companion
+
+A small Windows background app for the [Zenless Zone Zero TV wallpaper](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) on Wallpaper Engine. It runs in the notification area and lets the wallpaper play YouTube videos, live streams, and playlists.
+
+**You need this companion for YouTube playback.** Without it, the wallpaper shows a message asking you to start it.
+
+The companion does not bundle [yt-dlp](https://github.com/yt-dlp/yt-dlp). On first launch it downloads the official Windows binary for your CPU, verifies the published SHA-256 checksum, and keeps it updated automatically.
+
+## Quick start
+
+1. **Get the wallpaper** from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) and apply it in Wallpaper Engine.
+
+2. **Download** the [latest release](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest) for your PC:
+   - Most PCs: [zzz-wallpaper-companion-windows-amd64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-amd64.exe)
+   - ARM Windows (e.g. Surface): [zzz-wallpaper-companion-windows-arm64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-arm64.exe)
+
+3. **Run** the executable. No installer — put it anywhere you like.
+
+4. **Use the wallpaper.** The companion starts in the notification area (system tray). YouTube should work once it is running.
+
+On first launch the companion downloads yt-dlp in the background. Give it a moment if playback does not work immediately.
+
+## Requirements
+
+- Windows 10 or later (`amd64` or `arm64`)
+- Internet access (initial yt-dlp download and YouTube resolution)
+
+## Tray menu
+
+Right-click the notification-area icon. Double-click opens settings.
+
+| Item | What it does |
+| --- | --- |
+| **Settings** | Open the settings page in your browser |
+| **Check for yt-dlp updates** | Update yt-dlp now |
+| **Open data folder** | Open the companion data folder in Explorer |
+| **Quit** | Stop the companion |
+
+## Settings
+
+Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Companion port | `8765` | Must match what the wallpaper expects. Restart after changing. |
+| Maximum resolution | `720` | `360`, `480`, `720`, or `1080` |
+| yt-dlp channel | `nightly` | `nightly` (recommended) or `stable` |
+
+## Troubleshooting
+
+**Wallpaper says "Start the optional localhost companion"**
+
+- Make sure `zzz-wallpaper-companion.exe` is running (check the notification area).
+- Confirm the port in settings is `8765` (the wallpaper default).
+
+**YouTube still does not play**
+
+- Wait a minute on first run while yt-dlp downloads.
+- Open **Open data folder** from the tray menu and check `companion.log` for errors.
+- Try **Check for yt-dlp updates** from the tray menu.
+
+**Port already in use**
+
+- Change the companion port in settings, then restart the companion.
+- The wallpaper must use the same port (default `8765`).
+
+**Clean reset**
+
+- Quit the companion, delete `%LOCALAPPDATA%\ZZZWallpaperCompanion`, and run again. Settings and yt-dlp will be re-downloaded.
+
+## Data folder
+
+```
+%LOCALAPPDATA%\ZZZWallpaperCompanion\
+```
+
+| File | Purpose |
+| --- | --- |
+| `settings.json` | Port, resolution cap, yt-dlp channel |
+| `yt-dlp.exe` | Downloaded resolver |
+| `companion.log` | Runtime log |
+
+Deleting the executable does not remove this folder.
+
+---
+
+## Developer reference
+
+### API
+
+The server binds to `127.0.0.1` only. Non-loopback requests are rejected. Browser `Origin` headers must be `localhost` or `127.0.0.1`.
+
+#### `GET /api/health`
+
+```json
+{
+  "ready": true,
+  "name": "zzz-wallpaper-companion",
+  "protocolVersion": 1
+}
+```
+
+#### `GET /api/youtube/resolve?id=VIDEO_ID`
+
+Resolves a video or live stream.
+
+```json
+{
+  "videoUrl": "https://...",
+  "audioUrl": "https://...",
+  "videoFormatId": "248",
+  "audioFormatId": "251",
+  "extension": "webm",
+  "width": 1280,
+  "height": 720,
+  "videoCodec": "vp9",
+  "audioCodec": "opus",
+  "title": "Example",
+  "isLive": false,
+  "muxed": false,
+  "expiresAt": 1754512345
+}
+```
+
+`audioUrl` is omitted when `muxed` is `true`. `expiresAt` is a Unix timestamp when available.
+
+#### `GET /api/youtube/playlist?id=PLAYLIST_ID`
+
+Returns up to 500 playlist entries (IDs only).
+
+```json
+{
+  "id": "PLxxxxxxxx",
+  "items": [
+    { "id": "dQw4w9WgXcQ", "title": "Example", "duration": 212 }
+  ]
+}
+```
+
+#### `GET /api/settings` · `POST /api/settings`
+
+Read or update settings. POST body:
+
+```json
+{
+  "port": 8765,
+  "maxHeight": 720,
+  "updateChannel": "nightly"
+}
+```
+
+Response includes `restartRequired: true` when the port changes.
+
+Other routes: `GET /settings` (web UI), `GET /` (redirects to settings).
+
+### Build from source
+
+Requires Go 1.23+.
+
+```powershell
+go test ./...
+go build -ldflags "-H=windowsgui" -o dist\zzz-wallpaper-companion.exe .
+```
+
+Run `go generate` before building to embed the icon from `winres/icon.ico` into the executable (generates `rsrc_windows_*.syso`). CI does this automatically.
+
+For development (console output), omit `-H=windowsgui`:
+
+```powershell
+go build -o dist\zzz-wallpaper-companion.exe .
+```
+
+Set `ZZZ_COMPANION_DATA_DIR` to use an isolated data directory during development.
+
+GitHub Actions runs tests and builds `amd64` and `arm64` binaries on every push and pull request. Publish a [GitHub release](https://github.com/Garruvex/zzz-wallpaper-companion/releases) to make them available for download.
+
+### Security
+
+- HTTP API is loopback-only.
+- CORS allows `http://127.0.0.1:*` and `http://localhost:*` only.
+- yt-dlp is downloaded over HTTPS and verified against the upstream SHA-256 checksum.
+
+## License
+
+Companion source is [MIT](LICENSE). yt-dlp is downloaded separately from its upstream project and remains subject to its own licenses.
