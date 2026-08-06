@@ -162,7 +162,7 @@ go test ./...
 go build -ldflags "-H=windowsgui" -o dist\zzz-wallpaper-companion.exe .
 ```
 
-The repo includes `rsrc_windows_*.syso` for the embedded icon. After changing `winres/icon.ico`, run `go generate`.
+Run `go generate` before building to embed the icon from `winres/icon.ico` into the executable (generates `rsrc_windows_*.syso`). CI does this automatically.
 
 For development (console output), omit `-H=windowsgui`:
 
