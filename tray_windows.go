@@ -32,12 +32,14 @@ const (
 	imageIcon      = 1
 	lrDefaultSize  = 0x0040
 	mfString       = 0x00000000
+	mfChecked      = 0x00000008
 	tpmRightButton = 0x0002
 	cwUseDefault   = 0x80000000
 	cmdSettings    = 1001
 	cmdUpdate      = 1002
 	cmdLogs        = 1003
 	cmdQuit        = 1004
+	cmdStartup     = 1005
 )
 
 type point struct{ x, y int32 }
@@ -83,11 +85,12 @@ var (
 	trayPort            int
 	trayDataDir         string
 	trayResolver        *Resolver
+	trayConfig          *ConfigStore
 	trayQuit            func()
 )
 
-func runTray(port int, dataDir string, resolver *Resolver, quit func()) error {
-	trayPort, trayDataDir, trayResolver, trayQuit = port, dataDir, resolver, quit
+func runTray(config *ConfigStore, dataDir string, resolver *Resolver, quit func()) error {
+	trayPort, trayDataDir, trayResolver, trayConfig, trayQuit = config.Get().Port, dataDir, resolver, config, quit
 	instance, _, _ := kernel32.NewProc("GetModuleHandleW").Call(0)
 	className, _ := syscall.UTF16PtrFromString("ZZZWallpaperCompanionTray")
 	wndProc := syscall.NewCallback(windowProc)
@@ -144,6 +147,17 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 				defer cancel()
 				_ = trayResolver.Update(ctx)
 			}()
+		case cmdStartup:
+			current := trayConfig.Get()
+			if err := setLaunchOnStartup(!current.LaunchOnStartup); err != nil {
+				fatalDialog("Could not update startup setting", err.Error())
+			} else {
+				current.LaunchOnStartup = !current.LaunchOnStartup
+				if err := trayConfig.Save(current); err != nil {
+					_ = setLaunchOnStartup(!current.LaunchOnStartup)
+					fatalDialog("Could not save settings", err.Error())
+				}
+			}
 		case cmdQuit:
 			trayQuit()
 			user32.NewProc("DestroyWindow").Call(hwnd)
@@ -164,6 +178,11 @@ func showTrayMenu(hwnd uintptr) {
 	}
 	defer user32.NewProc("DestroyMenu").Call(menu)
 	appendMenu(menu, cmdSettings, "Settings")
+	flags := uint32(mfString)
+	if trayConfig.Get().LaunchOnStartup {
+		flags |= mfChecked
+	}
+	appendMenuFlags(menu, cmdStartup, "Launch on Windows startup", flags)
 	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
 	appendMenu(menu, cmdLogs, "Open data folder")
 	appendMenu(menu, cmdQuit, "Quit")
@@ -174,8 +193,12 @@ func showTrayMenu(hwnd uintptr) {
 }
 
 func appendMenu(menu uintptr, id uint16, label string) {
+	appendMenuFlags(menu, id, label, mfString)
+}
+
+func appendMenuFlags(menu uintptr, id uint16, label string, flags uint32) {
 	text, _ := syscall.UTF16PtrFromString(label)
-	user32.NewProc("AppendMenuW").Call(menu, mfString, uintptr(id), uintptr(unsafe.Pointer(text)))
+	user32.NewProc("AppendMenuW").Call(menu, uintptr(flags), uintptr(id), uintptr(unsafe.Pointer(text)))
 }
 
 func loadTrayIcon(instance uintptr) uintptr {

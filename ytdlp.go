@@ -91,11 +91,21 @@ func (r *Resolver) Ensure(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, err := os.Stat(r.path); err == nil {
-		return nil
+		cmd := exec.CommandContext(ctx, r.path, "--version")
+		hideCommandWindow(cmd)
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+		_ = os.Remove(r.path)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	return r.download(ctx)
+}
+
+func (r *Resolver) Ready() bool {
+	_, err := os.Stat(r.path)
+	return err == nil
 }
 
 func (r *Resolver) Update(ctx context.Context) error {
@@ -190,12 +200,18 @@ func (r *Resolver) fetchChecksum(ctx context.Context, url, asset string) (string
 	return "", fmt.Errorf("no checksum published for %s", asset)
 }
 
-func (r *Resolver) Resolve(ctx context.Context, id string) (resolvedMedia, error) {
+func (r *Resolver) Resolve(ctx context.Context, id string, hlsCompatibilityMode bool) (resolvedMedia, error) {
 	if err := r.Ensure(ctx); err != nil {
 		return resolvedMedia{}, err
 	}
 	height := r.settings.Get().MaxHeight
 	format := fmt.Sprintf("bv[ext=webm][vcodec^=vp9][height<=%d]+ba[ext=webm][acodec^=opus]/best[height<=%d]", height, height)
+	if hlsCompatibilityMode {
+		// Itag 269 is video-only baseline H.264. Wallpaper Engine's Chromium
+		// build does not expose an AAC SourceBuffer, so muxed HLS formats fail
+		// even when their video track is compatible.
+		format = "269/best[protocol=m3u8][acodec=none][height<=144]"
+	}
 	output, err := r.run(ctx, "--no-playlist", "--no-warnings", "--socket-timeout", "15", "--extractor-retries", "2", "--dump-single-json", "--format", format, "https://www.youtube.com/watch?v="+id)
 	if err != nil {
 		return resolvedMedia{}, err
@@ -230,9 +246,18 @@ func streamExpiry(urls ...string) int64 {
 		if err != nil {
 			continue
 		}
-		expires, err := strconv.ParseInt(parsed.Query().Get("expire"), 10, 64)
-		if err == nil && expires > 0 && (earliest == 0 || expires < earliest) {
-			earliest = expires
+		candidates := []string{parsed.Query().Get("expire")}
+		parts := strings.Split(strings.Trim(parsed.EscapedPath(), "/"), "/")
+		for index := 0; index+1 < len(parts); index++ {
+			if parts[index] == "expire" {
+				candidates = append(candidates, parts[index+1])
+			}
+		}
+		for _, candidate := range candidates {
+			expires, err := strconv.ParseInt(candidate, 10, 64)
+			if err == nil && expires > 0 && (earliest == 0 || expires < earliest) {
+				earliest = expires
+			}
 		}
 	}
 	return earliest

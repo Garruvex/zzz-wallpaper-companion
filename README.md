@@ -4,15 +4,13 @@ A small Windows background app for the [Zenless Zone Zero TV wallpaper](https://
 
 **You need this companion for YouTube playback.** Without it, the wallpaper shows a message asking you to start it.
 
-The companion does not bundle [yt-dlp](https://github.com/yt-dlp/yt-dlp). On first launch it downloads the official Windows binary for your CPU, verifies the published SHA-256 checksum, and keeps it updated automatically.
+The companion does not bundle [yt-dlp](https://github.com/yt-dlp/yt-dlp) or FFmpeg. On first launch it downloads both tools for your CPU and verifies their published SHA-256 checksums. yt-dlp is kept updated automatically. FFmpeg is used only when a live stream must be converted from H.264/AAC HLS to Wallpaper Engine-compatible VP8/Opus WebM.
 
 ## Quick start
 
 1. **Get the wallpaper** from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) and apply it in Wallpaper Engine.
 
-2. **Download** the [latest release](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest) for your PC:
-   - Most PCs: [zzz-wallpaper-companion-windows-amd64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-amd64.exe)
-   - ARM Windows (e.g. Surface): [zzz-wallpaper-companion-windows-arm64.exe](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest/download/zzz-wallpaper-companion-windows-arm64.exe)
+2. **Download** the [latest release](https://github.com/Garruvex/zzz-wallpaper-companion/releases/latest) for your PC (`amd64` for most PCs, `arm64` for ARM Windows such as Surface).
 
 3. **Run** the executable. No installer — put it anywhere you like.
 
@@ -32,6 +30,7 @@ Right-click the notification-area icon. Double-click opens settings.
 | Item | What it does |
 | --- | --- |
 | **Settings** | Open the settings page in your browser |
+| **Launch on Windows startup** | Toggle automatic launch after sign-in |
 | **Check for yt-dlp updates** | Update yt-dlp now |
 | **Open data folder** | Open the companion data folder in Explorer |
 | **Quit** | Stop the companion |
@@ -44,7 +43,9 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 | --- | --- | --- |
 | Companion port | `8765` | Must match what the wallpaper expects. Restart after changing. |
 | Maximum resolution | `720` | `360`, `480`, `720`, or `1080` |
+| Live-stream resolution | `360` | `240`, `360`, `480`, or `720`; higher values use substantially more CPU |
 | yt-dlp channel | `nightly` | `nightly` (recommended) or `stable` |
+| Launch on Windows startup | Off | Starts quietly in the notification area after sign-in |
 
 ## Troubleshooting
 
@@ -78,6 +79,7 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 | --- | --- |
 | `settings.json` | Port, resolution cap, yt-dlp channel |
 | `yt-dlp.exe` | Downloaded resolver |
+| `ffmpeg.exe` | Verified live-stream transcoder downloaded on first launch |
 | `companion.log` | Runtime log |
 
 Deleting the executable does not remove this folder.
@@ -145,17 +147,51 @@ Read or update settings. POST body:
 {
   "port": 8765,
   "maxHeight": 720,
-  "updateChannel": "nightly"
+  "updateChannel": "nightly",
+  "launchOnStartup": false,
+  "transcodeHeight": 360
 }
 ```
 
 Response includes `restartRequired: true` when the port changes.
 
+Live transcoding supports 240p, 360p, 480p, 720p, and experimental 1080p. The
+companion scales its WebM bitrate with the selected resolution; 1080p targets
+4 Mbps and can require substantially more CPU than the lower settings.
+
 Other routes: `GET /settings` (web UI), `GET /` (redirects to settings).
+
+#### `POST /api/youtube/heartbeat`
+
+Creates or refreshes a per-wallpaper stream lease. The wallpaper sends a
+random `sessionId` every five seconds. Transcoded streams include that ID and
+are cancelled if the heartbeat stops for 20 seconds.
+
+```json
+{ "sessionId": "random-session-id", "keepStreamAlive": true, "protocolMin": 2, "protocolMax": 2, "wallpaperVersion": "1.2.2" }
+```
+
+The companion rejects non-overlapping protocol ranges with HTTP 426 and tells
+the wallpaper which component needs to be updated.
 
 ### Build from source
 
 Requires Go 1.23+.
+
+The recommended Windows build command reads the version from `main.go`, runs
+the tests once, embeds a UTC timestamp build number, and creates versioned
+amd64 and arm64 GUI executables in `dist`:
+
+```powershell
+.\build.ps1
+```
+
+The build number and architecture can be supplied explicitly for a reproducible
+release build:
+
+```powershell
+.\build.ps1 -BuildNumber 42 -Architecture amd64
+```
 
 ```powershell
 go test ./...

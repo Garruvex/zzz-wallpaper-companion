@@ -11,9 +11,11 @@ import (
 const defaultPort = 8765
 
 type Settings struct {
-	Port          int    `json:"port"`
-	MaxHeight     int    `json:"maxHeight"`
-	UpdateChannel string `json:"updateChannel"`
+	Port            int    `json:"port"`
+	MaxHeight       int    `json:"maxHeight"`
+	UpdateChannel   string `json:"updateChannel"`
+	LaunchOnStartup bool   `json:"launchOnStartup"`
+	TranscodeHeight int    `json:"transcodeHeight"`
 }
 
 type ConfigStore struct {
@@ -23,7 +25,7 @@ type ConfigStore struct {
 }
 
 func defaultSettings() Settings {
-	return Settings{Port: defaultPort, MaxHeight: 720, UpdateChannel: "nightly"}
+	return Settings{Port: defaultPort, MaxHeight: 720, UpdateChannel: "nightly", TranscodeHeight: 360}
 }
 
 func newConfigStore(path string) (*ConfigStore, error) {
@@ -37,6 +39,10 @@ func newConfigStore(path string) (*ConfigStore, error) {
 	}
 	if err := json.Unmarshal(body, &s.data); err != nil {
 		return nil, err
+	}
+	// Migrate settings written before live transcoding was introduced.
+	if s.data.TranscodeHeight == 0 {
+		s.data.TranscodeHeight = 360
 	}
 	if err := validateSettings(s.data); err != nil {
 		return nil, err
@@ -53,6 +59,9 @@ func validateSettings(v Settings) error {
 	}
 	if v.UpdateChannel != "stable" && v.UpdateChannel != "nightly" {
 		return errors.New("updateChannel must be stable or nightly")
+	}
+	if v.TranscodeHeight != 240 && v.TranscodeHeight != 360 && v.TranscodeHeight != 480 && v.TranscodeHeight != 720 && v.TranscodeHeight != 1080 {
+		return errors.New("transcodeHeight must be 240, 360, 480, 720, or 1080")
 	}
 	return nil
 }
