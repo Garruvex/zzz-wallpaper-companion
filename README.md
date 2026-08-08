@@ -98,7 +98,12 @@ The server binds to `127.0.0.1` only. Non-loopback requests are rejected. Browse
 {
   "ready": true,
   "name": "zzz-wallpaper-companion",
-  "protocolVersion": 1
+  "protocolVersion": 2,
+  "version": "1.1.0",
+  "protocolMin": 2,
+  "protocolMax": 2,
+  "ytDlpReady": true,
+  "ffmpegReady": true
 }
 ```
 
