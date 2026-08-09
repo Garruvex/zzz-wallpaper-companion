@@ -154,7 +154,8 @@ Read or update settings. POST body:
   "maxHeight": 720,
   "updateChannel": "nightly",
   "launchOnStartup": false,
-  "transcodeHeight": 360
+  "transcodeHeight": 360,
+  "autoUpdate": true
 }
 ```
 
@@ -178,6 +179,17 @@ are cancelled if the heartbeat stops for 20 seconds.
 
 The companion rejects non-overlapping protocol ranges with HTTP 426 and tells
 the wallpaper which component needs to be updated.
+
+### Companion updates
+
+The companion checks the latest stable GitHub release once per day when
+automatic updates are enabled. It only stages releases whose protocol range
+overlaps the running companion, downloads the build for the current Windows
+architecture, and verifies its SHA-256 checksum from the release manifest.
+The staged build installs on the next companion restart, keeps one rollback
+executable, and must confirm that its localhost server started successfully or
+the helper restores the previous build. The tray menu also provides a manual
+update check.
 
 ### Build from source
 

@@ -21,13 +21,36 @@ var (
 )
 
 func main() {
+	if len(os.Args) == 4 && os.Args[1] == "--apply-update" {
+		if err := runUpdateHelper(os.Args[2], os.Args[3]); err != nil {
+			fatalDialog("Companion update failed", err.Error())
+		}
+		return
+	}
+	confirmMarker := ""
+	if len(os.Args) == 3 && os.Args[1] == "--confirm-update" {
+		confirmMarker = os.Args[2]
+	}
 	dataDir, err := appDataDir()
 	if err != nil {
 		fatalDialog("ZZZ Wallpaper Companion", err.Error())
 		return
 	}
+	releaseInstance, alreadyRunning, err := acquireSingleInstance()
+	if err != nil {
+		fatalDialog("Companion could not start", err.Error())
+		return
+	}
+	if alreadyRunning {
+		infoDialog("ZZZ Wallpaper Companion", "The companion is already running in the notification area.")
+		return
+	}
+	defer releaseInstance()
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		fatalDialog("ZZZ Wallpaper Companion", err.Error())
+		return
+	}
+	if confirmMarker == "" && maybeLaunchPendingUpdate(dataDir) {
 		return
 	}
 	logFile, err := os.OpenFile(filepath.Join(dataDir, "companion.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
@@ -49,13 +72,20 @@ func main() {
 	}
 	resolver := newResolver(dataDir, config)
 	ffmpeg := newFFmpegManager(dataDir)
+	updater := newUpdateManager(dataDir)
 	server := newAPIServer(config, resolver, ffmpeg)
 	quit := make(chan struct{})
 	var quitOnce sync.Once
 	requestQuit := func() { quitOnce.Do(func() { close(quit) }) }
 
 	go func() {
-		err := server.ListenAndServe()
+		err := server.ListenAndServe(func() {
+			if confirmMarker != "" {
+				if err := os.WriteFile(confirmMarker, []byte("ready\n"), 0o600); err != nil {
+					log.Printf("confirm update: %v", err)
+				}
+			}
+		})
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server stopped: %v", err)
 			fatalDialog("Companion could not start", err.Error())
@@ -63,9 +93,9 @@ func main() {
 		}
 	}()
 
-	go dependencyLoop(resolver, ffmpeg, quit)
+	go dependencyLoop(config, resolver, ffmpeg, updater, quit)
 	go func() {
-		if err := runTray(config, dataDir, resolver, requestQuit); err != nil {
+		if err := runTray(config, dataDir, resolver, updater, requestQuit); err != nil {
 			log.Printf("tray unavailable: %v", err)
 		}
 	}()
@@ -88,7 +118,7 @@ func appDataDir() (string, error) {
 	return filepath.Join(root, "ZZZWallpaperCompanion"), nil
 }
 
-func dependencyLoop(resolver *Resolver, ffmpeg *FFmpegManager, quit <-chan struct{}) {
+func dependencyLoop(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager, updater *UpdateManager, quit <-chan struct{}) {
 	check := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 		defer cancel()
@@ -101,6 +131,14 @@ func dependencyLoop(resolver *Resolver, ffmpeg *FFmpegManager, quit <-chan struc
 			log.Printf("FFmpeg setup: %v", err)
 		} else {
 			log.Print("FFmpeg is ready")
+		}
+		if config.Get().AutoUpdate {
+			result, err := updater.CheckAndStage(ctx)
+			if err != nil {
+				log.Printf("companion update: %v", err)
+			} else if result.UpdateStaged {
+				log.Printf("companion %s staged; it will install on next restart", result.LatestVersion)
+			}
 		}
 	}
 	check()

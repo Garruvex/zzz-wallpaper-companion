@@ -23,16 +23,21 @@ const (
 	wmLButtonDblClk = 0x0203
 
 	nimAdd     = 0x00000000
+	nimModify  = 0x00000001
 	nimDelete  = 0x00000002
 	nifMessage = 0x00000001
 	nifIcon    = 0x00000002
 	nifTip     = 0x00000004
+	nifInfo    = 0x00000010
+	niifInfo   = 0x00000001
 
 	idiApplication = 32512
 	imageIcon      = 1
 	lrDefaultSize  = 0x0040
 	mfString       = 0x00000000
 	mfChecked      = 0x00000008
+	mfGrayed       = 0x00000001
+	mfDisabled     = 0x00000002
 	tpmRightButton = 0x0002
 	cwUseDefault   = 0x80000000
 	cmdSettings    = 1001
@@ -40,6 +45,8 @@ const (
 	cmdLogs        = 1003
 	cmdQuit        = 1004
 	cmdStartup     = 1005
+	cmdAutoUpdate  = 1006
+	cmdAppUpdate   = 1007
 )
 
 type point struct{ x, y int32 }
@@ -85,12 +92,13 @@ var (
 	trayPort            int
 	trayDataDir         string
 	trayResolver        *Resolver
+	trayUpdater         *UpdateManager
 	trayConfig          *ConfigStore
 	trayQuit            func()
 )
 
-func runTray(config *ConfigStore, dataDir string, resolver *Resolver, quit func()) error {
-	trayPort, trayDataDir, trayResolver, trayConfig, trayQuit = config.Get().Port, dataDir, resolver, config, quit
+func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *UpdateManager, quit func()) error {
+	trayPort, trayDataDir, trayResolver, trayUpdater, trayConfig, trayQuit = config.Get().Port, dataDir, resolver, updater, config, quit
 	instance, _, _ := kernel32.NewProc("GetModuleHandleW").Call(0)
 	className, _ := syscall.UTF16PtrFromString("ZZZWallpaperCompanionTray")
 	wndProc := syscall.NewCallback(windowProc)
@@ -110,6 +118,7 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, quit func(
 	if ok == 0 {
 		return addErr
 	}
+	showStartupNotification(hwnd)
 	defer shell32.NewProc("Shell_NotifyIconW").Call(nimDelete, uintptr(unsafe.Pointer(&data)))
 	var message msg
 	for {
@@ -123,6 +132,13 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, quit func(
 		user32.NewProc("TranslateMessage").Call(uintptr(unsafe.Pointer(&message)))
 		user32.NewProc("DispatchMessageW").Call(uintptr(unsafe.Pointer(&message)))
 	}
+}
+
+func showStartupNotification(hwnd uintptr) {
+	data := notifyIconData{size: uint32(unsafe.Sizeof(notifyIconData{})), hwnd: hwnd, id: 1, flags: nifInfo, infoFlags: niifInfo}
+	copy(data.infoTitle[:], syscall.StringToUTF16("ZZZ Wallpaper Companion"))
+	copy(data.info[:], syscall.StringToUTF16("Companion is running in the notification area."))
+	shell32.NewProc("Shell_NotifyIconW").Call(nimModify, uintptr(unsafe.Pointer(&data)))
 }
 
 func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
@@ -147,6 +163,19 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 				defer cancel()
 				_ = trayResolver.Update(ctx)
 			}()
+		case cmdAppUpdate:
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+				defer cancel()
+				result, err := trayUpdater.CheckAndStage(ctx)
+				if err != nil {
+					fatalDialog("Companion update check failed", err.Error())
+				} else if result.UpdateStaged {
+					infoDialog("Companion update ready", "Version "+result.LatestVersion+" will install when the companion restarts.")
+				} else {
+					infoDialog("Companion is up to date", "Version "+result.CurrentVersion+" is the latest compatible release.")
+				}
+			}()
 		case cmdStartup:
 			current := trayConfig.Get()
 			if err := setLaunchOnStartup(!current.LaunchOnStartup); err != nil {
@@ -157,6 +186,12 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 					_ = setLaunchOnStartup(!current.LaunchOnStartup)
 					fatalDialog("Could not save settings", err.Error())
 				}
+			}
+		case cmdAutoUpdate:
+			current := trayConfig.Get()
+			current.AutoUpdate = !current.AutoUpdate
+			if err := trayConfig.Save(current); err != nil {
+				fatalDialog("Could not save automatic update setting", err.Error())
 			}
 		case cmdQuit:
 			trayQuit()
@@ -177,12 +212,19 @@ func showTrayMenu(hwnd uintptr) {
 		return
 	}
 	defer user32.NewProc("DestroyMenu").Call(menu)
+	appendMenuFlags(menu, 0, "Version "+version+" (build "+buildNumber+")", mfString|mfGrayed|mfDisabled)
 	appendMenu(menu, cmdSettings, "Settings")
 	flags := uint32(mfString)
 	if trayConfig.Get().LaunchOnStartup {
 		flags |= mfChecked
 	}
 	appendMenuFlags(menu, cmdStartup, "Launch on Windows startup", flags)
+	flags = mfString
+	if trayConfig.Get().AutoUpdate {
+		flags |= mfChecked
+	}
+	appendMenuFlags(menu, cmdAutoUpdate, "Automatically download compatible updates", flags)
+	appendMenu(menu, cmdAppUpdate, "Check for companion updates")
 	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
 	appendMenu(menu, cmdLogs, "Open data folder")
 	appendMenu(menu, cmdQuit, "Quit")
@@ -247,4 +289,10 @@ func fatalDialog(title, message string) {
 	t, _ := syscall.UTF16PtrFromString(title)
 	m, _ := syscall.UTF16PtrFromString(message)
 	user32.NewProc("MessageBoxW").Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), 0x10)
+}
+
+func infoDialog(title, message string) {
+	t, _ := syscall.UTF16PtrFromString(title)
+	m, _ := syscall.UTF16PtrFromString(message)
+	user32.NewProc("MessageBoxW").Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), 0x40)
 }

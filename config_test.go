@@ -18,6 +18,9 @@ func TestConfigStoreMigratesTranscodeHeight(t *testing.T) {
 	if got := store.Get().TranscodeHeight; got != 360 {
 		t.Fatalf("TranscodeHeight = %d, want 360", got)
 	}
+	if !store.Get().AutoUpdate {
+		t.Fatal("AutoUpdate should default to true for existing settings")
+	}
 }
 
 func TestConfigStoreDefaultsAndPersistence(t *testing.T) {
@@ -26,10 +29,10 @@ func TestConfigStoreDefaultsAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := store.Get(); got.Port != defaultPort || got.UpdateChannel != "nightly" || got.MaxHeight != 720 || got.TranscodeHeight != 360 {
+	if got := store.Get(); got.Port != defaultPort || got.UpdateChannel != "nightly" || got.MaxHeight != 720 || got.TranscodeHeight != 360 || !got.AutoUpdate {
 		t.Fatalf("unexpected defaults: %+v", got)
 	}
-	next := Settings{Port: 9000, MaxHeight: 1080, UpdateChannel: "stable", TranscodeHeight: 480}
+	next := Settings{Port: 9000, MaxHeight: 1080, UpdateChannel: "stable", TranscodeHeight: 480, AutoUpdate: false}
 	if err := store.Save(next); err != nil {
 		t.Fatal(err)
 	}

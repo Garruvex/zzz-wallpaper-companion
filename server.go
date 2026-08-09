@@ -73,11 +73,14 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	return s
 }
 
-func (s *APIServer) ListenAndServe() error {
+func (s *APIServer) ListenAndServe(onReady ...func()) error {
 	port := s.config.Get().Port
 	listener, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return fmt.Errorf("port %d is unavailable: %w", port, err)
+	}
+	if len(onReady) > 0 && onReady[0] != nil {
+		onReady[0]()
 	}
 	return s.http.Serve(listener)
 }
@@ -351,7 +354,10 @@ func (s *APIServer) transcode(w http.ResponseWriter, r *http.Request) {
 	bitrate, maxrate, bufferSize := transcodeVideoRates(height)
 	cmd := exec.CommandContext(streamContext, ffmpegPath,
 		"-hide_banner", "-loglevel", "warning",
-		"-fflags", "+nobuffer", "-i", media.VideoURL,
+		"-fflags", "+discardcorrupt",
+		"-reconnect", "1", "-reconnect_streamed", "1",
+		"-reconnect_delay_max", "5", "-rw_timeout", "15000000",
+		"-i", media.VideoURL,
 		"-map", "0:v:0", "-map", "0:a:0?",
 		"-vf", fmt.Sprintf("scale=-2:%d", height),
 		"-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8",
@@ -538,18 +544,22 @@ func writeError(w http.ResponseWriter, status int, message string) {
 var settingsTemplate = template.Must(template.New("settings").Funcs(template.FuncMap{
 	"heights":          func() []int { return []int{360, 480, 720, 1080} },
 	"transcodeHeights": func() []int { return []int{240, 360, 480, 720, 1080} },
+	"companionVersion": func() string { return version },
+	"companionBuild":   func() string { return buildNumber },
+	"protocolRange":    func() string { return fmt.Sprintf("%d-%d", protocolMinVersion, protocolMaxVersion) },
 }).Parse(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZZZ Wallpaper Companion</title><style>
 :root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#111315;color:#f3f4f4}body{margin:0}.bar{height:5px;background:#f3c942}.wrap{max-width:620px;margin:0 auto;padding:36px 22px}h1{font-size:25px;margin:0 0 7px}.sub{color:#aeb5b8;margin:0 0 30px}.section{border-top:1px solid #34383a;padding:22px 0}label{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;margin:0 0 18px}small{display:block;color:#949b9e;margin-top:4px}.warning{color:#f3c942}input,select{box-sizing:border-box;width:100%;background:#1c2022;color:#fff;border:1px solid #4a5053;padding:9px;border-radius:4px;font:inherit}input[type=checkbox]{width:auto;justify-self:end}button{background:#f3c942;color:#171717;border:0;padding:10px 18px;border-radius:4px;font-weight:700;cursor:pointer}.status{margin-left:12px;color:#aeb5b8}@media(max-width:520px){label{grid-template-columns:1fr}}
-</style></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Local playback service</p><form id="settings"><div class="section">
+</style></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p><form id="settings"><div class="section">
 <label><span>Companion port<small>Match this value in Wallpaper Engine. Restart required.</small></span><input id="port" type="number" min="1024" max="65535" value="{{.Port}}"></label>
 <label><span>Maximum resolution<small>Higher resolutions use more bandwidth and GPU memory.</small></span><select id="height">{{range $v := heights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>Live-stream resolution<small class="warning">Higher resolutions substantially increase CPU usage while FFmpeg converts HLS to WebM. 1080p is experimental and may use heavy CPU.</small></span><select id="transcodeHeight">{{range $v := transcodeHeights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>yt-dlp channel<small>Nightly is recommended for timely YouTube fixes.</small></span><select id="channel"><option value="nightly">Nightly</option><option value="stable">Stable</option></select></label>
 <label><span>Launch on Windows startup<small>Start quietly in the notification area after you sign in.</small></span><input id="startup" type="checkbox" {{if .LaunchOnStartup}}checked{{end}}></label>
+<label><span>Automatic companion updates<small>Download compatible verified releases and install them on the next restart.</small></span><input id="autoUpdate" type="checkbox" {{if .AutoUpdate}}checked{{end}}></label>
 </div><button type="submit">Save settings</button><span class="status" id="status"></span></form></main><script>
-const initial={port:{{.Port}},maxHeight:{{.MaxHeight}},updateChannel:{{printf "%q" .UpdateChannel}},launchOnStartup:{{.LaunchOnStartup}},transcodeHeight:{{.TranscodeHeight}}};
+const initial={port:{{.Port}},maxHeight:{{.MaxHeight}},updateChannel:{{printf "%q" .UpdateChannel}},launchOnStartup:{{.LaunchOnStartup}},transcodeHeight:{{.TranscodeHeight}},autoUpdate:{{.AutoUpdate}}};
 height.value=initial.maxHeight;channel.value=initial.updateChannel;transcodeHeight.value=initial.transcodeHeight;
-settings.addEventListener('submit',async e=>{e.preventDefault();status.textContent='Saving...';try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({port:Number(port.value),maxHeight:Number(height.value),updateChannel:channel.value,launchOnStartup:startup.checked,transcodeHeight:Number(transcodeHeight.value)})});const j=await r.json();if(!r.ok)throw new Error(j.error);status.textContent=j.restartRequired?'Saved. Restart the companion.':'Saved.'}catch(e){status.textContent=e.message}});
+settings.addEventListener('submit',async e=>{e.preventDefault();status.textContent='Saving...';try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({port:Number(port.value),maxHeight:Number(height.value),updateChannel:channel.value,launchOnStartup:startup.checked,transcodeHeight:Number(transcodeHeight.value),autoUpdate:autoUpdate.checked})});const j=await r.json();if(!r.ok)throw new Error(j.error);status.textContent=j.restartRequired?'Saved. Restart the companion.':'Saved.'}catch(e){status.textContent=e.message}});
 </script></body></html>`))
