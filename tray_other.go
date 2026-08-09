@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func runTray(_ int, _ string, _ *Resolver, _ func()) error {
+func runTray(_ *ConfigStore, _ string, _ *Resolver, _ func()) error {
 	return errors.New("tray is only supported on Windows")
 }
 func fatalDialog(title, message string) { log.Printf("%s: %s", title, message) }

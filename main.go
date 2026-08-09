@@ -15,7 +15,10 @@ import (
 	"time"
 )
 
-var version = "1.0"
+var (
+	version     = "1.2.0"
+	buildNumber = "dev"
+)
 
 func main() {
 	dataDir, err := appDataDir()
@@ -32,15 +35,21 @@ func main() {
 		defer logFile.Close()
 		log.SetOutput(logFile)
 	}
-	log.Printf("starting ZZZ Wallpaper Companion %s", version)
+	log.Printf("starting ZZZ Wallpaper Companion %s (build %s)", version, buildNumber)
 
 	config, err := newConfigStore(filepath.Join(dataDir, "settings.json"))
 	if err != nil {
 		fatalDialog("Invalid companion settings", err.Error())
 		return
 	}
+	if config.Get().LaunchOnStartup {
+		if err := setLaunchOnStartup(true); err != nil {
+			log.Printf("refresh startup entry: %v", err)
+		}
+	}
 	resolver := newResolver(dataDir, config)
-	server := newAPIServer(config, resolver)
+	ffmpeg := newFFmpegManager(dataDir)
+	server := newAPIServer(config, resolver, ffmpeg)
 	quit := make(chan struct{})
 	var quitOnce sync.Once
 	requestQuit := func() { quitOnce.Do(func() { close(quit) }) }
@@ -54,9 +63,9 @@ func main() {
 		}
 	}()
 
-	go updateLoop(resolver, quit)
+	go dependencyLoop(resolver, ffmpeg, quit)
 	go func() {
-		if err := runTray(config.Get().Port, dataDir, resolver, requestQuit); err != nil {
+		if err := runTray(config, dataDir, resolver, requestQuit); err != nil {
 			log.Printf("tray unavailable: %v", err)
 		}
 	}()
@@ -79,14 +88,19 @@ func appDataDir() (string, error) {
 	return filepath.Join(root, "ZZZWallpaperCompanion"), nil
 }
 
-func updateLoop(resolver *Resolver, quit <-chan struct{}) {
+func dependencyLoop(resolver *Resolver, ffmpeg *FFmpegManager, quit <-chan struct{}) {
 	check := func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 		defer cancel()
 		if err := resolver.Update(ctx); err != nil {
 			log.Printf("yt-dlp update: %v", err)
 		} else {
 			log.Print("yt-dlp is ready")
+		}
+		if err := ffmpeg.Ensure(ctx); err != nil {
+			log.Printf("FFmpeg setup: %v", err)
+		} else {
+			log.Print("FFmpeg is ready")
 		}
 	}
 	check()
