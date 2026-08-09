@@ -16,6 +16,7 @@ type Settings struct {
 	UpdateChannel   string `json:"updateChannel"`
 	LaunchOnStartup bool   `json:"launchOnStartup"`
 	TranscodeHeight int    `json:"transcodeHeight"`
+	AutoUpdate      bool   `json:"autoUpdate"`
 }
 
 type ConfigStore struct {
@@ -25,7 +26,7 @@ type ConfigStore struct {
 }
 
 func defaultSettings() Settings {
-	return Settings{Port: defaultPort, MaxHeight: 720, UpdateChannel: "nightly", TranscodeHeight: 360}
+	return Settings{Port: defaultPort, MaxHeight: 720, UpdateChannel: "nightly", TranscodeHeight: 360, AutoUpdate: true}
 }
 
 func newConfigStore(path string) (*ConfigStore, error) {
@@ -37,12 +38,19 @@ func newConfigStore(path string) (*ConfigStore, error) {
 	if err != nil {
 		return nil, err
 	}
+	var stored map[string]json.RawMessage
+	if err := json.Unmarshal(body, &stored); err != nil {
+		return nil, err
+	}
 	if err := json.Unmarshal(body, &s.data); err != nil {
 		return nil, err
 	}
 	// Migrate settings written before live transcoding was introduced.
 	if s.data.TranscodeHeight == 0 {
 		s.data.TranscodeHeight = 360
+	}
+	if _, exists := stored["autoUpdate"]; !exists {
+		s.data.AutoUpdate = true
 	}
 	if err := validateSettings(s.data); err != nil {
 		return nil, err
