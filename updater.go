@@ -268,6 +268,12 @@ func maybeLaunchPendingUpdate(dataDir string) bool {
 	pendingExecutable, pendingMetadata := pendingUpdatePaths(dataDir)
 	metadataBody, err := os.ReadFile(pendingMetadata)
 	if err != nil {
+		// The update helper cannot delete its own executable on Windows. Once
+		// its metadata is gone, remove that harmless leftover on the next
+		// ordinary companion start.
+		if errors.Is(err, os.ErrNotExist) {
+			_ = os.Remove(pendingExecutable)
+		}
 		return false
 	}
 	var metadata pendingUpdate

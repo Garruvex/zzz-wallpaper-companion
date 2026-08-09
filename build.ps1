@@ -33,6 +33,7 @@ try {
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
     $env:GOOS = "windows"
     $linkerFlags = "-H=windowsgui -s -w -X main.buildNumber=$BuildNumber"
+	$builtAssets = @{}
 
     foreach ($targetArchitecture in $Architecture) {
         $env:GOARCH = $targetArchitecture
@@ -43,7 +44,21 @@ try {
         $artifact = Get-Item -LiteralPath $outputPath
         Write-Host "Built $($artifact.FullName)"
         Write-Host "Version $Version, build $BuildNumber, $targetArchitecture, $([math]::Round($artifact.Length / 1MB, 2)) MB"
+		$builtAssets["windows-$targetArchitecture"] = @{
+			name = $artifact.Name
+			sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $artifact.FullName).Hash.ToLowerInvariant()
+		}
     }
+
+	$manifest = @{
+		version = $Version
+		protocolMin = 2
+		protocolMax = 2
+		assets = $builtAssets
+	} | ConvertTo-Json -Depth 4
+	$manifestPath = Join-Path $outputDirectory "zzz-wallpaper-companion-update.json"
+	[System.IO.File]::WriteAllText($manifestPath, $manifest + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding($false)))
+	Write-Host "Built $manifestPath"
 } finally {
     $env:GOOS = $previousGOOS
     $env:GOARCH = $previousGOARCH
