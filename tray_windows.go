@@ -22,14 +22,15 @@ const (
 	wmRButtonUp     = 0x0205
 	wmLButtonDblClk = 0x0203
 
-	nimAdd     = 0x00000000
-	nimModify  = 0x00000001
-	nimDelete  = 0x00000002
-	nifMessage = 0x00000001
-	nifIcon    = 0x00000002
-	nifTip     = 0x00000004
-	nifInfo    = 0x00000010
-	niifInfo   = 0x00000001
+	nimAdd      = 0x00000000
+	nimModify   = 0x00000001
+	nimDelete   = 0x00000002
+	nifMessage  = 0x00000001
+	nifIcon     = 0x00000002
+	nifTip      = 0x00000004
+	nifInfo     = 0x00000010
+	niifInfo    = 0x00000001
+	niifNoSound = 0x00000010
 
 	idiApplication = 32512
 	imageIcon      = 1
@@ -118,7 +119,7 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 	if ok == 0 {
 		return addErr
 	}
-	showStartupNotification(hwnd)
+	go showStartupNotification(hwnd)
 	defer shell32.NewProc("Shell_NotifyIconW").Call(nimDelete, uintptr(unsafe.Pointer(&data)))
 	var message msg
 	for {
@@ -135,7 +136,17 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 }
 
 func showStartupNotification(hwnd uintptr) {
-	data := notifyIconData{size: uint32(unsafe.Sizeof(notifyIconData{})), hwnd: hwnd, id: 1, flags: nifInfo, infoFlags: niifInfo}
+	// Explorer can discard NIF_INFO updates sent in the same instant as NIM_ADD.
+	// Give the tray icon time to finish registering before posting the balloon.
+	time.Sleep(750 * time.Millisecond)
+	data := notifyIconData{
+		size:             uint32(unsafe.Sizeof(notifyIconData{})),
+		hwnd:             hwnd,
+		id:               1,
+		flags:            nifInfo,
+		timeoutOrVersion: 4_000,
+		infoFlags:        niifInfo | niifNoSound,
+	}
 	copy(data.infoTitle[:], syscall.StringToUTF16("ZZZ Wallpaper Companion"))
 	copy(data.info[:], syscall.StringToUTF16("Companion is running in the notification area."))
 	shell32.NewProc("Shell_NotifyIconW").Call(nimModify, uintptr(unsafe.Pointer(&data)))
