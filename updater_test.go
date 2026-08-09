@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -76,5 +77,20 @@ func TestCheckAndStageVerifiedUpdate(t *testing.T) {
 	staged, err := os.ReadFile(filepath.Join(manager.dataDir, "companion-update.exe"))
 	if err != nil || string(staged) != string(payload) {
 		t.Fatalf("unexpected staged executable: %q, %v", staged, err)
+	}
+}
+
+func TestMaybeLaunchPendingUpdateRemovesOrphanExecutable(t *testing.T) {
+	dataDir := t.TempDir()
+	executable, _ := pendingUpdatePaths(dataDir)
+	if err := os.WriteFile(executable, []byte("old update helper"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	if maybeLaunchPendingUpdate(dataDir) {
+		t.Fatal("orphan update helper must not launch")
+	}
+	if _, err := os.Stat(executable); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("orphan update helper was not removed: %v", err)
 	}
 }
