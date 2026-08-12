@@ -4,10 +4,13 @@ package systemstats
 
 import "time"
 
-type unsupportedStatsCollector struct{}
+type unsupportedStatsCollector struct{ startedAt time.Time }
 
-func newSystemStatsCollector() systemStatsCollector { return &unsupportedStatsCollector{} }
-func (*unsupportedStatsCollector) Sample() SystemStatsSnapshot {
-	return SystemStatsSnapshot{SampledAt: time.Now().UnixMilli()}
+func newSystemStatsCollector() systemStatsCollector {
+	return &unsupportedStatsCollector{startedAt: time.Now()}
+}
+func (c *unsupportedStatsCollector) Sample() SystemStatsSnapshot {
+	now := time.Now()
+	return SystemStatsSnapshot{Uptime: uint64(now.Sub(c.startedAt) / time.Second), SampledAt: now.UnixMilli()}
 }
 func (*unsupportedStatsCollector) Close() {}

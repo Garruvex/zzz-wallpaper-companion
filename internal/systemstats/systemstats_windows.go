@@ -22,6 +22,7 @@ type memoryStatusEx struct {
 type windowsStatsCollector struct {
 	getSystemTimes                 *syscall.LazyProc
 	globalMemoryStatusEx           *syscall.LazyProc
+	getTickCount64                 *syscall.LazyProc
 	lastIdle, lastKernel, lastUser uint64
 	pdhCollect, pdhArray, pdhClose *syscall.LazyProc
 	pdhQuery, pdhCounter           uintptr
@@ -47,6 +48,7 @@ func newSystemStatsCollector() systemStatsCollector {
 	c := &windowsStatsCollector{
 		getSystemTimes:       kernel32.NewProc("GetSystemTimes"),
 		globalMemoryStatusEx: kernel32.NewProc("GlobalMemoryStatusEx"),
+		getTickCount64:       kernel32.NewProc("GetTickCount64"),
 	}
 	pdh := syscall.NewLazyDLL("pdh.dll")
 	open, add := pdh.NewProc("PdhOpenQueryW"), pdh.NewProc("PdhAddEnglishCounterW")
@@ -86,7 +88,8 @@ func (c *windowsStatsCollector) readCPU() float64 {
 func (c *windowsStatsCollector) Sample() SystemStatsSnapshot {
 	m := memoryStatusEx{Length: uint32(unsafe.Sizeof(memoryStatusEx{}))}
 	ok, _, _ := c.globalMemoryStatusEx.Call(uintptr(unsafe.Pointer(&m)))
-	s := SystemStatsSnapshot{CPU: c.readCPU(), SampledAt: time.Now().UnixMilli()}
+	uptimeMS, _, _ := c.getTickCount64.Call()
+	s := SystemStatsSnapshot{CPU: c.readCPU(), Uptime: uint64(uptimeMS) / 1000, SampledAt: time.Now().UnixMilli()}
 	if ok != 0 {
 		s.Memory = float64(m.MemoryLoad)
 		s.MemoryTotal = m.TotalPhys

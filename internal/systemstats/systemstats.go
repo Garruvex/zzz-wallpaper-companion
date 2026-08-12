@@ -12,6 +12,7 @@ type SystemStatsSnapshot struct {
 	MemoryUsed  uint64   `json:"memoryUsedBytes"`
 	MemoryTotal uint64   `json:"memoryTotalBytes"`
 	GPU         *float64 `json:"gpu,omitempty"`
+	Uptime      uint64   `json:"uptimeSeconds"`
 	SampledAt   int64    `json:"sampledAt"`
 }
 
