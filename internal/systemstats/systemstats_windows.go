@@ -38,6 +38,19 @@ type pdhDoubleItem struct {
 	Value pdhDoubleValue
 }
 
+func utf16PtrString(value *uint16) string {
+	if value == nil {
+		return ""
+	}
+	units := unsafe.Slice(value, 32*1024)
+	for index, unit := range units {
+		if unit == 0 {
+			return syscall.UTF16ToString(units[:index])
+		}
+	}
+	return ""
+}
+
 const (
 	pdhFmtDouble = 0x00000200
 	pdhMoreData  = 0x800007D2
@@ -117,14 +130,17 @@ func (c *windowsStatsCollector) readGPU() *float64 {
 		return nil
 	}
 	items := unsafe.Slice((*pdhDoubleItem)(unsafe.Pointer(&buffer[0])), int(count))
-	total := 0.0
+	samples := make([]gpuEngineSample, 0, len(items))
 	for _, item := range items {
-		if item.Value.Status == 0 && !math.IsNaN(item.Value.Value) && item.Value.Value > 0 {
-			total += item.Value.Value
+		if item.Value.Status == 0 && item.Name != nil {
+			samples = append(samples, gpuEngineSample{
+				name:  utf16PtrString(item.Name),
+				value: item.Value.Value,
+			})
 		}
 	}
-	total = math.Round(math.Min(100, total)*10) / 10
-	return &total
+	usage := aggregateGPUUsage(samples)
+	return &usage
 }
 
 func (c *windowsStatsCollector) Close() {

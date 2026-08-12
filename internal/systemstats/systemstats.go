@@ -2,9 +2,38 @@ package systemstats
 
 import (
 	"context"
+	"math"
+	"strings"
 	"sync/atomic"
 	"time"
 )
+
+type gpuEngineSample struct {
+	name  string
+	value float64
+}
+
+// aggregateGPUUsage matches Windows Task Manager's overall GPU convention:
+// combine per-process counters for the same physical engine, then report the
+// busiest engine rather than adding independent 3D/copy/video engines.
+func aggregateGPUUsage(samples []gpuEngineSample) float64 {
+	engines := make(map[string]float64)
+	for _, sample := range samples {
+		if math.IsNaN(sample.value) || sample.value <= 0 {
+			continue
+		}
+		key := strings.ToLower(sample.name)
+		if index := strings.Index(key, "_luid_"); index >= 0 {
+			key = key[index+1:]
+		}
+		engines[key] += sample.value
+	}
+	usage := 0.0
+	for _, value := range engines {
+		usage = math.Max(usage, value)
+	}
+	return math.Round(math.Min(100, usage)*10) / 10
+}
 
 type SystemStatsSnapshot struct {
 	CPU         float64  `json:"cpu"`
