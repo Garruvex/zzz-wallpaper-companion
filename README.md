@@ -6,6 +6,8 @@ A small Windows background app for the [Zenless Zone Zero TV wallpaper](https://
 
 The companion does not bundle [yt-dlp](https://github.com/yt-dlp/yt-dlp) or FFmpeg. On first launch it downloads both tools for your CPU and verifies their published SHA-256 checksums. yt-dlp is kept updated automatically. FFmpeg is used only when a live stream must be converted from H.264/AAC HLS to Wallpaper Engine-compatible VP8/Opus WebM.
 
+Version 1.2 adds backward-compatible lyrics and system-statistics APIs while retaining protocol v2. Lyrics are resolved through LRCLIB with a NetEase fallback and cached locally. System statistics are sampled once per second in one background goroutine, so API reads do not trigger system queries.
+
 ## Quick start
 
 1. **Get the wallpaper** from the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) and apply it in Wallpaper Engine.

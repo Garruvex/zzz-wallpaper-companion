@@ -19,7 +19,9 @@ func testServer(t *testing.T) *APIServer {
 		t.Fatal(err)
 	}
 	dataDir := t.TempDir()
-	return newAPIServer(store, newResolver(dataDir, store), newFFmpegManager(dataDir))
+	server := newAPIServer(store, newResolver(dataDir, store), newFFmpegManager(dataDir))
+	t.Cleanup(server.systemStats.Close)
+	return server
 }
 
 func TestHealth(t *testing.T) {
@@ -37,6 +39,28 @@ func TestHealth(t *testing.T) {
 	}
 	if body["name"] != "zzz-wallpaper-companion" {
 		t.Fatalf("unexpected body: %v", body)
+	}
+	capabilities, ok := body["capabilities"].(map[string]any)
+	if !ok || capabilities["lyrics"] != true || capabilities["systemStats"] != true {
+		t.Fatalf("missing capabilities: %v", body)
+	}
+}
+
+func TestSystemStatsEndpoint(t *testing.T) {
+	server := testServer(t)
+	request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/api/v1/system-stats", nil)
+	request.RemoteAddr = "127.0.0.1:50000"
+	recorder := httptest.NewRecorder()
+	server.http.Handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var body SystemStatsSnapshot
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.SampledAt <= 0 {
+		t.Fatalf("invalid snapshot: %#v", body)
 	}
 }
 

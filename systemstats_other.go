@@ -1,0 +1,13 @@
+//go:build !windows
+
+package main
+
+import "time"
+
+type unsupportedStatsCollector struct{}
+
+func newSystemStatsCollector() systemStatsCollector { return &unsupportedStatsCollector{} }
+func (*unsupportedStatsCollector) Sample() SystemStatsSnapshot {
+	return SystemStatsSnapshot{SampledAt: time.Now().UnixMilli()}
+}
+func (*unsupportedStatsCollector) Close() {}

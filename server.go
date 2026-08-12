@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -42,6 +43,8 @@ type APIServer struct {
 	config      *ConfigStore
 	resolver    *Resolver
 	ffmpeg      *FFmpegManager
+	lyrics      *LyricsService
+	systemStats *SystemStatsService
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -49,7 +52,8 @@ type APIServer struct {
 }
 
 func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager) *APIServer {
-	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, sessions: make(map[string]*streamSession)}
+	dataDir := filepath.Dir(resolver.path)
+	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: newLyricsService(dataDir), systemStats: newSystemStatsService(), sessions: make(map[string]*streamSession)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/youtube/resolve", s.resolve)
@@ -57,6 +61,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("GET /api/youtube/hls", s.hlsProxy)
 	mux.HandleFunc("GET /api/youtube/transcode", s.transcode)
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
+	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
+	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("POST /api/settings", s.saveSettings)
 	mux.HandleFunc("GET /resource/svg/cross.svg", s.probeImage)
@@ -87,7 +93,32 @@ func (s *APIServer) ListenAndServe(onReady ...func()) error {
 
 func (s *APIServer) Shutdown(ctx context.Context) error {
 	s.cancelAllStreams()
+	s.systemStats.Close()
 	return s.http.Shutdown(ctx)
+}
+
+func (s *APIServer) lookupLyrics(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var request LyricsRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid lyrics request")
+		return
+	}
+	result, err := s.lyrics.Lookup(r.Context(), request)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *APIServer) getSystemStats(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.systemStats.Snapshot())
 }
 
 func (s *APIServer) youtubeHeartbeat(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +239,7 @@ func (s *APIServer) health(w http.ResponseWriter, _ *http.Request) {
 		"ready": ffmpegReady, "name": "zzz-wallpaper-companion", "protocolVersion": protocolVersion,
 		"version": version, "protocolMin": protocolMinVersion, "protocolMax": protocolMaxVersion,
 		"ytDlpReady": s.resolver.Ready(), "ffmpegReady": ffmpegReady,
+		"capabilities": map[string]bool{"youtubeRelay": true, "lyrics": true, "systemStats": true},
 	})
 }
 
