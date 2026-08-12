@@ -2,6 +2,23 @@ package companion
 
 import "testing"
 
+func TestResolvedMusicMetadataPrefersMusicFields(t *testing.T) {
+	track, artist := resolvedMusicMetadata(ytOutput{
+		Title: "Artist - Song (Official Video)", Track: "Song", Artist: "Artist",
+		Creator: "Creator", Uploader: "Label",
+	})
+	if track != "Song" || artist != "Artist" {
+		t.Fatalf("unexpected music metadata: track=%q artist=%q", track, artist)
+	}
+}
+
+func TestResolvedMusicMetadataFallsBackToDisplayMetadata(t *testing.T) {
+	track, artist := resolvedMusicMetadata(ytOutput{Title: "Song", Creator: "Artist", Uploader: "Label"})
+	if track != "Song" || artist != "Artist" {
+		t.Fatalf("unexpected fallback metadata: track=%q artist=%q", track, artist)
+	}
+}
+
 func TestStreamExpiry(t *testing.T) {
 	tests := []struct {
 		name string

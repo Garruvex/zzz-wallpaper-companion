@@ -23,6 +23,10 @@ import (
 
 const maxLyricsResponseBytes = 1 << 20
 
+// Bump whenever normalization or candidate selection changes so successful
+// results stored under an older interpretation cannot mask the new pipeline.
+const lyricsMatcherVersion = "v3"
+
 type LyricsRequest struct {
 	Artist   string  `json:"artist"`
 	Title    string  `json:"title"`
@@ -68,7 +72,7 @@ func NewService(dataDir, clientVersion string) *LyricsService {
 }
 
 func lyricsTrackKey(r LyricsRequest) string {
-	normalized := strings.ToLower(strings.Join([]string{strings.TrimSpace(r.Artist), strings.TrimSpace(r.Title), strings.TrimSpace(r.Album), strconv.Itoa(int(r.Duration + .5))}, "|"))
+	normalized := strings.ToLower(strings.Join([]string{lyricsMatcherVersion, strings.TrimSpace(r.Artist), strings.TrimSpace(r.Title), strings.TrimSpace(r.Album), strconv.Itoa(int(r.Duration + .5))}, "|"))
 	sum := sha256.Sum256([]byte(normalized))
 	return hex.EncodeToString(sum[:16])
 }
@@ -230,6 +234,7 @@ func (s *LyricsService) searchLRCLIB(ctx context.Context, track LyricsRequest, k
 }
 
 var metadataSuffix = regexp.MustCompile(`(?i)\s*[\[(](?:official\s+)?(?:(?:music\s+)?video(?:\s+clip)?|audio|lyrics?|lyric\s+video|visuali[sz]er)[\])]`)
+var japaneseQuotedTitle = regexp.MustCompile(`[｢「]([^｣」]+)[｣」]`)
 var artistTitleSeparator = regexp.MustCompile(`\s+[-–—]\s+`)
 var nonWord = regexp.MustCompile(`[^\p{L}\p{N}]+`)
 var versionMarker = regexp.MustCompile(`(?i)\b(live|remix|acoustic|instrumental|karaoke|demo|edit|version|cover|sped\s*up|slowed)\b`)
@@ -241,6 +246,16 @@ func normalizedMetadata(value string) string {
 
 func normalizeLyricsRequest(track LyricsRequest) LyricsRequest {
 	originalTitle := strings.TrimSpace(track.Title)
+	// Japanese music channels commonly publish collaboration headlines as
+	// Artist｢Track｣ × TV Anime ... . When the prefix agrees with the supplied
+	// artist, the quoted portion is the reliable music title.
+	if match := japaneseQuotedTitle.FindStringSubmatch(originalTitle); len(match) == 2 {
+		prefix := strings.TrimSpace(originalTitle[:strings.Index(originalTitle, match[0])])
+		if score, ok := metadataMatchScore(track.Artist, prefix); ok && score >= .8 {
+			track.Title = strings.TrimSpace(match[1])
+			return track
+		}
+	}
 	cleanTitle := strings.TrimSpace(metadataSuffix.ReplaceAllString(originalTitle, " "))
 	if cleanTitle != originalTitle {
 		if separator := artistTitleSeparator.FindStringIndex(cleanTitle); separator != nil {
@@ -277,6 +292,31 @@ func metadataMatchScore(want, got string) (float64, bool) {
 	return 0, false
 }
 
+func artistMatchScore(want, got string) (float64, bool) {
+	score, ok := metadataMatchScore(want, got)
+	if !ok {
+		return 0, false
+	}
+	if score >= .8 {
+		return score, true
+	}
+
+	// Music metadata often brands a vocalist as "name from group", while
+	// providers catalogue the same recording under the vocalist alone.
+	// Keep this exception deliberately narrow: the shorter name must be a
+	// complete prefix and the longer value must use an explicit "from" credit.
+	wantNormalized := normalizedMetadata(want)
+	gotNormalized := normalizedMetadata(got)
+	shorter, longer := wantNormalized, gotNormalized
+	if len(shorter) > len(longer) {
+		shorter, longer = longer, shorter
+	}
+	if len([]rune(shorter)) >= 3 && strings.HasPrefix(longer, shorter+" from ") {
+		return .9, true
+	}
+	return score, true
+}
+
 func candidateTitle(candidate lrclibTrack) string {
 	title := normalizedMetadata(candidate.TrackName)
 	artist := normalizedMetadata(candidate.ArtistName)
@@ -292,19 +332,22 @@ func selectLRCLIBTrack(track LyricsRequest, candidates []lrclibTrack) (lrclibTra
 	wantVersion := versionMarker.FindString(normalizedMetadata(track.Title))
 	for _, candidate := range candidates {
 		titleScore, titleMatch := metadataMatchScore(track.Title, candidateTitle(candidate))
-		artistScore, artistMatch := metadataMatchScore(track.Artist, candidate.ArtistName)
-		if !titleMatch || !artistMatch {
+		artistScore, artistMatch := artistMatchScore(track.Artist, candidate.ArtistName)
+		if !titleMatch || titleScore < .85 || !artistMatch || (strings.TrimSpace(track.Artist) != "" && artistScore < .8) {
 			continue
 		}
 		score := titleScore*60 + artistScore*40
 		gotVersion := versionMarker.FindString(normalizedMetadata(candidate.TrackName))
 		if wantVersion == gotVersion {
 			score += 12
-		} else if wantVersion != "" || gotVersion != "" {
-			score -= 25
+		} else {
+			continue
 		}
 		if track.Duration > 0 && candidate.Duration > 0 {
 			difference := math.Abs(track.Duration - candidate.Duration)
+			if difference > 20 {
+				continue
+			}
 			score += math.Max(0, 20-difference/1.5)
 		}
 		if albumScore, ok := metadataMatchScore(track.Album, candidate.AlbumName); ok {
@@ -319,7 +362,7 @@ func selectLRCLIBTrack(track LyricsRequest, candidates []lrclibTrack) (lrclibTra
 			bestScore, best = score, candidate
 		}
 	}
-	return best, bestScore >= 0
+	return best, bestScore >= 85
 }
 
 func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, key string) (LyricsResponse, error) {
@@ -377,19 +420,22 @@ func selectNetEaseTrack(track LyricsRequest, candidates []neteaseTrack) (netease
 			artistNames = append(artistNames, artist.Name)
 		}
 		titleScore, titleMatch := metadataMatchScore(track.Title, candidate.Name)
-		artistScore, artistMatch := metadataMatchScore(track.Artist, strings.Join(artistNames, " "))
-		if !titleMatch || !artistMatch {
+		artistScore, artistMatch := artistMatchScore(track.Artist, strings.Join(artistNames, " "))
+		if !titleMatch || titleScore < .85 || !artistMatch || (strings.TrimSpace(track.Artist) != "" && artistScore < .8) {
 			continue
 		}
 		score := titleScore*60 + artistScore*40
 		gotVersion := versionMarker.FindString(normalizedMetadata(candidate.Name))
 		if wantVersion == gotVersion {
 			score += 12
-		} else if wantVersion != "" || gotVersion != "" {
-			score -= 25
+		} else {
+			continue
 		}
 		if track.Duration > 0 && candidate.Duration > 0 {
 			difference := math.Abs(track.Duration - float64(candidate.Duration)/1000)
+			if difference > 20 {
+				continue
+			}
 			score += math.Max(0, 20-difference/1.5)
 		}
 		if albumScore, ok := metadataMatchScore(track.Album, candidate.Album.Name); ok {
@@ -399,7 +445,7 @@ func selectNetEaseTrack(track LyricsRequest, candidates []neteaseTrack) (netease
 			bestScore, best = score, candidate
 		}
 	}
-	return best, bestScore >= 0
+	return best, bestScore >= 85
 }
 
 func (s *LyricsService) getJSON(ctx context.Context, endpoint, userAgent, referer string, target any) (int, error) {

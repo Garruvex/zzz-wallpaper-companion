@@ -32,19 +32,23 @@ type Resolver struct {
 }
 
 type resolvedMedia struct {
-	VideoURL    string `json:"videoUrl"`
-	AudioURL    string `json:"audioUrl"`
-	VideoFormat string `json:"videoFormatId"`
-	AudioFormat string `json:"audioFormatId"`
-	Extension   string `json:"extension"`
-	Width       int    `json:"width,omitempty"`
-	Height      int    `json:"height,omitempty"`
-	VideoCodec  string `json:"videoCodec,omitempty"`
-	AudioCodec  string `json:"audioCodec,omitempty"`
-	Title       string `json:"title,omitempty"`
-	IsLive      bool   `json:"isLive"`
-	Muxed       bool   `json:"muxed"`
-	ExpiresAt   int64  `json:"expiresAt,omitempty"`
+	VideoURL    string  `json:"videoUrl"`
+	AudioURL    string  `json:"audioUrl"`
+	VideoFormat string  `json:"videoFormatId"`
+	AudioFormat string  `json:"audioFormatId"`
+	Extension   string  `json:"extension"`
+	Width       int     `json:"width,omitempty"`
+	Height      int     `json:"height,omitempty"`
+	VideoCodec  string  `json:"videoCodec,omitempty"`
+	AudioCodec  string  `json:"audioCodec,omitempty"`
+	Title       string  `json:"title,omitempty"`
+	Track       string  `json:"track,omitempty"`
+	Artist      string  `json:"artist,omitempty"`
+	Album       string  `json:"album,omitempty"`
+	Duration    float64 `json:"duration,omitempty"`
+	IsLive      bool    `json:"isLive"`
+	Muxed       bool    `json:"muxed"`
+	ExpiresAt   int64   `json:"expiresAt,omitempty"`
 }
 
 type playlistItem struct {
@@ -66,6 +70,11 @@ type ytFormat struct {
 type ytOutput struct {
 	ID               string     `json:"id"`
 	Title            string     `json:"title"`
+	Track            string     `json:"track"`
+	Artist           string     `json:"artist"`
+	Album            string     `json:"album"`
+	Creator          string     `json:"creator"`
+	Uploader         string     `json:"uploader"`
 	Duration         float64    `json:"duration"`
 	IsLive           bool       `json:"is_live"`
 	URL              string     `json:"url"`
@@ -77,6 +86,21 @@ type ytOutput struct {
 	Height           int        `json:"height"`
 	RequestedFormats []ytFormat `json:"requested_formats"`
 	Entries          []ytOutput `json:"entries"`
+}
+
+func resolvedMusicMetadata(metadata ytOutput) (track, artist string) {
+	track = strings.TrimSpace(metadata.Track)
+	if track == "" {
+		track = strings.TrimSpace(metadata.Title)
+	}
+	artist = strings.TrimSpace(metadata.Artist)
+	if artist == "" {
+		artist = strings.TrimSpace(metadata.Creator)
+	}
+	if artist == "" {
+		artist = strings.TrimSpace(metadata.Uploader)
+	}
+	return track, artist
 }
 
 func newResolver(dataDir string, settings *ConfigStore) *Resolver {
@@ -221,6 +245,7 @@ func (r *Resolver) Resolve(ctx context.Context, id string, hlsCompatibilityMode 
 		return resolvedMedia{}, err
 	}
 	var video, audio *ytFormat
+	track, artist := resolvedMusicMetadata(metadata)
 	for i := range metadata.RequestedFormats {
 		item := &metadata.RequestedFormats[i]
 		if video == nil && item.VCodec != "" && item.VCodec != "none" {
@@ -231,12 +256,12 @@ func (r *Resolver) Resolve(ctx context.Context, id string, hlsCompatibilityMode 
 		}
 	}
 	if video != nil && audio != nil && video.URL != "" && audio.URL != "" {
-		return resolvedMedia{VideoURL: video.URL, AudioURL: audio.URL, VideoFormat: video.FormatID, AudioFormat: audio.FormatID, Extension: "webm", Width: video.Width, Height: video.Height, VideoCodec: video.VCodec, AudioCodec: audio.ACodec, Title: metadata.Title, IsLive: metadata.IsLive, ExpiresAt: streamExpiry(video.URL, audio.URL)}, nil
+		return resolvedMedia{VideoURL: video.URL, AudioURL: audio.URL, VideoFormat: video.FormatID, AudioFormat: audio.FormatID, Extension: "webm", Width: video.Width, Height: video.Height, VideoCodec: video.VCodec, AudioCodec: audio.ACodec, Title: metadata.Title, Track: track, Artist: artist, Album: metadata.Album, Duration: metadata.Duration, IsLive: metadata.IsLive, ExpiresAt: streamExpiry(video.URL, audio.URL)}, nil
 	}
 	if metadata.URL == "" || metadata.VCodec == "" || metadata.VCodec == "none" {
 		return resolvedMedia{}, errors.New("no browser-playable stream was found")
 	}
-	return resolvedMedia{VideoURL: metadata.URL, VideoFormat: metadata.FormatID, Extension: metadata.Ext, Width: metadata.Width, Height: metadata.Height, VideoCodec: metadata.VCodec, AudioCodec: metadata.ACodec, Title: metadata.Title, IsLive: metadata.IsLive, Muxed: true, ExpiresAt: streamExpiry(metadata.URL)}, nil
+	return resolvedMedia{VideoURL: metadata.URL, VideoFormat: metadata.FormatID, Extension: metadata.Ext, Width: metadata.Width, Height: metadata.Height, VideoCodec: metadata.VCodec, AudioCodec: metadata.ACodec, Title: metadata.Title, Track: track, Artist: artist, Album: metadata.Album, Duration: metadata.Duration, IsLive: metadata.IsLive, Muxed: true, ExpiresAt: streamExpiry(metadata.URL)}, nil
 }
 
 func streamExpiry(urls ...string) int64 {

@@ -65,6 +65,16 @@ func TestNormalizeLyricsRequestPrefersOfficialVideoTitleArtist(t *testing.T) {
 	}
 }
 
+func TestNormalizeLyricsRequestExtractsJapaneseQuotedCollaborationTitle(t *testing.T) {
+	got := normalizeLyricsRequest(LyricsRequest{
+		Artist: "Creepy Nuts",
+		Title:  "Creepy Nuts｢Bling-Bang-Bang-Born｣ × TV Anime｢マッシュル-MASHLE-｣ Collaboration Music Video #BBBBダンス",
+	})
+	if got.Artist != "Creepy Nuts" || got.Title != "Bling-Bang-Bang-Born" {
+		t.Fatalf("unexpected metadata: %#v", got)
+	}
+}
+
 func TestSelectLRCLIBTrackToleratesVideoDurationAndAlbum(t *testing.T) {
 	track := LyricsRequest{Artist: "Owl City", Title: "Fireflies", Album: "YouTube", Duration: 232}
 	candidates := []lrclibTrack{
@@ -91,6 +101,37 @@ func TestSelectLRCLIBTrackRejectsWrongArtistAndVersion(t *testing.T) {
 	}
 }
 
+func TestSelectLRCLIBTrackRejectsUnrequestedVersion(t *testing.T) {
+	track := LyricsRequest{Artist: "Example Artist", Title: "Example Song", Duration: 200}
+	candidates := []lrclibTrack{
+		{TrackName: "Example Song (Live)", ArtistName: "Example Artist", Duration: 200, SyncedLyrics: "wrong version"},
+		{TrackName: "Example Song Remix", ArtistName: "Example Artist", Duration: 200, SyncedLyrics: "wrong remix"},
+	}
+	if got, ok := selectLRCLIBTrack(track, candidates); ok {
+		t.Fatalf("selected unrequested version: %#v", got)
+	}
+}
+
+func TestSelectLRCLIBTrackRejectsLooseSubstring(t *testing.T) {
+	track := LyricsRequest{Artist: "Example Artist", Title: "Home", Duration: 200}
+	candidates := []lrclibTrack{
+		{TrackName: "Take Me Home Tonight", ArtistName: "Example Artist", Duration: 200, SyncedLyrics: "wrong song"},
+	}
+	if got, ok := selectLRCLIBTrack(track, candidates); ok {
+		t.Fatalf("selected loose substring: %#v", got)
+	}
+}
+
+func TestSelectLRCLIBTrackRejectsLargeDurationMismatch(t *testing.T) {
+	track := LyricsRequest{Artist: "Example Artist", Title: "Example Song", Duration: 200}
+	candidates := []lrclibTrack{
+		{TrackName: "Example Song", ArtistName: "Example Artist", Duration: 245, SyncedLyrics: "wrong recording"},
+	}
+	if got, ok := selectLRCLIBTrack(track, candidates); ok {
+		t.Fatalf("selected mismatched duration: %#v", got)
+	}
+}
+
 func TestSelectNetEaseTrackRanksTitleVersionAndDuration(t *testing.T) {
 	makeTrack := func(id int64, name, artist string, duration int64) neteaseTrack {
 		candidate := neteaseTrack{ID: id, Name: name, Duration: duration}
@@ -108,5 +149,18 @@ func TestSelectNetEaseTrackRanksTitleVersionAndDuration(t *testing.T) {
 	got, ok := selectNetEaseTrack(track, candidates)
 	if !ok || got.ID != 3 {
 		t.Fatalf("selected %#v", got)
+	}
+}
+
+func TestSelectNetEaseTrackAcceptsArtistFromGroupCredit(t *testing.T) {
+	candidate := neteaseTrack{ID: 3407565594, Name: "猫日", Duration: 230000}
+	candidate.Artists = append(candidate.Artists, struct {
+		Name string `json:"name"`
+	}{Name: "suis"})
+
+	track := LyricsRequest{Artist: "suis from ヨルシカ", Title: "猫日", Duration: 230}
+	got, ok := selectNetEaseTrack(track, []neteaseTrack{candidate})
+	if !ok || got.ID != candidate.ID {
+		t.Fatalf("artist-from-group credit was not matched: %#v", got)
 	}
 }
