@@ -39,6 +39,14 @@ func TestLyricsCacheRoundTrip(t *testing.T) {
 	}
 }
 
+func TestLyricsCacheDoesNotRetainNegativeResults(t *testing.T) {
+	service := NewService(t.TempDir(), "test")
+	service.store("missing", LyricsResponse{Status: "not_found", TrackKey: "missing"})
+	if _, ok := service.cached("missing"); ok {
+		t.Fatal("not_found result was cached")
+	}
+}
+
 func TestLyricsTrackKeyIsStable(t *testing.T) {
 	a := lyricsTrackKey(LyricsRequest{Artist: " Artist ", Title: "Song", Duration: 180.1})
 	b := lyricsTrackKey(LyricsRequest{Artist: "artist", Title: "song", Duration: 180.4})

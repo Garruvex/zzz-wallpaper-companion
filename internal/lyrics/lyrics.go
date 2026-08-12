@@ -151,12 +151,12 @@ func (s *LyricsService) cached(key string) (LyricsResponse, bool) {
 }
 
 func (s *LyricsService) store(key string, result LyricsResponse) {
-	s.mu.Lock()
-	s.memory[key] = result
-	s.mu.Unlock()
 	if result.Status != "ready" && result.Status != "instrumental" {
 		return
 	}
+	s.mu.Lock()
+	s.memory[key] = result
+	s.mu.Unlock()
 	body, err := json.Marshal(result)
 	if err != nil || len(body) > maxLyricsResponseBytes {
 		return
