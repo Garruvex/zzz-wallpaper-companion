@@ -186,6 +186,27 @@ func TestYouTubeHeartbeatCreatesAndReleasesStreamLease(t *testing.T) {
 	server.unregisterStream(sessionID, relayID)
 }
 
+func TestHeartbeatCanonicalRouteAndLegacyAliasMatch(t *testing.T) {
+	server := testServer(t)
+	body := `{"sessionId":"test_session_1234567890","keepStreamAlive":false,"protocolMin":2,"protocolMax":2}`
+	for _, route := range []string{"/api/v1/heartbeat", "/api/youtube/heartbeat"} {
+		request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1"+route, strings.NewReader(body))
+		request.RemoteAddr = "127.0.0.1:50000"
+		recorder := httptest.NewRecorder()
+		server.http.Handler.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s returned %d: %s", route, recorder.Code, recorder.Body.String())
+		}
+		var response struct {
+			Ready      bool `json:"ready"`
+			Compatible bool `json:"compatible"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil || !response.Ready || !response.Compatible {
+			t.Fatalf("unexpected %s response: %s", route, recorder.Body.String())
+		}
+	}
+}
+
 func TestYouTubeHeartbeatRejectsInvalidSession(t *testing.T) {
 	server := testServer(t)
 	request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/api/youtube/heartbeat", strings.NewReader(`{"sessionId":"short","keepStreamAlive":true}`))

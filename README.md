@@ -169,11 +169,13 @@ companion scales its WebM bitrate with the selected resolution; 1080p targets
 
 Other routes: `GET /settings` (web UI), `GET /` (redirects to settings).
 
-#### `POST /api/youtube/heartbeat`
+#### `POST /api/v1/heartbeat`
 
-Creates or refreshes a per-wallpaper stream lease. The wallpaper sends a
-random `sessionId` every five seconds. Transcoded streams include that ID and
-are cancelled if the heartbeat stops for 20 seconds.
+Checks companion availability and protocol compatibility while creating or
+refreshing the wallpaper session. When `keepStreamAlive` is true, the session
+also holds the YouTube relay lease. The wallpaper sends a random `sessionId`
+every five seconds, and transcoded streams are cancelled if that heartbeat
+stops for 20 seconds.
 
 ```json
 { "sessionId": "random-session-id", "keepStreamAlive": true, "protocolMin": 2, "protocolMax": 2, "wallpaperVersion": "1.2.2" }
@@ -181,6 +183,8 @@ are cancelled if the heartbeat stops for 20 seconds.
 
 The companion rejects non-overlapping protocol ranges with HTTP 426 and tells
 the wallpaper which component needs to be updated.
+
+`POST /api/youtube/heartbeat` remains an alias for older wallpaper versions.
 
 ### Companion updates
 

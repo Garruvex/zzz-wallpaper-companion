@@ -63,6 +63,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("GET /api/youtube/playlist", s.playlist)
 	mux.HandleFunc("GET /api/youtube/hls", s.hlsProxy)
 	mux.HandleFunc("GET /api/youtube/transcode", s.transcode)
+	mux.HandleFunc("POST /api/v1/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
