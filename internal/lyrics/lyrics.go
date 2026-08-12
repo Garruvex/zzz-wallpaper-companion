@@ -75,6 +75,7 @@ func lyricsTrackKey(r LyricsRequest) string {
 
 func (s *LyricsService) Lookup(ctx context.Context, req LyricsRequest) (LyricsResponse, error) {
 	req.Artist, req.Title, req.Album = strings.TrimSpace(req.Artist), strings.TrimSpace(req.Title), strings.TrimSpace(req.Album)
+	req = normalizeLyricsRequest(req)
 	if req.Title == "" || len(req.Title) > 500 || len(req.Artist) > 500 || len(req.Album) > 500 || req.Duration < 0 {
 		return LyricsResponse{}, errors.New("invalid track metadata")
 	}
@@ -229,12 +230,30 @@ func (s *LyricsService) searchLRCLIB(ctx context.Context, track LyricsRequest, k
 }
 
 var metadataSuffix = regexp.MustCompile(`(?i)\s*[\[(](?:official\s+)?(?:(?:music\s+)?video(?:\s+clip)?|audio|lyrics?|lyric\s+video|visuali[sz]er)[\])]`)
+var artistTitleSeparator = regexp.MustCompile(`\s+[-–—]\s+`)
 var nonWord = regexp.MustCompile(`[^\p{L}\p{N}]+`)
 var versionMarker = regexp.MustCompile(`(?i)\b(live|remix|acoustic|instrumental|karaoke|demo|edit|version|cover|sped\s*up|slowed)\b`)
 
 func normalizedMetadata(value string) string {
 	value = metadataSuffix.ReplaceAllString(strings.ToLower(value), " ")
 	return strings.TrimSpace(nonWord.ReplaceAllString(value, " "))
+}
+
+func normalizeLyricsRequest(track LyricsRequest) LyricsRequest {
+	originalTitle := strings.TrimSpace(track.Title)
+	cleanTitle := strings.TrimSpace(metadataSuffix.ReplaceAllString(originalTitle, " "))
+	if cleanTitle != originalTitle {
+		if separator := artistTitleSeparator.FindStringIndex(cleanTitle); separator != nil {
+			artist := strings.TrimSpace(cleanTitle[:separator[0]])
+			title := strings.TrimSpace(cleanTitle[separator[1]:])
+			if artist != "" && title != "" {
+				track.Artist, track.Title = artist, title
+				return track
+			}
+		}
+		track.Title = cleanTitle
+	}
+	return track
 }
 
 func metadataMatchScore(want, got string) (float64, bool) {

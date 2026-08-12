@@ -55,6 +55,16 @@ func TestLyricsTrackKeyIsStable(t *testing.T) {
 	}
 }
 
+func TestNormalizeLyricsRequestPrefersOfficialVideoTitleArtist(t *testing.T) {
+	got := normalizeLyricsRequest(LyricsRequest{
+		Artist: "UNIVERSAL MUSIC JAPAN",
+		Title:  "suis from ヨルシカ - 猫日 (OFFICIAL VIDEO)",
+	})
+	if got.Artist != "suis from ヨルシカ" || got.Title != "猫日" {
+		t.Fatalf("unexpected metadata: %#v", got)
+	}
+}
+
 func TestSelectLRCLIBTrackToleratesVideoDurationAndAlbum(t *testing.T) {
 	track := LyricsRequest{Artist: "Owl City", Title: "Fireflies", Album: "YouTube", Duration: 232}
 	candidates := []lrclibTrack{
