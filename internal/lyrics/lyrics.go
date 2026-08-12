@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -115,7 +116,7 @@ func (s *LyricsService) Lookup(ctx context.Context, req LyricsRequest) (LyricsRe
 	}
 
 	result, err := s.lookupLRCLIB(lookupCtx, req, key)
-	if err != nil || result.Status != "ready" {
+	if err != nil || (result.Status != "ready" && result.Status != "instrumental") {
 		result, err = s.lookupNetEase(lookupCtx, req, key)
 	}
 	if err != nil {
@@ -170,9 +171,6 @@ func (s *LyricsService) lookupLRCLIB(ctx context.Context, track LyricsRequest, k
 	q := endpoint.Query()
 	q.Set("track_name", track.Title)
 	q.Set("artist_name", track.Artist)
-	if track.Album != "" {
-		q.Set("album_name", track.Album)
-	}
 	if track.Duration > 0 {
 		q.Set("duration", strconv.Itoa(int(track.Duration+.5)))
 	}
@@ -191,10 +189,118 @@ func (s *LyricsService) lookupLRCLIB(ctx context.Context, track LyricsRequest, k
 		return LyricsResponse{}, err
 	}
 	if status == http.StatusNotFound {
-		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
+		return s.searchLRCLIB(ctx, track, key)
 	}
 	body.Synced, body.Plain, body.Instrumental = raw.SyncedLyrics, raw.PlainLyrics, raw.Instrumental
 	return makeLyricsResponse(key, "lrclib", body.Synced, body.Plain, body.Instrumental), nil
+}
+
+type lrclibTrack struct {
+	TrackName    string  `json:"trackName"`
+	ArtistName   string  `json:"artistName"`
+	AlbumName    string  `json:"albumName"`
+	Duration     float64 `json:"duration"`
+	SyncedLyrics string  `json:"syncedLyrics"`
+	PlainLyrics  string  `json:"plainLyrics"`
+	Instrumental bool    `json:"instrumental"`
+}
+
+func (s *LyricsService) searchLRCLIB(ctx context.Context, track LyricsRequest, key string) (LyricsResponse, error) {
+	endpoint, _ := url.Parse("https://lrclib.net/api/search")
+	q := endpoint.Query()
+	q.Set("track_name", track.Title)
+	if track.Artist != "" {
+		q.Set("artist_name", track.Artist)
+	}
+	endpoint.RawQuery = q.Encode()
+	var candidates []lrclibTrack
+	status, err := s.getJSON(ctx, endpoint.String(), "zzz-wallpaper-companion/"+s.clientVersion, "", &candidates)
+	if err != nil {
+		return LyricsResponse{}, err
+	}
+	if status == http.StatusNotFound || len(candidates) == 0 {
+		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
+	}
+	match, ok := selectLRCLIBTrack(track, candidates)
+	if !ok {
+		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
+	}
+	return makeLyricsResponse(key, "lrclib", match.SyncedLyrics, match.PlainLyrics, match.Instrumental), nil
+}
+
+var metadataSuffix = regexp.MustCompile(`(?i)\s*[\[(](?:official\s+)?(?:(?:music\s+)?video(?:\s+clip)?|audio|lyrics?|lyric\s+video|visuali[sz]er)[\])]`)
+var nonWord = regexp.MustCompile(`[^\p{L}\p{N}]+`)
+var versionMarker = regexp.MustCompile(`(?i)\b(live|remix|acoustic|instrumental|karaoke|demo|edit|version|cover|sped\s*up|slowed)\b`)
+
+func normalizedMetadata(value string) string {
+	value = metadataSuffix.ReplaceAllString(strings.ToLower(value), " ")
+	return strings.TrimSpace(nonWord.ReplaceAllString(value, " "))
+}
+
+func metadataMatchScore(want, got string) (float64, bool) {
+	want, got = normalizedMetadata(want), normalizedMetadata(got)
+	if want == "" {
+		return 0, true
+	}
+	if got == "" {
+		return 0, false
+	}
+	if want == got {
+		return 1, true
+	}
+	if strings.Contains(want, got) || strings.Contains(got, want) {
+		shorter, longer := len(want), len(got)
+		if shorter > longer {
+			shorter, longer = longer, shorter
+		}
+		return .7 + .2*float64(shorter)/float64(longer), true
+	}
+	return 0, false
+}
+
+func candidateTitle(candidate lrclibTrack) string {
+	title := normalizedMetadata(candidate.TrackName)
+	artist := normalizedMetadata(candidate.ArtistName)
+	if artist != "" && strings.HasPrefix(title, artist+" ") {
+		return strings.TrimSpace(strings.TrimPrefix(title, artist))
+	}
+	return title
+}
+
+func selectLRCLIBTrack(track LyricsRequest, candidates []lrclibTrack) (lrclibTrack, bool) {
+	bestScore := -1.0
+	var best lrclibTrack
+	wantVersion := versionMarker.FindString(normalizedMetadata(track.Title))
+	for _, candidate := range candidates {
+		titleScore, titleMatch := metadataMatchScore(track.Title, candidateTitle(candidate))
+		artistScore, artistMatch := metadataMatchScore(track.Artist, candidate.ArtistName)
+		if !titleMatch || !artistMatch {
+			continue
+		}
+		score := titleScore*60 + artistScore*40
+		gotVersion := versionMarker.FindString(normalizedMetadata(candidate.TrackName))
+		if wantVersion == gotVersion {
+			score += 12
+		} else if wantVersion != "" || gotVersion != "" {
+			score -= 25
+		}
+		if track.Duration > 0 && candidate.Duration > 0 {
+			difference := math.Abs(track.Duration - candidate.Duration)
+			score += math.Max(0, 20-difference/1.5)
+		}
+		if albumScore, ok := metadataMatchScore(track.Album, candidate.AlbumName); ok {
+			score += albumScore * 5
+		}
+		if strings.TrimSpace(candidate.SyncedLyrics) != "" {
+			score += 8
+		} else if strings.TrimSpace(candidate.PlainLyrics) != "" {
+			score += 2
+		}
+		if score > bestScore {
+			bestScore, best = score, candidate
+		}
+	}
+	return best, bestScore >= 0
 }
 
 func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, key string) (LyricsResponse, error) {

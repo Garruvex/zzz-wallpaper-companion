@@ -46,3 +46,29 @@ func TestLyricsTrackKeyIsStable(t *testing.T) {
 		t.Fatalf("equivalent metadata produced different keys: %s %s", a, b)
 	}
 }
+
+func TestSelectLRCLIBTrackToleratesVideoDurationAndAlbum(t *testing.T) {
+	track := LyricsRequest{Artist: "Owl City", Title: "Fireflies", Album: "YouTube", Duration: 232}
+	candidates := []lrclibTrack{
+		{TrackName: "Fireflies (Live)", ArtistName: "Owl City", Duration: 232, SyncedLyrics: "live"},
+		{TrackName: "Fireflies", ArtistName: "Owl City", AlbumName: "Ocean Eyes", Duration: 242, SyncedLyrics: "album"},
+		{TrackName: "Owl City - Fireflies (Official Music Video)", ArtistName: "Owl City", Duration: 232, SyncedLyrics: "video"},
+	}
+	got, ok := selectLRCLIBTrack(track, candidates)
+	if !ok || got.SyncedLyrics != "video" {
+		t.Fatalf("selected %#v", got)
+	}
+}
+
+func TestSelectLRCLIBTrackRejectsWrongArtistAndVersion(t *testing.T) {
+	track := LyricsRequest{Artist: "Example Artist", Title: "Example Song (Acoustic)", Duration: 200}
+	candidates := []lrclibTrack{
+		{TrackName: "Example Song", ArtistName: "Example Artist", Duration: 200, SyncedLyrics: "studio"},
+		{TrackName: "Example Song (Acoustic)", ArtistName: "Other Artist", Duration: 200, SyncedLyrics: "wrong artist"},
+		{TrackName: "Example Song (Acoustic)", ArtistName: "Example Artist", Duration: 205, SyncedLyrics: "correct"},
+	}
+	got, ok := selectLRCLIBTrack(track, candidates)
+	if !ok || got.SyncedLyrics != "correct" {
+		t.Fatalf("selected %#v", got)
+	}
+}
