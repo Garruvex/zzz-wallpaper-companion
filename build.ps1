@@ -9,9 +9,9 @@ param(
 $ErrorActionPreference = "Stop"
 $projectDirectory = $PSScriptRoot
 $outputDirectory = Join-Path $projectDirectory "dist"
-$mainSource = Get-Content -LiteralPath (Join-Path $projectDirectory "main.go") -Raw
-if ($mainSource -notmatch 'version\s*=\s*"([^"]+)"') {
-    throw "Could not read the version from main.go."
+$versionSource = Get-Content -LiteralPath (Join-Path $projectDirectory "internal\companion\app.go") -Raw
+if ($versionSource -notmatch 'version\s*=\s*"([^"]+)"') {
+    throw "Could not read the version from internal/companion/app.go."
 }
 $Version = $Matches[1]
 $safeVersion = $Version -replace '[^0-9A-Za-z._-]', '_'
@@ -32,13 +32,13 @@ try {
 
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
     $env:GOOS = "windows"
-    $linkerFlags = "-H=windowsgui -s -w -X main.buildNumber=$BuildNumber"
+    $linkerFlags = "-H=windowsgui -s -w -X github.com/Garruvex/zzz-wallpaper-companion/internal/companion.buildNumber=$BuildNumber"
 	$builtAssets = @{}
 
     foreach ($targetArchitecture in $Architecture) {
         $env:GOARCH = $targetArchitecture
         $outputPath = Join-Path $outputDirectory "zzz-wallpaper-companion-$safeVersion-build-$safeBuildNumber-windows-$targetArchitecture.exe"
-        & go build -trimpath -ldflags $linkerFlags -o $outputPath .
+        & go build -trimpath -ldflags $linkerFlags -o $outputPath ./cmd/companion
         if ($LASTEXITCODE -ne 0) { throw "Go build failed for $targetArchitecture." }
 
         $artifact = Get-Item -LiteralPath $outputPath

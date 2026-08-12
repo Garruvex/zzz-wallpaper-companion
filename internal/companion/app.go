@@ -1,7 +1,7 @@
 //go:generate go run github.com/akavel/rsrc@v0.10.2 -ico winres/icon.ico -arch amd64 -o rsrc_windows_amd64.syso
 //go:generate go run github.com/akavel/rsrc@v0.10.2 -ico winres/icon.ico -arch arm64 -o rsrc_windows_arm64.syso
 
-package main
+package companion
 
 import (
 	"context"
@@ -20,7 +20,7 @@ var (
 	buildNumber = "dev"
 )
 
-func main() {
+func Run() {
 	if len(os.Args) == 4 && os.Args[1] == "--apply-update" {
 		if err := runUpdateHelper(os.Args[2], os.Args[3]); err != nil {
 			fatalDialog("Companion update failed", err.Error())

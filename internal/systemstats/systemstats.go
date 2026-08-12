@@ -1,4 +1,4 @@
-package main
+package systemstats
 
 import (
 	"context"
@@ -26,7 +26,7 @@ type SystemStatsService struct {
 	done   chan struct{}
 }
 
-func newSystemStatsService() *SystemStatsService {
+func NewService() *SystemStatsService {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &SystemStatsService{cancel: cancel, done: make(chan struct{})}
 	s.latest.Store(SystemStatsSnapshot{SampledAt: time.Now().UnixMilli()})

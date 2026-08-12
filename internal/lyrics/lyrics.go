@@ -1,4 +1,4 @@
-package main
+package lyrics
 
 import (
 	"context"
@@ -46,6 +46,7 @@ type LyricsResponse struct {
 
 type LyricsService struct {
 	cacheDir      string
+	clientVersion string
 	client        *http.Client
 	mu            sync.RWMutex
 	memory        map[string]LyricsResponse
@@ -56,11 +57,12 @@ type LyricsService struct {
 	requestID     uint64
 }
 
-func newLyricsService(dataDir string) *LyricsService {
+func NewService(dataDir, clientVersion string) *LyricsService {
 	return &LyricsService{
-		cacheDir: filepath.Join(dataDir, "lyrics"),
-		client:   &http.Client{Timeout: 8 * time.Second},
-		memory:   make(map[string]LyricsResponse),
+		cacheDir:      filepath.Join(dataDir, "lyrics"),
+		clientVersion: clientVersion,
+		client:        &http.Client{Timeout: 8 * time.Second},
+		memory:        make(map[string]LyricsResponse),
 	}
 }
 
@@ -184,7 +186,7 @@ func (s *LyricsService) lookupLRCLIB(ctx context.Context, track LyricsRequest, k
 		PlainLyrics  string `json:"plainLyrics"`
 		Instrumental bool   `json:"instrumental"`
 	}
-	status, err := s.getJSON(ctx, endpoint.String(), "zzz-wallpaper-companion/"+version, "", &raw)
+	status, err := s.getJSON(ctx, endpoint.String(), "zzz-wallpaper-companion/"+s.clientVersion, "", &raw)
 	if err != nil {
 		return LyricsResponse{}, err
 	}

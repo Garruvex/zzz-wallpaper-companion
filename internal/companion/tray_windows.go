@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package companion
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-//go:embed winres/icon.ico
+//go:embed assets/icon.ico
 var trayIconICO []byte
 
 const (

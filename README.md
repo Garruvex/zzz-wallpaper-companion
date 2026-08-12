@@ -197,7 +197,7 @@ update check.
 
 Requires Go 1.23+.
 
-The recommended Windows build command reads the version from `main.go`, runs
+The recommended Windows build command reads the version from `internal/companion/app.go`, runs
 the tests once, embeds a UTC timestamp build number, and creates versioned
 amd64 and arm64 GUI executables in `dist`:
 
@@ -214,20 +214,32 @@ release build:
 
 ```powershell
 go test ./...
-go build -ldflags "-H=windowsgui" -o dist\zzz-wallpaper-companion.exe .
+go build -ldflags "-H=windowsgui" -o dist\zzz-wallpaper-companion.exe ./cmd/companion
 ```
 
-Run `go generate` before building to embed the icon from `winres/icon.ico` into the executable (generates `rsrc_windows_*.syso`). CI does this automatically.
+Run `go generate ./cmd/companion` before building to embed the icon from
+`winres/icon.ico` into the executable (generates `rsrc_windows_*.syso`). CI does
+this automatically.
 
 For development (console output), omit `-H=windowsgui`:
 
 ```powershell
-go build -o dist\zzz-wallpaper-companion.exe .
+go build -o dist\zzz-wallpaper-companion.exe ./cmd/companion
 ```
 
 Set `ZZZ_COMPANION_DATA_DIR` to use an isolated data directory during development.
 
 GitHub Actions runs tests and builds `amd64` and `arm64` binaries on every push and pull request. Publish a [GitHub release](https://github.com/Garruvex/zzz-wallpaper-companion/releases) to make them available for download.
+
+### Code layout
+
+- `cmd/companion` contains only the executable entry point and Windows executable resources.
+- `internal/companion` owns application startup, the local API, media relay, settings, updates, tray, and platform lifecycle.
+- `internal/lyrics` owns lyric providers, parsing, cancellation, and caching.
+- `internal/systemstats` owns the background system sampler and platform collectors.
+
+Feature services are kept independent from HTTP handlers so they can be tested
+and extended without depending on the executable or tray implementation.
 
 ### Security
 

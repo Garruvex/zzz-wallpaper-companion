@@ -1,4 +1,4 @@
-package main
+package companion
 
 import (
 	"encoding/json"
@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/systemstats"
 )
 
 func testServer(t *testing.T) *APIServer {
@@ -55,7 +57,7 @@ func TestSystemStatsEndpoint(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status %d: %s", recorder.Code, recorder.Body.String())
 	}
-	var body SystemStatsSnapshot
+	var body systemstats.SystemStatsSnapshot
 	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}

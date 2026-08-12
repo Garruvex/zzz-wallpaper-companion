@@ -1,4 +1,4 @@
-package main
+package companion
 
 import (
 	"context"
@@ -18,6 +18,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/lyrics"
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/systemstats"
 )
 
 const (
@@ -43,8 +46,8 @@ type APIServer struct {
 	config      *ConfigStore
 	resolver    *Resolver
 	ffmpeg      *FFmpegManager
-	lyrics      *LyricsService
-	systemStats *SystemStatsService
+	lyrics      *lyrics.LyricsService
+	systemStats *systemstats.SystemStatsService
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -53,7 +56,7 @@ type APIServer struct {
 
 func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager) *APIServer {
 	dataDir := filepath.Dir(resolver.path)
-	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: newLyricsService(dataDir), systemStats: newSystemStatsService(), sessions: make(map[string]*streamSession)}
+	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/youtube/resolve", s.resolve)
@@ -99,7 +102,7 @@ func (s *APIServer) Shutdown(ctx context.Context) error {
 
 func (s *APIServer) lookupLyrics(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var request LyricsRequest
+	var request lyrics.LyricsRequest
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {

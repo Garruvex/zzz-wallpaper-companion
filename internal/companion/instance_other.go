@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package companion
 
 func acquireSingleInstance() (func(), bool, error) {
 	return func() {}, false, nil

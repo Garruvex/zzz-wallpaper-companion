@@ -1,4 +1,4 @@
-package main
+package lyrics
 
 import (
 	"context"
@@ -15,7 +15,7 @@ func TestParseLRCMultipleTimestampsAndSort(t *testing.T) {
 }
 
 func TestLyricsLookupHonorsCancellationDuringDebounce(t *testing.T) {
-	service := newLyricsService(t.TempDir())
+	service := NewService(t.TempDir(), "test")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	started := time.Now()
@@ -26,7 +26,7 @@ func TestLyricsLookupHonorsCancellationDuringDebounce(t *testing.T) {
 }
 
 func TestLyricsCacheRoundTrip(t *testing.T) {
-	service := newLyricsService(t.TempDir())
+	service := NewService(t.TempDir(), "test")
 	result := LyricsResponse{Status: "ready", TrackKey: "track", Source: "test", Synced: true, Lines: []LyricLine{{TimeMS: 1000, Text: "line"}}}
 	service.store("track", result)
 	service.memory = make(map[string]LyricsResponse)
