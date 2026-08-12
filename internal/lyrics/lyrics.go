@@ -327,38 +327,22 @@ func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, 
 	q := endpoint.Query()
 	q.Set("s", strings.TrimSpace(track.Title+" "+track.Artist))
 	q.Set("type", "1")
-	q.Set("limit", "5")
+	q.Set("limit", "10")
 	endpoint.RawQuery = q.Encode()
 	var search struct {
 		Result struct {
-			Songs []struct {
-				ID      int64 `json:"id"`
-				Artists []struct {
-					Name string `json:"name"`
-				} `json:"artists"`
-			} `json:"songs"`
+			Songs []neteaseTrack `json:"songs"`
 		} `json:"result"`
 	}
 	_, err := s.getJSON(ctx, endpoint.String(), "Mozilla/5.0", "https://music.163.com/", &search)
 	if err != nil {
 		return LyricsResponse{}, err
 	}
-	var id int64
-	for _, song := range search.Result.Songs {
-		for _, artist := range song.Artists {
-			if containsFold(track.Artist, artist.Name) || containsFold(artist.Name, track.Artist) {
-				id = song.ID
-				break
-			}
-		}
-		if id != 0 {
-			break
-		}
-	}
-	if id == 0 {
+	match, ok := selectNetEaseTrack(track, search.Result.Songs)
+	if !ok {
 		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
 	}
-	lyricsURL := fmt.Sprintf("https://music.163.com/api/song/lyric?id=%d&lv=1&kv=1&tv=-1", id)
+	lyricsURL := fmt.Sprintf("https://music.163.com/api/song/lyric?id=%d&lv=1&kv=1&tv=-1", match.ID)
 	var lyric struct {
 		LRC struct {
 			Lyric string `json:"lyric"`
@@ -369,6 +353,53 @@ func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, 
 		return LyricsResponse{}, err
 	}
 	return makeLyricsResponse(key, "netease", lyric.LRC.Lyric, "", false), nil
+}
+
+type neteaseTrack struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Duration int64  `json:"duration"`
+	Artists  []struct {
+		Name string `json:"name"`
+	} `json:"artists"`
+	Album struct {
+		Name string `json:"name"`
+	} `json:"album"`
+}
+
+func selectNetEaseTrack(track LyricsRequest, candidates []neteaseTrack) (neteaseTrack, bool) {
+	bestScore := -1.0
+	var best neteaseTrack
+	wantVersion := versionMarker.FindString(normalizedMetadata(track.Title))
+	for _, candidate := range candidates {
+		artistNames := make([]string, 0, len(candidate.Artists))
+		for _, artist := range candidate.Artists {
+			artistNames = append(artistNames, artist.Name)
+		}
+		titleScore, titleMatch := metadataMatchScore(track.Title, candidate.Name)
+		artistScore, artistMatch := metadataMatchScore(track.Artist, strings.Join(artistNames, " "))
+		if !titleMatch || !artistMatch {
+			continue
+		}
+		score := titleScore*60 + artistScore*40
+		gotVersion := versionMarker.FindString(normalizedMetadata(candidate.Name))
+		if wantVersion == gotVersion {
+			score += 12
+		} else if wantVersion != "" || gotVersion != "" {
+			score -= 25
+		}
+		if track.Duration > 0 && candidate.Duration > 0 {
+			difference := math.Abs(track.Duration - float64(candidate.Duration)/1000)
+			score += math.Max(0, 20-difference/1.5)
+		}
+		if albumScore, ok := metadataMatchScore(track.Album, candidate.Album.Name); ok {
+			score += albumScore * 5
+		}
+		if score > bestScore {
+			bestScore, best = score, candidate
+		}
+	}
+	return best, bestScore >= 0
 }
 
 func (s *LyricsService) getJSON(ctx context.Context, endpoint, userAgent, referer string, target any) (int, error) {

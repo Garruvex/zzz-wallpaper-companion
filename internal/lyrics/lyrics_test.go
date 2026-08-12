@@ -90,3 +90,23 @@ func TestSelectLRCLIBTrackRejectsWrongArtistAndVersion(t *testing.T) {
 		t.Fatalf("selected %#v", got)
 	}
 }
+
+func TestSelectNetEaseTrackRanksTitleVersionAndDuration(t *testing.T) {
+	makeTrack := func(id int64, name, artist string, duration int64) neteaseTrack {
+		candidate := neteaseTrack{ID: id, Name: name, Duration: duration}
+		candidate.Artists = append(candidate.Artists, struct {
+			Name string `json:"name"`
+		}{Name: artist})
+		return candidate
+	}
+	track := LyricsRequest{Artist: "Example Artist", Title: "Example Song (Acoustic)", Duration: 205}
+	candidates := []neteaseTrack{
+		makeTrack(1, "Example Song", "Example Artist", 205000),
+		makeTrack(2, "Example Song (Acoustic)", "Other Artist", 205000),
+		makeTrack(3, "Example Song (Acoustic)", "Example Artist", 207000),
+	}
+	got, ok := selectNetEaseTrack(track, candidates)
+	if !ok || got.ID != 3 {
+		t.Fatalf("selected %#v", got)
+	}
+}
