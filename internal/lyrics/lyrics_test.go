@@ -55,6 +55,45 @@ func TestLyricsTrackKeyIsStable(t *testing.T) {
 	}
 }
 
+func TestArtistSearchVariantsSplitsCollaborators(t *testing.T) {
+	got := artistSearchVariants("Richie Jen, A Niu")
+	want := []string{"Richie Jen, A Niu", "Richie Jen", "A Niu", ""}
+	if len(got) != len(want) {
+		t.Fatalf("unexpected variants: %#v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("variant %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestMetadataMatchScoreTreatsChineseScriptsAsEquivalent(t *testing.T) {
+	if score, ok := metadataMatchScore("再出發", "再出发"); !ok || score != 1 {
+		t.Fatalf("Traditional/Simplified title did not match: score=%v ok=%v", score, ok)
+	}
+}
+
+func TestSelectLRCLIBTrackMatchesOneCollaborator(t *testing.T) {
+	track := LyricsRequest{Artist: "Richie Jen, A Niu", Title: "再出發", Duration: 285}
+	candidates := []lrclibTrack{{
+		TrackName: "再出發", ArtistName: "Richie Jen", Duration: 286, SyncedLyrics: "lyrics",
+	}}
+	got, ok := selectLRCLIBTrack(track, candidates)
+	if !ok || got.SyncedLyrics != "lyrics" {
+		t.Fatalf("collaboration candidate was not selected: %#v", got)
+	}
+}
+
+func TestSelectNetEaseTrackMatchesSimplifiedChinese(t *testing.T) {
+	candidate := neteaseTrack{ID: 1, Name: "再出发", Duration: 286000}
+	track := LyricsRequest{Title: "再出發", Duration: 285}
+	got, ok := selectNetEaseTrack(track, []neteaseTrack{candidate})
+	if !ok || got.ID != candidate.ID {
+		t.Fatalf("Simplified Chinese candidate was not selected: %#v", got)
+	}
+}
+
 func TestNormalizeLyricsRequestPrefersOfficialVideoTitleArtist(t *testing.T) {
 	got := normalizeLyricsRequest(LyricsRequest{
 		Artist: "UNIVERSAL MUSIC JAPAN",

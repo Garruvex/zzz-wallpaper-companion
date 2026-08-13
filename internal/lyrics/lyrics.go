@@ -19,13 +19,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/caiguanhao/opencc/configs/t2s"
 )
 
 const maxLyricsResponseBytes = 1 << 20
 
 // Bump whenever normalization or candidate selection changes so successful
 // results stored under an older interpretation cannot mask the new pipeline.
-const lyricsMatcherVersion = "v3"
+const lyricsMatcherVersion = "v4"
 
 type LyricsRequest struct {
 	Artist   string  `json:"artist"`
@@ -211,26 +213,35 @@ type lrclibTrack struct {
 }
 
 func (s *LyricsService) searchLRCLIB(ctx context.Context, track LyricsRequest, key string) (LyricsResponse, error) {
-	endpoint, _ := url.Parse("https://lrclib.net/api/search")
-	q := endpoint.Query()
-	q.Set("track_name", track.Title)
-	if track.Artist != "" {
-		q.Set("artist_name", track.Artist)
-	}
-	endpoint.RawQuery = q.Encode()
 	var candidates []lrclibTrack
-	status, err := s.getJSON(ctx, endpoint.String(), "zzz-wallpaper-companion/"+s.clientVersion, "", &candidates)
-	if err != nil {
-		return LyricsResponse{}, err
+	seen := make(map[string]bool)
+	for _, artist := range artistSearchVariants(track.Artist) {
+		endpoint, _ := url.Parse("https://lrclib.net/api/search")
+		q := endpoint.Query()
+		q.Set("track_name", track.Title)
+		if artist != "" {
+			q.Set("artist_name", artist)
+		}
+		endpoint.RawQuery = q.Encode()
+		var found []lrclibTrack
+		_, err := s.getJSON(ctx, endpoint.String(), "zzz-wallpaper-companion/"+s.clientVersion, "", &found)
+		if err != nil {
+			return LyricsResponse{}, err
+		}
+		for _, candidate := range found {
+			id := normalizedMetadata(candidate.TrackName) + "|" + normalizedMetadata(candidate.ArtistName) + "|" + strconv.Itoa(int(candidate.Duration+.5))
+			if !seen[id] {
+				seen[id], candidates = true, append(candidates, candidate)
+			}
+		}
+		if match, ok := selectLRCLIBTrack(track, candidates); ok {
+			return makeLyricsResponse(key, "lrclib", match.SyncedLyrics, match.PlainLyrics, match.Instrumental), nil
+		}
 	}
-	if status == http.StatusNotFound || len(candidates) == 0 {
+	if len(candidates) == 0 {
 		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
 	}
-	match, ok := selectLRCLIBTrack(track, candidates)
-	if !ok {
-		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
-	}
-	return makeLyricsResponse(key, "lrclib", match.SyncedLyrics, match.PlainLyrics, match.Instrumental), nil
+	return LyricsResponse{Status: "not_found", TrackKey: key}, nil
 }
 
 var metadataSuffix = regexp.MustCompile(`(?i)\s*[\[(](?:official\s+)?(?:(?:music\s+)?video(?:\s+clip)?|audio|lyrics?|lyric\s+video|visuali[sz]er)[\])]`)
@@ -238,10 +249,32 @@ var japaneseQuotedTitle = regexp.MustCompile(`[｢「]([^｣」]+)[｣」]`)
 var artistTitleSeparator = regexp.MustCompile(`\s+[-–—]\s+`)
 var nonWord = regexp.MustCompile(`[^\p{L}\p{N}]+`)
 var versionMarker = regexp.MustCompile(`(?i)\b(live|remix|acoustic|instrumental|karaoke|demo|edit|version|cover|sped\s*up|slowed)\b`)
+var artistSeparator = regexp.MustCompile(`(?i)\s*(?:,|&|/|;|、|，|\bfeat(?:uring)?\.?\b|\bft\.?\b|和|與|与)\s*`)
+
+func artistSearchVariants(artist string) []string {
+	artist = strings.TrimSpace(artist)
+	variants := []string{artist}
+	seen := map[string]bool{strings.ToLower(artist): true}
+	for _, part := range artistSeparator.Split(artist, -1) {
+		part = strings.TrimSpace(part)
+		key := strings.ToLower(part)
+		if part != "" && !seen[key] {
+			seen[key], variants = true, append(variants, part)
+		}
+	}
+	if !seen[""] {
+		variants = append(variants, "")
+	}
+	return variants
+}
 
 func normalizedMetadata(value string) string {
 	value = metadataSuffix.ReplaceAllString(strings.ToLower(value), " ")
 	return strings.TrimSpace(nonWord.ReplaceAllString(value, " "))
+}
+
+func simplifyChinese(value string) string {
+	return t2s.Dicts.Convert(value)
 }
 
 func normalizeLyricsRequest(track LyricsRequest) LyricsRequest {
@@ -282,6 +315,11 @@ func metadataMatchScore(want, got string) (float64, bool) {
 	if want == got {
 		return 1, true
 	}
+	// Providers in mainland China commonly catalogue Traditional metadata in
+	// Simplified Chinese. Compare both sides in the same script as well.
+	if simplifyChinese(want) == simplifyChinese(got) {
+		return 1, true
+	}
 	if strings.Contains(want, got) || strings.Contains(got, want) {
 		shorter, longer := len(want), len(got)
 		if shorter > longer {
@@ -293,6 +331,18 @@ func metadataMatchScore(want, got string) (float64, bool) {
 }
 
 func artistMatchScore(want, got string) (float64, bool) {
+	best := 0.0
+	for _, artist := range artistSearchVariants(want) {
+		if artist == "" {
+			continue
+		}
+		if score, ok := metadataMatchScore(artist, got); ok && score > best {
+			best = score
+		}
+	}
+	if best >= .8 {
+		return best, true
+	}
 	score, ok := metadataMatchScore(want, got)
 	if !ok {
 		return 0, false
@@ -366,23 +416,49 @@ func selectLRCLIBTrack(track LyricsRequest, candidates []lrclibTrack) (lrclibTra
 }
 
 func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, key string) (LyricsResponse, error) {
-	endpoint, _ := url.Parse("https://music.163.com/api/search/get")
-	q := endpoint.Query()
-	q.Set("s", strings.TrimSpace(track.Title+" "+track.Artist))
-	q.Set("type", "1")
-	q.Set("limit", "10")
-	endpoint.RawQuery = q.Encode()
-	var search struct {
-		Result struct {
-			Songs []neteaseTrack `json:"songs"`
-		} `json:"result"`
+	var candidates []neteaseTrack
+	var match neteaseTrack
+	matched := false
+	seen := make(map[int64]bool)
+	titles := []string{track.Title}
+	if simplified := simplifyChinese(track.Title); simplified != track.Title {
+		titles = append(titles, simplified)
 	}
-	_, err := s.getJSON(ctx, endpoint.String(), "Mozilla/5.0", "https://music.163.com/", &search)
-	if err != nil {
-		return LyricsResponse{}, err
+searches:
+	for _, title := range titles {
+		for _, artist := range artistSearchVariants(track.Artist) {
+			endpoint, _ := url.Parse("https://music.163.com/api/search/get")
+			q := endpoint.Query()
+			q.Set("s", strings.TrimSpace(title+" "+simplifyChinese(artist)))
+			q.Set("type", "1")
+			q.Set("limit", "10")
+			endpoint.RawQuery = q.Encode()
+			var search struct {
+				Result struct {
+					Songs []neteaseTrack `json:"songs"`
+				} `json:"result"`
+			}
+			if _, err := s.getJSON(ctx, endpoint.String(), "Mozilla/5.0", "https://music.163.com/", &search); err != nil {
+				return LyricsResponse{}, err
+			}
+			for _, candidate := range search.Result.Songs {
+				if !seen[candidate.ID] {
+					seen[candidate.ID], candidates = true, append(candidates, candidate)
+				}
+			}
+			if match, matched = selectNetEaseTrack(track, candidates); matched {
+				break searches
+			}
+			if artist == "" && track.Duration > 0 {
+				fallbackTrack := track
+				fallbackTrack.Artist = ""
+				if match, matched = selectNetEaseTrack(fallbackTrack, candidates); matched {
+					break searches
+				}
+			}
+		}
 	}
-	match, ok := selectNetEaseTrack(track, search.Result.Songs)
-	if !ok {
+	if !matched {
 		return LyricsResponse{Status: "not_found", TrackKey: key}, nil
 	}
 	lyricsURL := fmt.Sprintf("https://music.163.com/api/song/lyric?id=%d&lv=1&kv=1&tv=-1", match.ID)
@@ -391,7 +467,7 @@ func (s *LyricsService) lookupNetEase(ctx context.Context, track LyricsRequest, 
 			Lyric string `json:"lyric"`
 		} `json:"lrc"`
 	}
-	_, err = s.getJSON(ctx, lyricsURL, "Mozilla/5.0", "https://music.163.com/", &lyric)
+	_, err := s.getJSON(ctx, lyricsURL, "Mozilla/5.0", "https://music.163.com/", &lyric)
 	if err != nil {
 		return LyricsResponse{}, err
 	}
