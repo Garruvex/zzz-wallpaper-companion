@@ -41,7 +41,7 @@ jobs:
           $env:GOOS = "windows"
           $env:GOARCH = "${{ matrix.arch }}"
           $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "1.1.0" }
-          go build -trimpath -ldflags "-H=windowsgui -s -w -X main.version=$version -X main.buildNumber=${{ github.run_number }}" -o "dist/zzz-wallpaper-companion-windows-${{ matrix.arch }}.exe" .
+          go build -trimpath -ldflags "-H=windowsgui -s -w -X github.com/Garruvex/zzz-wallpaper-companion/internal/companion.version=$version -X github.com/Garruvex/zzz-wallpaper-companion/internal/companion.buildNumber=${{ github.run_number }}" -o "dist/zzz-wallpaper-companion-windows-${{ matrix.arch }}.exe" ./cmd/companion
       - uses: actions/upload-artifact@v4
         with:
           name: zzz-wallpaper-companion-windows-${{ matrix.arch }}
