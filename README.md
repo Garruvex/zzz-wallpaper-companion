@@ -1,5 +1,9 @@
 # ZZZ Wallpaper Companion
 
+The default connection port is **8765**. Leave it unchanged unless you know what you are doing. If changed, use the same port in the companion's Settings and Wallpaper Engine's **Companion App** settings section, then restart the companion.
+
+If the configured port cannot be opened, the companion stays in the notification area with a connection warning. **Settings** opens a temporary local recovery page; wallpaper services remain unavailable until you resolve the conflict and restart. The temporary address serves settings only and does not change your configured port. A responding companion is identified by its health endpoint. If an existing companion is unresponsive, check its notification-area icon and, if stuck, end only that companion process in Task Manager before restarting. Other applications are not terminated and ports are not changed automatically.
+
 A small Windows background app for the [Zenless Zone Zero TV wallpaper](https://steamcommunity.com/sharedfiles/filedetails/?id=3333357727) on Wallpaper Engine. It runs in the notification area and lets the wallpaper play YouTube videos, live streams, and playlists.
 
 **You need this companion for YouTube playback.** Without it, the wallpaper shows a message asking you to start it.

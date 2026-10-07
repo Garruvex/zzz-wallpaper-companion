@@ -85,21 +85,23 @@ type notifyIconData struct {
 }
 
 var (
-	user32              = syscall.NewLazyDLL("user32.dll")
-	shell32             = syscall.NewLazyDLL("shell32.dll")
-	kernel32            = syscall.NewLazyDLL("kernel32.dll")
-	procDefWindowProc   = user32.NewProc("DefWindowProcW")
-	procPostQuitMessage = user32.NewProc("PostQuitMessage")
-	trayPort            int
-	trayDataDir         string
-	trayResolver        *Resolver
-	trayUpdater         *UpdateManager
-	trayConfig          *ConfigStore
-	trayQuit            func()
+	user32                = syscall.NewLazyDLL("user32.dll")
+	shell32               = syscall.NewLazyDLL("shell32.dll")
+	kernel32              = syscall.NewLazyDLL("kernel32.dll")
+	procDefWindowProc     = user32.NewProc("DefWindowProcW")
+	procPostQuitMessage   = user32.NewProc("PostQuitMessage")
+	trayPort              int
+	trayConnectionWarning string
+	trayDataDir           string
+	trayResolver          *Resolver
+	trayUpdater           *UpdateManager
+	trayConfig            *ConfigStore
+	trayQuit              func()
 )
 
-func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *UpdateManager, quit func()) error {
-	trayPort, trayDataDir, trayResolver, trayUpdater, trayConfig, trayQuit = config.Get().Port, dataDir, resolver, updater, config, quit
+func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *UpdateManager, quit func(), settingsPort int, connectionWarning string) error {
+	trayPort, trayDataDir, trayResolver, trayUpdater, trayConfig, trayQuit = settingsPort, dataDir, resolver, updater, config, quit
+	trayConnectionWarning = connectionWarning
 	instance, _, _ := kernel32.NewProc("GetModuleHandleW").Call(0)
 	className, _ := syscall.UTF16PtrFromString("ZZZWallpaperCompanionTray")
 	wndProc := syscall.NewCallback(windowProc)
@@ -119,7 +121,7 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 	if ok == 0 {
 		return addErr
 	}
-	go showStartupNotification(hwnd)
+	go showStartupNotification(hwnd, connectionWarning)
 	defer shell32.NewProc("Shell_NotifyIconW").Call(nimDelete, uintptr(unsafe.Pointer(&data)))
 	var message msg
 	for {
@@ -135,7 +137,7 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 	}
 }
 
-func showStartupNotification(hwnd uintptr) {
+func showStartupNotification(hwnd uintptr, connectionWarning string) {
 	// Explorer can discard NIF_INFO updates sent in the same instant as NIM_ADD.
 	// Give the tray icon time to finish registering before posting the balloon.
 	time.Sleep(750 * time.Millisecond)
@@ -148,7 +150,11 @@ func showStartupNotification(hwnd uintptr) {
 		infoFlags:        niifInfo | niifNoSound,
 	}
 	copy(data.infoTitle[:], syscall.StringToUTF16("ZZZ Wallpaper Companion"))
-	copy(data.info[:], syscall.StringToUTF16("Companion is running in the notification area."))
+	message := "Companion is running in the notification area."
+	if connectionWarning != "" {
+		message = "Connection unavailable. Open Settings to resolve the port conflict. Wallpaper services are unavailable."
+	}
+	copy(data.info[:], syscall.StringToUTF16(message))
 	shell32.NewProc("Shell_NotifyIconW").Call(nimModify, uintptr(unsafe.Pointer(&data)))
 }
 
@@ -224,6 +230,9 @@ func showTrayMenu(hwnd uintptr) {
 	}
 	defer user32.NewProc("DestroyMenu").Call(menu)
 	appendMenuFlags(menu, 0, "Version "+version+" (build "+buildNumber+")", mfString|mfGrayed|mfDisabled)
+	if trayConnectionWarning != "" {
+		appendMenuFlags(menu, 0, "Connection unavailable - open Settings", mfString|mfGrayed|mfDisabled)
+	}
 	appendMenu(menu, cmdSettings, "Settings")
 	flags := uint32(mfString)
 	if trayConfig.Get().LaunchOnStartup {
