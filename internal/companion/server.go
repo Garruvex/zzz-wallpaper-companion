@@ -48,6 +48,7 @@ type APIServer struct {
 	ffmpeg      *FFmpegManager
 	lyrics      *lyrics.LyricsService
 	systemStats *systemstats.SystemStatsService
+	mapTiles    *mapTileService
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -57,8 +58,10 @@ type APIServer struct {
 func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager) *APIServer {
 	dataDir := filepath.Dir(resolver.path)
 	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
+	s.mapTiles = newMapTileService(dataDir)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
+	mux.HandleFunc("GET /api/v1/map-tiles/{z}/{x}/{y}", s.mapTiles.serve)
 	mux.HandleFunc("GET /api/youtube/resolve", s.resolve)
 	mux.HandleFunc("GET /api/youtube/playlist", s.playlist)
 	mux.HandleFunc("GET /api/youtube/hls", s.hlsProxy)
@@ -243,7 +246,7 @@ func (s *APIServer) health(w http.ResponseWriter, _ *http.Request) {
 		"ready": ffmpegReady, "name": "zzz-wallpaper-companion", "protocolVersion": protocolVersion,
 		"version": version, "protocolMin": protocolMinVersion, "protocolMax": protocolMaxVersion,
 		"ytDlpReady": s.resolver.Ready(), "ffmpegReady": ffmpegReady,
-		"capabilities": map[string]bool{"youtubeRelay": true, "lyrics": true, "systemStats": true},
+		"capabilities": map[string]bool{"youtubeRelay": true, "lyrics": true, "systemStats": true, "mapTiles": true},
 	})
 }
 
