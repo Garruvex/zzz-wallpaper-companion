@@ -73,6 +73,12 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 ## Data folder
 
+### Street-map tiles (v1.2.1)
+
+The wallpaper's weather map loads visible OpenStreetMap tiles through the companion's loopback-only `/api/v1/map-tiles/{z}/{x}/{y}` endpoint. Requests identify ZZZ Wallpaper Companion and its project contact URL. Successful tiles are cached in `map-tiles/` under the data folder according to upstream HTTP cache headers, with a seven-day fallback. Expired tiles use conditional requests. Provider refusals and rate limits pause upstream requests for at least an hour; refused responses are never cached as map images. No offline download or prefetch feature is provided.
+
+The updated wallpaper requires the `mapTiles` health capability; older companion builds show an update message rather than requesting public tiles directly.
+
 ```
 %LOCALAPPDATA%\ZZZWallpaperCompanion\
 ```
