@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ import (
 )
 
 var (
-	version     = "1.2.1"
+	version     = "1.2.2"
 	buildNumber = "dev"
 )
 
@@ -42,7 +43,12 @@ func Run() {
 		return
 	}
 	if alreadyRunning {
-		infoDialog("ZZZ Wallpaper Companion", "The companion is already running in the notification area.")
+		config, configErr := newConfigStore(filepath.Join(dataDir, "settings.json"))
+		if configErr == nil && companionResponding(config.Get().Port) {
+			infoDialog("ZZZ Wallpaper Companion", "The companion is already running and responding. Open its notification-area icon to access Settings.")
+		} else {
+			infoDialog("ZZZ Wallpaper Companion", "A companion process is already running, but it is not responding on the configured port. It may be starting, using a different port, or unresponsive. Check its notification-area icon. If it is stuck, end only the ZZZ companion process in Task Manager, then restart it. No process has been terminated automatically.")
+		}
 		return
 	}
 	defer releaseInstance()
@@ -74,18 +80,29 @@ func Run() {
 	ffmpeg := newFFmpegManager(dataDir)
 	updater := newUpdateManager(dataDir)
 	server := newAPIServer(config, resolver, ffmpeg)
+	listener, connectionWarning, err := server.prepareListener()
+	if err != nil {
+		fatalDialog("Companion settings unavailable", err.Error())
+		return
+	}
+	settingsPort := listener.Addr().(*net.TCPAddr).Port
+	if connectionWarning != "" {
+		log.Print(connectionWarning)
+		go func() {
+			infoDialog("Companion connection unavailable", connectionWarning+" Open Settings from the notification-area icon to fix it.")
+		}()
+	}
 	quit := make(chan struct{})
 	var quitOnce sync.Once
 	requestQuit := func() { quitOnce.Do(func() { close(quit) }) }
 
 	go func() {
-		err := server.ListenAndServe(func() {
-			if confirmMarker != "" {
-				if err := os.WriteFile(confirmMarker, []byte("ready\n"), 0o600); err != nil {
-					log.Printf("confirm update: %v", err)
-				}
+		if confirmMarker != "" && connectionWarning == "" {
+			if err := os.WriteFile(confirmMarker, []byte("ready\n"), 0o600); err != nil {
+				log.Printf("confirm update: %v", err)
 			}
-		})
+		}
+		err := server.http.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server stopped: %v", err)
 			fatalDialog("Companion could not start", err.Error())
@@ -95,7 +112,7 @@ func Run() {
 
 	go dependencyLoop(config, resolver, ffmpeg, updater, quit)
 	go func() {
-		if err := runTray(config, dataDir, resolver, updater, requestQuit); err != nil {
+		if err := runTray(config, dataDir, resolver, updater, requestQuit, settingsPort, connectionWarning); err != nil {
 			log.Printf("tray unavailable: %v", err)
 		}
 	}()
