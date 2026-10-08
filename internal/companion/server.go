@@ -271,6 +271,11 @@ func (s *APIServer) resolve(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	compatibilityMode := r.URL.Query().Get("hlsCompat") == "1"
 	result, err := s.resolver.Resolve(ctx, id, compatibilityMode)
+	if errors.Is(err, errYTDLPInstalling) {
+		w.Header().Set("Retry-After", "15")
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return
