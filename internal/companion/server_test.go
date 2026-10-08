@@ -236,3 +236,15 @@ func TestYouTubeHeartbeatReportsUpgradeDirection(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveReportsYTDLPInstallAsUnavailable(t *testing.T) {
+	server := testServer(t)
+	server.resolver.installing.Store(true) // keep the test from starting a real download
+	request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/api/youtube/resolve?id=wEZFS5aert8", nil)
+	request.RemoteAddr = "127.0.0.1:50000"
+	recorder := httptest.NewRecorder()
+	server.http.Handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusServiceUnavailable || recorder.Header().Get("Retry-After") == "" {
+		t.Fatalf("status %d, Retry-After %q: %s", recorder.Code, recorder.Header().Get("Retry-After"), recorder.Body.String())
+	}
+}

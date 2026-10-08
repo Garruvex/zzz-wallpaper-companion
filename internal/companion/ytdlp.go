@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,17 +19,35 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 const nightlyBaseURL = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download"
 const stableBaseURL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download"
 
+// yt-dlp is about 18 MB, which takes several minutes on a slow connection, so
+// the download is bounded by stalls rather than by a fixed total duration.
+const (
+	ytDLPInstallTimeout  = 30 * time.Minute
+	ytDLPChecksumTimeout = 30 * time.Second
+)
+
+var downloadStallTimeout = 60 * time.Second
+
+var (
+	errYTDLPInstalling = errors.New("yt-dlp is still downloading; YouTube will be available when it finishes")
+	errDownloadStalled = errors.New("yt-dlp download stalled")
+)
+
 type Resolver struct {
 	mu         sync.Mutex
 	path       string
-	httpClient *http.Client
-	settings   *ConfigStore
+	httpClient     *http.Client
+	downloadClient *http.Client
+	settings       *ConfigStore
+	installing     atomic.Bool
+	baseURL        string
 }
 
 type resolvedMedia struct {
@@ -105,26 +124,68 @@ func resolvedMusicMetadata(metadata ytOutput) (track, artist string) {
 
 func newResolver(dataDir string, settings *ConfigStore) *Resolver {
 	return &Resolver{
-		path:       filepath.Join(dataDir, "yt-dlp.exe"),
-		httpClient: &http.Client{Timeout: 2 * time.Minute},
-		settings:   settings,
+		path:           filepath.Join(dataDir, "yt-dlp.exe"),
+		httpClient:     &http.Client{Timeout: 2 * time.Minute},
+		downloadClient: newDownloadClient(),
+		settings:       settings,
 	}
+}
+
+func newDownloadClient() *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.ResponseHeaderTimeout = 30 * time.Second
+	return &http.Client{Transport: transport}
 }
 
 func (r *Resolver) Ensure(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	return r.ensureLocked(ctx)
+}
+
+func (r *Resolver) ensureLocked(ctx context.Context) error {
 	if _, err := os.Stat(r.path); err == nil {
 		cmd := exec.CommandContext(ctx, r.path, "--version")
 		hideCommandWindow(cmd)
 		if err := cmd.Run(); err == nil {
 			return nil
 		}
+		// A cancelled request kills the version check; that says nothing
+		// about the binary, so only a check that ran to completion removes it.
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		_ = os.Remove(r.path)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	return r.download(ctx)
+}
+
+// requireReady never downloads on a request's short deadline: a missing
+// binary starts a background install and the request fails fast instead.
+func (r *Resolver) requireReady() error {
+	if r.Ready() {
+		return nil
+	}
+	r.installInBackground()
+	return errYTDLPInstalling
+}
+
+func (r *Resolver) installInBackground() {
+	if !r.installing.CompareAndSwap(false, true) {
+		return
+	}
+	go func() {
+		defer r.installing.Store(false)
+		ctx, cancel := context.WithTimeout(context.Background(), ytDLPInstallTimeout)
+		defer cancel()
+		if err := r.Ensure(ctx); err != nil {
+			log.Printf("yt-dlp install: %v", err)
+			return
+		}
+		log.Print("yt-dlp is ready")
+	}()
 }
 
 func (r *Resolver) Ready() bool {
@@ -137,6 +198,9 @@ func (r *Resolver) Update(ctx context.Context) error {
 	defer r.mu.Unlock()
 	if _, err := os.Stat(r.path); errors.Is(err, os.ErrNotExist) {
 		return r.download(ctx)
+	}
+	if err := r.ensureLocked(ctx); err != nil {
+		return err
 	}
 	channel := r.settings.Get().UpdateChannel
 	cmd := exec.CommandContext(ctx, r.path, "--update-to", channel)
@@ -154,19 +218,28 @@ func (r *Resolver) download(ctx context.Context) error {
 	if r.settings.Get().UpdateChannel == "stable" {
 		baseURL = stableBaseURL
 	}
+	if r.baseURL != "" {
+		baseURL = r.baseURL
+	}
 	asset := "yt-dlp.exe"
 	if runtime.GOARCH == "arm64" {
 		asset = "yt-dlp_arm64.exe"
 	}
-	expected, err := r.fetchChecksum(ctx, baseURL+"/SHA2-256SUMS", asset)
+	checksumContext, cancelChecksum := context.WithTimeout(ctx, ytDLPChecksumTimeout)
+	expected, err := r.fetchChecksum(checksumContext, baseURL+"/SHA2-256SUMS", asset)
+	cancelChecksum()
 	if err != nil {
 		return err
 	}
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	stall := time.AfterFunc(downloadStallTimeout, func() { cancel(errDownloadStalled) })
+	defer stall.Stop()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/"+asset, nil)
 	if err != nil {
 		return err
 	}
-	response, err := r.httpClient.Do(request)
+	response, err := r.downloadClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -183,10 +256,14 @@ func (r *Resolver) download(ctx context.Context) error {
 		return err
 	}
 	hash := sha256.New()
-	_, copyErr := io.Copy(io.MultiWriter(file, hash), response.Body)
+	body := &progressReader{Reader: response.Body, progress: func() { stall.Reset(downloadStallTimeout) }}
+	_, copyErr := io.Copy(io.MultiWriter(file, hash), body)
 	closeErr := file.Close()
 	if copyErr != nil {
 		_ = os.Remove(tmp)
+		if cause := context.Cause(ctx); errors.Is(cause, errDownloadStalled) {
+			return cause
+		}
 		return copyErr
 	}
 	if closeErr != nil {
@@ -201,12 +278,25 @@ func (r *Resolver) download(ctx context.Context) error {
 	return os.Rename(tmp, r.path)
 }
 
+type progressReader struct {
+	io.Reader
+	progress func()
+}
+
+func (p *progressReader) Read(buffer []byte) (int, error) {
+	n, err := p.Reader.Read(buffer)
+	if n > 0 {
+		p.progress()
+	}
+	return n, err
+}
+
 func (r *Resolver) fetchChecksum(ctx context.Context, url, asset string) (string, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
-	response, err := r.httpClient.Do(request)
+	response, err := r.downloadClient.Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -225,7 +315,7 @@ func (r *Resolver) fetchChecksum(ctx context.Context, url, asset string) (string
 }
 
 func (r *Resolver) Resolve(ctx context.Context, id string, hlsCompatibilityMode bool) (resolvedMedia, error) {
-	if err := r.Ensure(ctx); err != nil {
+	if err := r.requireReady(); err != nil {
 		return resolvedMedia{}, err
 	}
 	height := r.settings.Get().MaxHeight
@@ -289,7 +379,7 @@ func streamExpiry(urls ...string) int64 {
 }
 
 func (r *Resolver) Playlist(ctx context.Context, id string) ([]playlistItem, error) {
-	if err := r.Ensure(ctx); err != nil {
+	if err := r.requireReady(); err != nil {
 		return nil, err
 	}
 	output, err := r.run(ctx, "--flat-playlist", "--dump-single-json", "--playlist-end", "500", "https://www.youtube.com/playlist?list="+id)

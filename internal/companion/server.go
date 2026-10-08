@@ -48,6 +48,8 @@ type APIServer struct {
 	ffmpeg      *FFmpegManager
 	lyrics      *lyrics.LyricsService
 	systemStats *systemstats.SystemStatsService
+	dates       *DateStore
+	holidays    *holidayService
 	mapTiles    *mapTileService
 	http        *http.Server
 	sessionsMu  sync.Mutex
@@ -59,6 +61,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	dataDir := filepath.Dir(resolver.path)
 	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	s.mapTiles = newMapTileService(dataDir)
+	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
+	s.holidays = newHolidayService(dataDir)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/v1/map-tiles/{z}/{x}/{y}", s.mapTiles.serve)
@@ -70,6 +74,16 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
+	mux.HandleFunc("GET /api/v1/dates", s.getDates)
+	mux.HandleFunc("POST /api/v1/dates", s.saveDates)
+	mux.HandleFunc("GET /dates", s.datesPage)
+	mux.HandleFunc("GET /holidays", s.holidaysPage)
+	mux.HandleFunc("GET /licenses/unicode", s.unicodeLicensePage)
+	mux.HandleFunc("GET /api/v1/holiday-settings", s.holidaySettings)
+	mux.HandleFunc("POST /api/v1/holiday-settings", s.holidaySettings)
+	mux.HandleFunc("GET /api/v1/holiday-countries", s.holidayCountries)
+	mux.HandleFunc("GET /api/v1/holiday-subdivisions", s.holidaySubdivisions)
+	mux.HandleFunc("GET /api/v1/holidays", s.getHolidays)
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("POST /api/settings", s.saveSettings)
 	mux.HandleFunc("GET /resource/svg/cross.svg", s.probeImage)
@@ -246,7 +260,7 @@ func (s *APIServer) health(w http.ResponseWriter, _ *http.Request) {
 		"ready": ffmpegReady, "name": "zzz-wallpaper-companion", "protocolVersion": protocolVersion,
 		"version": version, "protocolMin": protocolMinVersion, "protocolMax": protocolMaxVersion,
 		"ytDlpReady": s.resolver.Ready(), "ffmpegReady": ffmpegReady,
-		"capabilities": map[string]bool{"youtubeRelay": true, "lyrics": true, "systemStats": true, "mapTiles": true},
+		"capabilities": map[string]bool{"youtubeRelay": true, "lyrics": true, "systemStats": true, "mapTiles": true, "importantDates": true},
 	})
 }
 
@@ -266,6 +280,11 @@ func (s *APIServer) resolve(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	compatibilityMode := r.URL.Query().Get("hlsCompat") == "1"
 	result, err := s.resolver.Resolve(ctx, id, compatibilityMode)
+	if errors.Is(err, errYTDLPInstalling) {
+		w.Header().Set("Retry-After", "15")
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return
@@ -561,7 +580,12 @@ func localOnly(next http.Handler) http.Handler {
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" && origin != "null" && !strings.HasPrefix(origin, "http://127.0.0.1:") && !strings.HasPrefix(origin, "http://localhost:") {
+		allowed := origin == "" || origin == "null"
+		if !allowed {
+			parsed, err := url.Parse(origin)
+			allowed = err == nil && parsed.Scheme == "http" && parsed.User == nil && parsed.Path == "" && parsed.RawQuery == "" && parsed.Fragment == "" && parsed.Port() != "" && (parsed.Hostname() == "127.0.0.1" || parsed.Hostname() == "localhost")
+		}
+		if !allowed {
 			http.Error(w, "origin not allowed", http.StatusForbidden)
 			return
 		}
@@ -597,7 +621,7 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZZZ Wallpaper Companion</title><style>
 :root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#111315;color:#f3f4f4}body{margin:0}.bar{height:5px;background:#f3c942}.wrap{max-width:620px;margin:0 auto;padding:36px 22px}h1{font-size:25px;margin:0 0 7px}.sub{color:#aeb5b8;margin:0 0 30px}.section{border-top:1px solid #34383a;padding:22px 0}label{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;margin:0 0 18px}small{display:block;color:#949b9e;margin-top:4px}.warning{color:#f3c942}input,select{box-sizing:border-box;width:100%;background:#1c2022;color:#fff;border:1px solid #4a5053;padding:9px;border-radius:4px;font:inherit}input[type=checkbox]{width:auto;justify-self:end}button{background:#f3c942;color:#171717;border:0;padding:10px 18px;border-radius:4px;font-weight:700;cursor:pointer}.status{margin-left:12px;color:#aeb5b8}@media(max-width:520px){label{grid-template-columns:1fr}}
-</style></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}<form id="settings"><div class="section">
+</style></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#f3c942">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#f3c942">Public Holidays — country and region</a></p>{{end}}<form id="settings"><div class="section">
 <label><span>Companion port<small>Default: 8765. Leave unchanged unless you know what you are doing. Match this value in Wallpaper Engine Companion App settings. Restart required.</small></span><input id="port" type="number" min="1024" max="65535" value="{{.Port}}"></label>
 <label><span>Maximum resolution<small>Higher resolutions use more bandwidth and GPU memory.</small></span><select id="height">{{range $v := heights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>Live-stream resolution<small class="warning">Higher resolutions substantially increase CPU usage while FFmpeg converts HLS to WebM. 1080p is experimental and may use heavy CPU.</small></span><select id="transcodeHeight">{{range $v := transcodeHeights}}<option>{{$v}}</option>{{end}}</select></label>

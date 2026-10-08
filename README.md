@@ -264,3 +264,20 @@ and extended without depending on the executable or tray implementation.
 ## License
 
 Companion source is [MIT](LICENSE). yt-dlp is downloaded separately from its upstream project and remains subject to its own licenses.
+
+
+## Important Dates
+
+Companion Settings → **Important Dates** opens a date picker and editable birthday/event list. Save, edit or delete entries without typing a special format. Repeat yearly is optional. Wallpaper v1.5.0 caches the last successful list and continues displaying it offline. Existing wallpaper dates are merged once into the companion. Refresh the editor after migration if it reports that dates changed in another window. Dates are stored locally in `dates.json`; calendar editing requires companion v1.3.0.
+
+`GET /api/v1/dates` returns `{version:1, revision, events}`. `POST /api/v1/dates` saves a validated full list using the current revision; stale revisions return 409. Maximum 500 dates. Invalid or unreadable data never silently replaces a saved list.
+
+## Public holidays
+
+Open Settings → **Public Holidays** to choose a country and optional state/province. Save to apply the calendar within a minute. Choose **Off** to stop showing holidays.
+
+Taiwan uses its official government office calendar. China uses holiday-cn and includes adjusted workdays. Other countries use Nager.Holidays; only public holidays are shown. Regional choices list states/provinces with public holidays in the current year.
+
+Calendars refresh weekly and are cached in `holidays.json` beside the companion settings. Failed updates keep the last good data. The wallpaper keeps its own offline copy and has bundled Taiwan/China calendars. Unpublished years stay unavailable; dates are never repeated into future years.
+
+Nager’s API permits private/non-profit projects; commercial use requires sponsorship: [terms](https://nagerholidays.com/legal/termsofservice). Region names come from Unicode CLDR; its license is included in `internal/companion/UNICODE_LICENSE.txt`.
