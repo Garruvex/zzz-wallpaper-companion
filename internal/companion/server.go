@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/lyrics"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/systemstats"
 )
@@ -51,6 +52,7 @@ type APIServer struct {
 	dates       *DateStore
 	holidays    *holidayService
 	mapTiles    *mapTileService
+	input       *gamepad.Hub
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -61,6 +63,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	dataDir := filepath.Dir(resolver.path)
 	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	s.mapTiles = newMapTileService(dataDir)
+	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
 	mux := http.NewServeMux()
@@ -74,6 +77,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
+	mux.HandleFunc("GET /api/v1/input", s.inputStream)
+	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
 	mux.HandleFunc("GET /api/v1/dates", s.getDates)
 	mux.HandleFunc("POST /api/v1/dates", s.saveDates)
 	mux.HandleFunc("GET /dates", s.datesPage)

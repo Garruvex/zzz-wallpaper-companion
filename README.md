@@ -53,6 +53,12 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 | yt-dlp channel | `nightly` | `nightly` (recommended) or `stable` |
 | Launch on Windows startup | Off | Starts quietly in the notification area after sign-in |
 
+## Game controller and play mode (optional)
+
+For wallpapers that embed a game emulator. The companion reads Xbox-style (XInput) controllers and sends button states to the wallpaper at `GET /api/v1/input` (server-sent events). It only polls while a wallpaper is listening.
+
+**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true}`) also reads these keys, even when the wallpaper doesn't have focus: arrow keys, X (A), Z (B), A (L), S (R), Enter (Start), Backspace (Select). The keys are only read, not blocked, so other apps still receive them while play mode is on. It turns off by itself when the wallpaper stops listening.
+
 ## Troubleshooting
 
 **Wallpaper says "Start the optional localhost companion"**
