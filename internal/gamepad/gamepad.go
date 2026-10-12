@@ -90,9 +90,11 @@ type Hub struct {
 	mode     CaptureMode
 	paused   bool
 	focused  bool
-	last     Snapshot
-	stop     chan struct{}
-	wake     chan struct{}
+	// focusKnown is false until the first focus check after play mode starts.
+	focusKnown bool
+	last       Snapshot
+	stop       chan struct{}
+	wake       chan struct{}
 }
 
 func NewHub(source Source) *Hub {
@@ -137,7 +139,7 @@ func (h *Hub) SetPlayMode(enabled bool, mode CaptureMode) Snapshot {
 		// Desktop mode starts playing if the desktop already has focus; key
 		// mode waits for the Pause key.
 		h.paused = mode == CaptureKey
-		h.focused = false
+		h.focusKnown = false
 	}
 	h.playMode, h.mode = enabled, mode
 	h.mu.Unlock()
@@ -207,11 +209,11 @@ func (h *Hub) step(stop <-chan struct{}, hooked bool) {
 		return
 	default:
 	}
-	if h.mode == CaptureDesktop && focused != h.focused {
+	if h.mode == CaptureDesktop && (!h.focusKnown || focused != h.focused) {
 		// Clicking the desktop plays; switching to any window pauses.
 		h.paused = !focused
 	}
-	h.focused = focused
+	h.focused, h.focusKnown = focused, true
 	if presses%2 == 1 && h.mode != CaptureAlways {
 		h.paused = !h.paused
 	}

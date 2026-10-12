@@ -125,6 +125,18 @@ func TestDesktopModeFollowsFocusAndPauseKey(t *testing.T) {
 	next(t, ch, func(s Snapshot) bool { return s.Captured })
 }
 
+func TestDesktopModeStartsPausedWhenAnotherWindowHasFocus(t *testing.T) {
+	hub, src := newTestHub()
+	ch, cancel := hub.Subscribe()
+	defer cancel()
+	hub.SetPlayMode(true, CaptureAlways)
+	next(t, ch, func(s Snapshot) bool { return s.Captured })
+	hub.SetPlayMode(true, CaptureDesktop)
+	next(t, ch, func(s Snapshot) bool { return s.PlayMode && !s.Captured })
+	src.set(func(s *fakeSource) { s.focused = true })
+	next(t, ch, func(s Snapshot) bool { return s.Captured })
+}
+
 func TestKeyModeWaitsForPause(t *testing.T) {
 	hub, src := newTestHub()
 	ch, cancel := hub.Subscribe()
