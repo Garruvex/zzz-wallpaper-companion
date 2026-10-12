@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 )
 
 const inputKeepAlive = 15 * time.Second
@@ -47,12 +49,14 @@ func (s *APIServer) inputStream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// setPlayMode turns keyboard capture on or off. It only takes effect while a
-// wallpaper is listening to the stream, and it resets when the last one leaves.
+// setPlayMode turns input capture on or off for the open GBA channel, and picks
+// when the game takes the keys (see gamepad.CaptureMode). It only takes effect
+// while a wallpaper is listening to the stream, and resets when the last one leaves.
 func (s *APIServer) setPlayMode(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var request struct {
-		Enabled bool `json:"enabled"`
+		Enabled bool   `json:"enabled"`
+		Capture string `json:"capture"`
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10))
 	decoder.DisallowUnknownFields()
@@ -60,7 +64,12 @@ func (s *APIServer) setPlayMode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid play mode request")
 		return
 	}
-	writeJSON(w, http.StatusOK, s.input.SetPlayMode(request.Enabled))
+	mode, ok := gamepad.ParseCaptureMode(request.Capture)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "capture must be desktop, key or always")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.input.SetPlayMode(request.Enabled, mode))
 }
 
 const maxROMBytes = 64 << 20

@@ -46,12 +46,14 @@ func TestInputStreamSendsInitialState(t *testing.T) {
 
 func TestPlayModeRejectsBadBody(t *testing.T) {
 	server := testServer(t)
-	request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/api/v1/input/play-mode", strings.NewReader(`{"enabled":true,"x":1}`))
-	request.RemoteAddr = "127.0.0.1:1234"
-	recorder := httptest.NewRecorder()
-	server.http.Handler.ServeHTTP(recorder, request)
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("status %d", recorder.Code)
+	for _, body := range []string{`{"enabled":true,"x":1}`, `{"enabled":true,"capture":"sometimes"}`} {
+		request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/api/v1/input/play-mode", strings.NewReader(body))
+		request.RemoteAddr = "127.0.0.1:1234"
+		recorder := httptest.NewRecorder()
+		server.http.Handler.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status %d", body, recorder.Code)
+		}
 	}
 }
 

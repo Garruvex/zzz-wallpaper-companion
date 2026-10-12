@@ -57,7 +57,13 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 For wallpapers that embed a game emulator. The companion reads Xbox-style (XInput) controllers and sends button states to the wallpaper at `GET /api/v1/input` (server-sent events). It only polls while a wallpaper is listening.
 
-**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true}`) also reads these keys, even when the wallpaper doesn't have focus: arrow keys, X (A), Z (B), A (L), S (R), Enter (Start), Backspace (Select). The keys are only read, not blocked, so other apps still receive them while play mode is on. It turns off by itself when the wallpaper stops listening.
+**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal. `capture` decides when that is:
+
+- `desktop` (default): while the desktop has focus. Click the wallpaper to play; switching to any window pauses. **Pause/Break** toggles it from anywhere.
+- `key`: only after **Pause/Break** turns it on.
+- `always`: whenever play mode is on.
+
+Keys are read with a Windows low-level keyboard hook, which exists only while play mode is on and is removed when the wallpaper stops listening. Each state includes `captured` and a timestamp (`at`) so the wallpaper can show its state and input lag.
 
 **ROM files:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). `GET /api/v1/roms` lists the `.gba`, `.gbc` and `.gb` files in it and `GET /api/v1/roms/<name>` sends one to the wallpaper. Nothing outside that folder and no other file type is ever served.
 
