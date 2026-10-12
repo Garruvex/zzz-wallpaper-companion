@@ -84,16 +84,11 @@ function savesPanel(cart) {
       })));
   }
   panel.append(el('div', { className: 'line' },
-    el('small', { textContent: 'Reset and Remove move files into a backups or .removed folder; nothing is deleted.' }),
-    el('span', { className: 'row' },
-      button('Reset progress', () => {
-        if (confirm(`Start ${cart.title} from scratch? Its save and resume points move to its backups folder.`))
-          run('Progress reset.', () => api(`${base}/do/reset`, { method: 'POST' }));
-      }, 'danger'),
-      button('Remove game', () => {
-        if (confirm(`Remove ${cart.title} from the library? Its folder moves to roms/.removed.`))
-          run(`${cart.title} removed.`, () => api(`${base}/do/remove`, { method: 'POST' }));
-      }, 'danger'))));
+    el('small', { textContent: 'Deleted saves move to the game\'s backups folder, so a mistake can be undone by hand.' }),
+    button('Delete save', () => {
+      if (confirm(`Delete the save and resume points of ${cart.title}? It starts from the beginning next time. The files move to its backups folder.`))
+        run('Save deleted.', () => api(`${base}/do/reset`, { method: 'POST' }));
+    }, 'danger')));
   return panel;
 }
 
@@ -122,7 +117,11 @@ function render() {
         onTV ? el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }) : '',
         el('small', { textContent: cart.rom })),
       onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
-      button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }));
+      button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }),
+      button('Remove', () => {
+        if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
+          run(`${cart.title} removed.`, () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/remove`, { method: 'POST' }));
+      }, 'danger'));
     list.append(el('div', { className: 'game' }, row, shown ? savesPanel(cart) : ''));
   }
 }

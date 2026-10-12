@@ -155,7 +155,7 @@ func TestRemovingAGameMovesItAside(t *testing.T) {
 	if strings.Contains(cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.String(), "Sonic") {
 		t.Fatal("removed game still listed")
 	}
-	if r := cartRequest(t, server, http.MethodGet, "/games", nil); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), "Play on TV") {
+	if r := cartRequest(t, server, http.MethodGet, "/games", nil); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), "Delete save") {
 		t.Fatalf("games page: %d", r.Code)
 	}
 }
