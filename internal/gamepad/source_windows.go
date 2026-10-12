@@ -51,6 +51,7 @@ var (
 	procCallNextHookEx      = user32.NewProc("CallNextHookEx")
 	procGetMessage          = user32.NewProc("GetMessageW")
 	procPostThreadMessage   = user32.NewProc("PostThreadMessageW")
+	procGetAsyncKeyState    = user32.NewProc("GetAsyncKeyState")
 	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
 	procGetCurrentThreadID  = kernel32.NewProc("GetCurrentThreadId")
 	procXInputGetState      *syscall.LazyProc
@@ -169,13 +170,23 @@ var (
 	hookProcPtr = syscall.NewCallback(hookProc)
 )
 
+// modifierDown reports whether Shift, Ctrl, Alt or a Windows key is held.
+func modifierDown() bool {
+	for _, vk := range [...]uintptr{0x10, 0x11, 0x12, 0x5B, 0x5C} {
+		if state, _, _ := procGetAsyncKeyState.Call(vk); state&0x8000 != 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func hookProc(code int, wParam uintptr, lParam uintptr) uintptr {
 	if code == 0 {
 		// lParam points at memory Windows owns for the duration of the call.
 		event := *(**kbdllHookStruct)(unsafe.Pointer(&lParam))
 		if event.flags&llkhfInjected == 0 {
 			down := wParam == wmKeyDown || wParam == wmSysKeyDown
-			swallow, changed := theHook.keys.handle(event.vkCode, down)
+			swallow, changed := theHook.keys.handle(event.vkCode, down, modifierDown())
 			if changed {
 				theHook.signal()
 			}

@@ -183,29 +183,60 @@ func TestPlayModeResetsWhenLastListenerLeaves(t *testing.T) {
 
 func TestKeyStateSwallowsOnlyGameKeysWhileGrabbing(t *testing.T) {
 	var k keyState
-	if swallow, _ := k.handle(0x58, true); swallow {
+	if swallow, _ := k.handle(0x58, true, false); swallow {
 		t.Fatal("X must pass through when not grabbing")
 	}
 	k.setGrab(true)
-	if swallow, _ := k.handle(0x58, true); !swallow || k.held.Load() != 1<<ButtonA {
+	if swallow, _ := k.handle(0x58, true, false); !swallow || k.held.Load() != 1<<ButtonA {
 		t.Fatal("X should be taken for the game while grabbing")
 	}
-	if swallow, _ := k.handle(0x51, true); swallow {
+	if swallow, _ := k.handle(0x51, true, false); swallow {
 		t.Fatal("Q is not a game key and must pass through")
 	}
-	k.handle(0x58, false)
+	k.handle(0x58, false, false)
 	if k.held.Load() != 0 {
 		t.Fatal("key up should release")
 	}
-	k.handle(vkPause, true)
-	k.handle(vkPause, true) // auto-repeat
-	k.handle(vkPause, false)
+	k.handle(vkPause, true, false)
+	k.handle(vkPause, true, false) // auto-repeat
+	k.handle(vkPause, false, false)
 	if k.presses.Load() != 1 {
 		t.Fatalf("pause presses = %d, want 1", k.presses.Load())
 	}
-	k.handle(0x26, true)
+	k.handle(0x26, true, false)
 	k.setGrab(false)
 	if k.held.Load() != 0 {
 		t.Fatal("releasing the grab should drop held keys")
+	}
+}
+
+func TestShortcutsWithModifiersAlwaysPassThrough(t *testing.T) {
+	var k keyState
+	k.setGrab(true)
+	// Ctrl+C on the desktop: C is a game key, but this is a shortcut.
+	if swallow, _ := k.handle(0x43, true, true); swallow || k.held.Load() != 0 {
+		t.Fatal("Ctrl+C must reach the system and not the game")
+	}
+	if swallow, _ := k.handle(0x43, true, false); swallow {
+		t.Fatal("repeats of a key pressed with a modifier stay with the system")
+	}
+	if swallow, _ := k.handle(0x43, false, false); swallow {
+		t.Fatal("its release goes to the system too")
+	}
+	// A game key held before the modifier is released as it was pressed.
+	k.handle(0x27, true, false)
+	if swallow, _ := k.handle(0x27, true, true); !swallow {
+		t.Fatal("a key already taken stays taken until released")
+	}
+	if swallow, changed := k.handle(0x27, false, true); !swallow || !changed || k.held.Load() != 0 {
+		t.Fatal("a taken key's release is swallowed and clears it")
+	}
+	// A release the hook never saw the press for passes through.
+	if swallow, _ := k.handle(0x28, false, false); swallow {
+		t.Fatal("a stray key-up must pass through")
+	}
+	// Win+Pause is the system's; plain Pause is ours.
+	if swallow, _ := k.handle(vkPause, true, true); swallow || k.presses.Load() != 0 {
+		t.Fatal("Win+Pause must pass through")
 	}
 }

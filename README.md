@@ -57,7 +57,7 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 For wallpapers that embed a game emulator. The companion reads Xbox-style (XInput) controllers and sends button states to the wallpaper at `GET /api/v1/input` (server-sent events). It only polls while a wallpaper is listening.
 
-**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), C (Y), D (X), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal. `capture` decides when that is:
+**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), C (Y), D (X), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal, and a game key pressed together with Ctrl, Alt, Shift or the Windows key is never taken (so Win+arrows, Ctrl+C, Alt+Enter keep working). `capture` decides when that is:
 
 - `desktop` (default): while the desktop has focus. Click the wallpaper to play; switching to any window pauses. **Pause/Break** toggles it from anywhere.
 - `key`: only after **Pause/Break** turns it on.
