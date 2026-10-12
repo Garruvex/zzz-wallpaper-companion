@@ -58,8 +58,13 @@ type cart struct {
 	Label  bool   `json:"label"`
 	Rev    uint64 `json:"rev"`            // changes when the saves are reset or replaced
 	SHA1   string `json:"sha1,omitempty"` // the ROM's hash, once known
-	dir    string
-	save   string
+	// Shelf is the player's choice for the wallpaper's shelf of game tapes:
+	// true puts it on, false keeps it off, unset lets it take a free tape.
+	// OnShelf is the outcome once the shelf's size is taken into account.
+	Shelf   *bool `json:"shelf,omitempty"`
+	OnShelf bool  `json:"onShelf"`
+	dir     string
+	save    string
 }
 
 func (s *APIServer) romDir() string { return filepath.Join(s.dataDir, "roms") }
@@ -102,6 +107,7 @@ func readCart(root, id string) (cart, bool) {
 		var meta struct {
 			Title, Color, SHA1 string
 			Rev                uint64
+			Shelf              *bool
 		}
 		if json.Unmarshal(data, &meta) == nil {
 			if t := strings.TrimSpace(meta.Title); t != "" {
@@ -111,6 +117,7 @@ func readCart(root, id string) (cart, bool) {
 				c.Color = meta.Color
 			}
 			c.Rev = meta.Rev
+			c.Shelf = meta.Shelf
 			if len(meta.SHA1) == 40 {
 				c.SHA1 = meta.SHA1
 			}
@@ -176,6 +183,7 @@ func (s *APIServer) cartList() []cart {
 		}
 	}
 	sort.Slice(carts, func(i, j int) bool { return strings.ToLower(carts[i].Title) < strings.ToLower(carts[j].Title) })
+	applyShelf(carts)
 	return carts
 }
 

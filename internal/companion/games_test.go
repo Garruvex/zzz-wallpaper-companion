@@ -2,6 +2,7 @@ package companion
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -157,5 +158,46 @@ func TestRemovingAGameMovesItAside(t *testing.T) {
 	}
 	if r := cartRequest(t, server, http.MethodGet, "/games", nil); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), "Delete save") {
 		t.Fatalf("games page: %d", r.Code)
+	}
+}
+
+func TestShelfChoosesWhichGamesGetATape(t *testing.T) {
+	server := testServer(t)
+	for i := 0; i < shelfSlots+2; i++ {
+		write(t, filepath.Join(server.romDir(), fmt.Sprintf("Game %02d", i), "game.gba"), fmt.Sprintf("ROM %d", i))
+	}
+	onShelf := func() map[string]bool {
+		var got struct{ Carts []cart }
+		decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &got)
+		out := map[string]bool{}
+		for _, c := range got.Carts {
+			out[c.ID] = c.OnShelf
+		}
+		return out
+	}
+	got := onShelf()
+	if !got["Game 00"] || !got["Game 13"] || got["Game 14"] || got["Game 15"] {
+		t.Fatalf("games not given tapes in title order: %v", got)
+	}
+	// Choosing the last game bumps one that was only filling a free tape.
+	if r := cartRequest(t, server, http.MethodPost, "/api/v1/carts/Game%2015/do/shelf?on=1", nil); r.Code != http.StatusNoContent {
+		t.Fatalf("shelf on: %d %s", r.Code, r.Body)
+	}
+	got = onShelf()
+	if !got["Game 15"] || got["Game 13"] {
+		t.Fatalf("chosen game did not take a tape: %v", got)
+	}
+	// Taking one off frees a tape for the next.
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Game%2000/do/shelf?on=0", nil)
+	got = onShelf()
+	if got["Game 00"] || !got["Game 13"] {
+		t.Fatalf("taking a game off did not free its tape: %v", got)
+	}
+	// With every tape chosen, another can't be added.
+	for i := 0; i < shelfSlots; i++ {
+		cartRequest(t, server, http.MethodPost, fmt.Sprintf("/api/v1/carts/Game%%20%02d/do/shelf?on=1", i+1), nil)
+	}
+	if r := cartRequest(t, server, http.MethodPost, "/api/v1/carts/Game%2000/do/shelf?on=1", nil); r.Code != http.StatusConflict {
+		t.Fatalf("full shelf accepted another: %d", r.Code)
 	}
 }

@@ -318,6 +318,8 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.changedSaves(w, c)
+	case "shelf":
+		s.setShelf(w, r, c)
 	case "remove":
 		removed := filepath.Join(s.romDir(), ".removed")
 		if err := os.MkdirAll(removed, 0o755); err != nil {
@@ -336,6 +338,52 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusNotFound, "unknown action")
 	}
+}
+
+// shelfSlots is how many tapes the wallpaper's shelf has.
+const shelfSlots = 14
+
+// applyShelf decides which games get a tape. Games the player put on the
+// shelf come first, then games that were never asked about fill the free
+// tapes, in title order; games the player took off never get one. carts must
+// already be in title order.
+func applyShelf(carts []cart) {
+	left := shelfSlots
+	for _, wanted := range []bool{true, false} {
+		for i := range carts {
+			c := &carts[i]
+			explicit := c.Shelf != nil && *c.Shelf
+			unset := c.Shelf == nil
+			if left > 0 && ((wanted && explicit) || (!wanted && unset)) {
+				c.OnShelf = true
+				left--
+			}
+		}
+	}
+}
+
+// setShelf puts a game on the shelf or takes it off.
+func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
+	on := r.URL.Query().Get("on") == "1"
+	if on {
+		taken := 0
+		for _, other := range s.cartList() {
+			if other.ID != c.ID && other.Shelf != nil && *other.Shelf {
+				taken++
+			}
+		}
+		if taken >= shelfSlots {
+			writeError(w, http.StatusConflict, fmt.Sprintf("The shelf is full (%d tapes). Take another game off it first.", shelfSlots))
+			return
+		}
+	}
+	meta := cartMeta(c.dir)
+	meta["shelf"] = on
+	if err := writeCartMeta(c.dir, meta); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not update the game")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 var errStaleRevision = errors.New("the game's saves changed since it was loaded")

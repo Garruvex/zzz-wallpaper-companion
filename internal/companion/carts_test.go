@@ -59,9 +59,9 @@ func TestLooseROMsBecomeCartridgesWithTheirSaves(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []cart{
-		{ID: "Emerald", Title: "Emerald", System: "gba", ROM: "game.gba"},
-		{ID: "Mario World", Title: "Mario World", System: "snes", ROM: "game.sfc"},
-		{ID: "Sonic", Title: "Sonic 2", System: "segaMD", ROM: "game.md", Color: "#2050ff", Label: true},
+		{ID: "Emerald", Title: "Emerald", System: "gba", ROM: "game.gba", OnShelf: true},
+		{ID: "Mario World", Title: "Mario World", System: "snes", ROM: "game.sfc", OnShelf: true},
+		{ID: "Sonic", Title: "Sonic 2", System: "segaMD", ROM: "game.md", Color: "#2050ff", Label: true, OnShelf: true},
 	}
 	if len(got.Carts) != len(want) {
 		t.Fatalf("carts = %+v", got.Carts)
