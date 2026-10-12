@@ -80,6 +80,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
 	mux.HandleFunc("GET /api/v1/roms", s.listROMs)
 	mux.HandleFunc("GET /api/v1/roms/{name}", s.serveROM)
+	mux.HandleFunc("GET /api/v1/roms/{name}/{kind}", s.getSave)
+	mux.HandleFunc("POST /api/v1/roms/{name}/{kind}", s.putSave)
 	mux.HandleFunc("GET /api/v1/input", s.inputStream)
 	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
 	mux.HandleFunc("GET /api/v1/dates", s.getDates)

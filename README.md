@@ -67,6 +67,8 @@ Keys are read with a Windows low-level keyboard hook, which exists only while pl
 
 **ROM files:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). `GET /api/v1/roms` lists the `.gba`, `.gbc` and `.gb` files in it and `GET /api/v1/roms/<name>` sends one to the wallpaper. Nothing outside that folder and no other file type is ever served.
 
+**Game saves:** `GET`/`POST /api/v1/roms/<name>/save` and `/state` read and write `Game.sav` (the game's own save; the previous one is kept as `Game.sav.bak`) and `Game.state` (resume snapshot) next to the ROM. Only ROMs in the ROM folder can have saves.
+
 ## Troubleshooting
 
 **Wallpaper says "Start the optional localhost companion"**
