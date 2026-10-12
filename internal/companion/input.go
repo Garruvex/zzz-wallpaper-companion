@@ -67,16 +67,37 @@ const maxROMBytes = 64 << 20
 
 var romExtensions = map[string]bool{".gba": true, ".gbc": true, ".gb": true}
 
-// serveROM sends a Game Boy ROM from a path on this PC. Wallpaper Engine's
-// browser may not read local files itself, so the wallpaper asks here instead.
-// Only existing ROM files are served, never other file types.
+// romDir is the folder the user drops their own games into.
+func (s *APIServer) romDir() string { return filepath.Join(s.dataDir, "roms") }
+
+func (s *APIServer) ensureROMDir() string {
+	dir := s.romDir()
+	_ = os.MkdirAll(dir, 0o755)
+	return dir
+}
+
+// listROMs names the ROM files in the ROM folder. The wallpaper shows one
+// channel per name.
+func (s *APIServer) listROMs(w http.ResponseWriter, r *http.Request) {
+	entries, _ := os.ReadDir(s.ensureROMDir())
+	roms := []string{}
+	for _, entry := range entries {
+		if entry.Type().IsRegular() && romExtensions[strings.ToLower(filepath.Ext(entry.Name()))] {
+			roms = append(roms, entry.Name())
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"roms": roms})
+}
+
+// serveROM sends one ROM from the ROM folder by file name. Nothing outside
+// that folder, and no other file type, can be requested.
 func (s *APIServer) serveROM(w http.ResponseWriter, r *http.Request) {
-	path := strings.Trim(strings.TrimSpace(r.URL.Query().Get("path")), `"`)
-	if path == "" || !filepath.IsAbs(path) || !romExtensions[strings.ToLower(filepath.Ext(path))] {
-		writeError(w, http.StatusBadRequest, "path must be an absolute .gba, .gbc or .gb file")
+	name := r.PathValue("name")
+	if name == "" || name != filepath.Base(name) || !romExtensions[strings.ToLower(filepath.Ext(name))] {
+		writeError(w, http.StatusBadRequest, "invalid ROM name")
 		return
 	}
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Join(s.ensureROMDir(), name))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "ROM not found")
 		return

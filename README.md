@@ -59,7 +59,7 @@ For wallpapers that embed a game emulator. The companion reads Xbox-style (XInpu
 
 **Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true}`) also reads these keys, even when the wallpaper doesn't have focus: arrow keys, X (A), Z (B), A (L), S (R), Enter (Start), Backspace (Select). The keys are only read, not blocked, so other apps still receive them while play mode is on. It turns off by itself when the wallpaper stops listening.
 
-**ROM files:** `GET /api/v1/rom?path=<absolute path>` sends a `.gba`, `.gbc` or `.gb` file from your PC to the wallpaper, in case Wallpaper Engine's browser can't read local files itself. Other file types are never served.
+**ROM files:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). `GET /api/v1/roms` lists the `.gba`, `.gbc` and `.gb` files in it and `GET /api/v1/roms/<name>` sends one to the wallpaper. Nothing outside that folder and no other file type is ever served.
 
 ## Troubleshooting
 

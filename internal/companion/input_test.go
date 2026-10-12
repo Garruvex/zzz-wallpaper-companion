@@ -55,32 +55,30 @@ func TestPlayModeRejectsBadBody(t *testing.T) {
 	}
 }
 
-func TestServeROMOnlyServesROMFiles(t *testing.T) {
+func TestROMFolderListsAndServesOnlyROMs(t *testing.T) {
 	server := testServer(t)
-	dir := t.TempDir()
-	rom := filepath.Join(dir, "Test Game.gba")
-	if err := os.WriteFile(rom, []byte("ROMDATA"), 0o600); err != nil {
+	dir := server.ensureROMDir()
+	if err := os.WriteFile(filepath.Join(dir, "Test Game.gba"), []byte("ROMDATA"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	secret := filepath.Join(dir, "notes.txt")
-	if err := os.WriteFile(secret, []byte("secret"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("secret"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	get := func(path string) *httptest.ResponseRecorder {
-		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/api/v1/rom?path="+url.QueryEscape(path), nil)
+	get := func(target string) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+target, nil)
 		request.RemoteAddr = "127.0.0.1:1234"
 		recorder := httptest.NewRecorder()
 		server.http.Handler.ServeHTTP(recorder, request)
 		return recorder
 	}
-	if r := get(rom); r.Code != http.StatusOK || r.Body.String() != "ROMDATA" {
+	if r := get("/api/v1/roms"); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), "Test Game.gba") || strings.Contains(r.Body.String(), "notes") {
+		t.Fatalf("list: %d %q", r.Code, r.Body.String())
+	}
+	if r := get("/api/v1/roms/" + url.PathEscape("Test Game.gba")); r.Code != http.StatusOK || r.Body.String() != "ROMDATA" {
 		t.Fatalf("rom: %d %q", r.Code, r.Body.String())
 	}
-	if r := get(`"` + rom + `"`); r.Code != http.StatusOK {
-		t.Fatalf("quoted path: %d", r.Code)
-	}
-	for _, bad := range []string{secret, "relative.gba", filepath.Join(dir, "missing.gba"), ""} {
-		if r := get(bad); r.Code == http.StatusOK {
+	for _, bad := range []string{"notes.txt", "missing.gba", "..%2Fx.gba", "%2Fetc%2Fpasswd.gba"} {
+		if r := get("/api/v1/roms/" + bad); r.Code == http.StatusOK {
 			t.Fatalf("served %q", bad)
 		}
 	}

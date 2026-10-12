@@ -53,6 +53,7 @@ type APIServer struct {
 	holidays    *holidayService
 	mapTiles    *mapTileService
 	input       *gamepad.Hub
+	dataDir     string
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -61,7 +62,7 @@ type APIServer struct {
 
 func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager) *APIServer {
 	dataDir := filepath.Dir(resolver.path)
-	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
+	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, dataDir: dataDir, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	s.mapTiles = newMapTileService(dataDir)
 	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
@@ -77,7 +78,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
-	mux.HandleFunc("GET /api/v1/rom", s.serveROM)
+	mux.HandleFunc("GET /api/v1/roms", s.listROMs)
+	mux.HandleFunc("GET /api/v1/roms/{name}", s.serveROM)
 	mux.HandleFunc("GET /api/v1/input", s.inputStream)
 	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
 	mux.HandleFunc("GET /api/v1/dates", s.getDates)
