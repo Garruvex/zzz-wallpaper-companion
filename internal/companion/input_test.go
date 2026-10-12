@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -49,5 +52,36 @@ func TestPlayModeRejectsBadBody(t *testing.T) {
 	server.http.Handler.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status %d", recorder.Code)
+	}
+}
+
+func TestServeROMOnlyServesROMFiles(t *testing.T) {
+	server := testServer(t)
+	dir := t.TempDir()
+	rom := filepath.Join(dir, "Test Game.gba")
+	if err := os.WriteFile(rom, []byte("ROMDATA"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	secret := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(secret, []byte("secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	get := func(path string) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/api/v1/rom?path="+url.QueryEscape(path), nil)
+		request.RemoteAddr = "127.0.0.1:1234"
+		recorder := httptest.NewRecorder()
+		server.http.Handler.ServeHTTP(recorder, request)
+		return recorder
+	}
+	if r := get(rom); r.Code != http.StatusOK || r.Body.String() != "ROMDATA" {
+		t.Fatalf("rom: %d %q", r.Code, r.Body.String())
+	}
+	if r := get(`"` + rom + `"`); r.Code != http.StatusOK {
+		t.Fatalf("quoted path: %d", r.Code)
+	}
+	for _, bad := range []string{secret, "relative.gba", filepath.Join(dir, "missing.gba"), ""} {
+		if r := get(bad); r.Code == http.StatusOK {
+			t.Fatalf("served %q", bad)
+		}
 	}
 }

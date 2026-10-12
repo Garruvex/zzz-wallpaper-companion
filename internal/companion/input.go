@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -58,4 +61,36 @@ func (s *APIServer) setPlayMode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.input.SetPlayMode(request.Enabled))
+}
+
+const maxROMBytes = 64 << 20
+
+var romExtensions = map[string]bool{".gba": true, ".gbc": true, ".gb": true}
+
+// serveROM sends a Game Boy ROM from a path on this PC. Wallpaper Engine's
+// browser may not read local files itself, so the wallpaper asks here instead.
+// Only existing ROM files are served, never other file types.
+func (s *APIServer) serveROM(w http.ResponseWriter, r *http.Request) {
+	path := strings.Trim(strings.TrimSpace(r.URL.Query().Get("path")), `"`)
+	if path == "" || !filepath.IsAbs(path) || !romExtensions[strings.ToLower(filepath.Ext(path))] {
+		writeError(w, http.StatusBadRequest, "path must be an absolute .gba, .gbc or .gb file")
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "ROM not found")
+		return
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		writeError(w, http.StatusNotFound, "ROM not found")
+		return
+	}
+	if info.Size() > maxROMBytes {
+		writeError(w, http.StatusRequestEntityTooLarge, "ROM is too large")
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	http.ServeContent(w, r, "", info.ModTime(), file)
 }

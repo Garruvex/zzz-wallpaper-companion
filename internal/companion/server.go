@@ -77,6 +77,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
 	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
 	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
+	mux.HandleFunc("GET /api/v1/rom", s.serveROM)
 	mux.HandleFunc("GET /api/v1/input", s.inputStream)
 	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
 	mux.HandleFunc("GET /api/v1/dates", s.getDates)
