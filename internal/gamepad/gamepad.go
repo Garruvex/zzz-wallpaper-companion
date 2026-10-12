@@ -27,6 +27,8 @@ type Snapshot struct {
 	Buttons   uint32 `json:"buttons"`
 	PlayMode  bool   `json:"playMode"`
 	Connected bool   `json:"controller"`
+	// At is when this state was read (Unix ms), so the wallpaper can show input lag.
+	At int64 `json:"at"`
 }
 
 // Source reads the current state of the hardware. keyboard is true only while
@@ -104,10 +106,11 @@ func (h *Hub) snapshotLocked() Snapshot {
 }
 
 func (h *Hub) publishLocked(buttons uint32, controller bool) Snapshot {
-	next := Snapshot{Buttons: buttons, PlayMode: h.playMode, Connected: controller}
+	next := Snapshot{Buttons: buttons, PlayMode: h.playMode, Connected: controller, At: h.last.At}
 	if next == h.last {
 		return next
 	}
+	next.At = time.Now().UnixMilli()
 	h.last = next
 	for ch := range h.subs {
 		// Keep only the newest state if a listener is slow.
