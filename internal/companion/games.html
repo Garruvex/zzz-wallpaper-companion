@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Games · ZZZ Companion</title>
+<style>
+:root{color-scheme:dark;font:16px Segoe UI,sans-serif;background:#111315;color:#f3f4f4;--accent:#f3c942;--line:#34383a;--muted:#aeb5b8}
+body{margin:0}.bar{height:5px;background:var(--accent)}main{max-width:760px;margin:auto;padding:32px 22px}
+a{color:var(--accent)}h1{margin:8px 0}p{color:var(--muted);line-height:1.5}
+button,.button{font:inherit;padding:8px 14px;border:1px solid #4a5053;border-radius:4px;background:#1c2022;color:#fff;cursor:pointer;white-space:nowrap}
+button:disabled{opacity:.5;cursor:default}button.primary{background:var(--accent);border-color:var(--accent);color:#171717;font-weight:700}
+button.danger{border-color:#7a3b3b;color:#ffb4b4}
+#drop{display:grid;place-items:center;gap:8px;padding:28px;border:2px dashed #4a5053;border-radius:8px;text-align:center;color:var(--muted);margin:22px 0}
+#drop.over{border-color:var(--accent);color:#fff;background:#1a1d10}
+#drop input{display:none}
+#status{min-height:24px;color:var(--accent)}
+.game{border-top:1px solid var(--line);padding:16px 0}.game:last-child{border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.title{flex:1;min-width:180px}
+.title b{display:block;overflow-wrap:anywhere}.title small{color:var(--muted)}
+.chip{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;background:#2a2e31;color:#dfe3e4;font-size:12px;font-weight:600;letter-spacing:.04em}
+.chip.on{background:var(--accent);color:#171717}
+.saves{margin:12px 0 0;padding:14px;border-radius:6px;background:#181b1d;display:grid;gap:10px}
+.saves .line{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.saves small{color:var(--muted)}
+.empty{color:var(--muted);padding:18px 0}
+</style></head><body><div class="bar"></div><main>
+<a href="/settings">← Companion settings</a>
+<h1>Games</h1>
+<p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
+<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear</span></label>
+<p id="status" role="status">Loading games…</p>
+<div id="games"></div>
+<input id="importFile" type="file" hidden>
+<script>
+const $ = id => document.getElementById(id);
+const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR' };
+let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
+
+const api = async (path, options = {}) => {
+  const response = await fetch(path, options);
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) throw new Error(data.error || response.statusText);
+  return data;
+};
+const when = iso => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const size = bytes => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`;
+const say = text => { $('status').textContent = text; };
+const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
+const button = (label, action, className = '') => el('button', { type: 'button', className, textContent: label, disabled: busy, onclick: action });
+
+async function run(message, task) {
+  if (busy) return;
+  busy = true; render();
+  try { const result = await task(); say(typeof result === 'string' && result ? result : message); } catch (error) { say(error.message); }
+  finally { busy = false; await refresh(); }
+}
+
+async function refresh() {
+  try {
+    [{ carts }, current] = await Promise.all([api('/api/v1/carts'), api('/api/v1/games/current')]);
+    await Promise.all([...open].map(async id => { details[id] = await api(`/api/v1/carts/${encodeURIComponent(id)}/details`).catch(() => null); }));
+    if ($('status').textContent === 'Loading games…') say('');
+  } catch (error) { say('Could not reach the companion.'); }
+  render();
+}
+
+function savesPanel(cart) {
+  const info = details[cart.id];
+  if (!info) return el('div', { className: 'saves' }, 'Loading…');
+  const base = `/api/v1/carts/${encodeURIComponent(cart.id)}`;
+  const panel = el('div', { className: 'saves' });
+  const save = info.save;
+  panel.append(el('div', { className: 'line' },
+    el('span', {}, el('b', { textContent: 'Game save ' }), el('small', { textContent: save ? `${size(save.size)} · ${when(save.modified)}` : 'none yet' })),
+    el('span', { className: 'row' },
+      save ? el('a', { className: 'button', href: `${base}/save?download=1`, textContent: 'Download' }) : '',
+      button('Import…', () => importSave(cart)))));
+  panel.append(el('div', { className: 'line' },
+    el('span', {}, el('b', { textContent: 'Resume point ' }), el('small', { textContent: info.state ? `where you left off · ${when(info.state.modified)}` : 'none yet' }))));
+  for (const point of info.states) {
+    panel.append(el('div', { className: 'line' },
+      el('small', { textContent: `Earlier resume point · ${when(point.modified)}` }),
+      button('Go back to this', () => {
+        if (confirm(`Go back to the resume point from ${when(point.modified)}? The current one is kept in the game's backups folder.`))
+          run('Restored. The TV reloads the game if it is playing it.', () => api(`${base}/do/restore?state=${point.n}`, { method: 'POST' }));
+      })));
+  }
+  panel.append(el('div', { className: 'line' },
+    el('small', { textContent: 'Reset and Remove move files into a backups or .removed folder; nothing is deleted.' }),
+    el('span', { className: 'row' },
+      button('Reset progress', () => {
+        if (confirm(`Start ${cart.title} from scratch? Its save and resume points move to its backups folder.`))
+          run('Progress reset.', () => api(`${base}/do/reset`, { method: 'POST' }));
+      }, 'danger'),
+      button('Remove game', () => {
+        if (confirm(`Remove ${cart.title} from the library? Its folder moves to roms/.removed.`))
+          run(`${cart.title} removed.`, () => api(`${base}/do/remove`, { method: 'POST' }));
+      }, 'danger'))));
+  return panel;
+}
+
+function importSave(cart) {
+  const input = $('importFile');
+  input.value = '';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file || !confirm(`Use ${file.name} as the save for ${cart.title}? The game starts from that save; the current save and resume points move to its backups folder.`)) return;
+    run('Save imported.', () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/import`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file }));
+  };
+  input.click();
+}
+
+function render() {
+  const list = $('games');
+  list.replaceChildren();
+  if (!carts.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Drop a game file above.' })); return; }
+  for (const cart of carts) {
+    const onTV = current.id === cart.id;
+    const shown = open.has(cart.id);
+    const row = el('div', { className: 'row' },
+      el('div', { className: 'title' },
+        el('b', { textContent: cart.title }),
+        el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
+        onTV ? el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }) : '',
+        el('small', { textContent: cart.rom })),
+      onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
+      button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }));
+    list.append(el('div', { className: 'game' }, row, shown ? savesPanel(cart) : ''));
+  }
+}
+
+const select = id => api('/api/v1/games/current', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(() => '');
+
+async function upload(files) {
+  for (const file of files) {
+    await run(`Added ${file.name}.`, async () => {
+      say(`Adding ${file.name}…`);
+      const result = await api(`/api/v1/carts?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file });
+      return result.existing ? `${file.name} is already in the library as ${result.cart.title}; its saves are kept.` : `Added ${result.cart.title}.`;
+    });
+  }
+}
+$('file').addEventListener('change', () => upload([...$('file').files]));
+const drop = $('drop');
+for (const type of ['dragenter', 'dragover']) drop.addEventListener(type, event => { event.preventDefault(); drop.classList.add('over'); });
+for (const type of ['dragleave', 'drop']) drop.addEventListener(type, () => drop.classList.remove('over'));
+drop.addEventListener('drop', event => { event.preventDefault(); upload([...event.dataTransfer.files]); });
+refresh();
+setInterval(() => { if (!busy && !document.hidden) refresh(); }, 4000);
+</script>
+</main></body></html>

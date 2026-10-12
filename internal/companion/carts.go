@@ -56,6 +56,8 @@ type cart struct {
 	ROM    string `json:"rom"`
 	Color  string `json:"color,omitempty"`
 	Label  bool   `json:"label"`
+	Rev    uint64 `json:"rev"`            // changes when the saves are reset or replaced
+	SHA1   string `json:"sha1,omitempty"` // the ROM's hash, once known
 	dir    string
 	save   string
 }
@@ -97,13 +99,20 @@ func readCart(root, id string) (cart, bool) {
 		return cart{}, false
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, "cart.json")); err == nil {
-		var meta struct{ Title, Color string }
+		var meta struct {
+			Title, Color, SHA1 string
+			Rev                uint64
+		}
 		if json.Unmarshal(data, &meta) == nil {
 			if t := strings.TrimSpace(meta.Title); t != "" {
 				c.Title = t
 			}
 			if len(meta.Color) == 7 && meta.Color[0] == '#' {
 				c.Color = meta.Color
+			}
+			c.Rev = meta.Rev
+			if len(meta.SHA1) == 40 {
+				c.SHA1 = meta.SHA1
 			}
 		}
 	}
@@ -201,7 +210,7 @@ func (s *APIServer) cartFile(r *http.Request) (c cart, path, kind string, ok boo
 }
 
 func (s *APIServer) getCartFile(w http.ResponseWriter, r *http.Request) {
-	_, path, kind, ok := s.cartFile(r)
+	c, path, kind, ok := s.cartFile(r)
 	if !ok {
 		writeError(w, http.StatusNotFound, "no such cartridge or file")
 		return
@@ -221,14 +230,21 @@ func (s *APIServer) getCartFile(w http.ResponseWriter, r *http.Request) {
 	if kind == "label" {
 		contentType = "image/png"
 	}
+	if r.URL.Query().Get("download") == "1" {
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", c.Title+filepath.Ext(path)))
+	}
 	w.Header().Set("Content-Type", contentType)
 	http.ServeContent(w, r, "", info.ModTime(), file)
 }
 
 func (s *APIServer) putCartFile(w http.ResponseWriter, r *http.Request) {
-	_, path, kind, ok := s.cartFile(r)
+	c, path, kind, ok := s.cartFile(r)
 	if !ok || (kind != "save" && kind != "state") {
 		writeError(w, http.StatusNotFound, "only save and state can be written")
+		return
+	}
+	if err := checkRevision(r, c); err != nil {
+		writeError(w, http.StatusConflict, err.Error())
 		return
 	}
 	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCartFileBytes))

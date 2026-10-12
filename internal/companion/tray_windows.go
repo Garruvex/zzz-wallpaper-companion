@@ -5,6 +5,7 @@ package companion
 import (
 	"context"
 	_ "embed"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,6 +52,7 @@ const (
 	cmdAutoUpdate  = 1006
 	cmdAppUpdate   = 1007
 	cmdROMs        = 1008
+	cmdGames       = 1009
 )
 
 type point struct{ x, y int32 }
@@ -175,6 +177,8 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 		switch uint16(wParam) {
 		case cmdSettings:
 			openURL(settingsURL(trayPort))
+		case cmdGames:
+			openURL(fmt.Sprintf("http://127.0.0.1:%d/games", trayPort))
 		case cmdROMs:
 			romDir := filepath.Join(trayDataDir, "roms")
 			_ = os.MkdirAll(romDir, 0o755)
@@ -253,6 +257,7 @@ func showTrayMenu(hwnd uintptr) {
 	appendMenuFlags(menu, cmdAutoUpdate, "Automatically download compatible updates", flags)
 	appendMenu(menu, cmdAppUpdate, "Check for companion updates")
 	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
+	appendMenu(menu, cmdGames, "Games…")
 	appendMenu(menu, cmdROMs, "Open game ROM folder")
 	appendMenu(menu, cmdLogs, "Open data folder")
 	appendMenu(menu, cmdQuit, "Quit")
