@@ -11,6 +11,8 @@ var keyBindings = map[uint32]uint{
 	0x5A: ButtonB,      // Z
 	0x41: ButtonL,      // A
 	0x53: ButtonR,      // S
+	0x43: ButtonY,      // C (SNES Y, Genesis A)
+	0x44: ButtonX,      // D (SNES X)
 	0x0D: ButtonStart,  // Enter
 	0x08: ButtonSelect, // Backspace
 }

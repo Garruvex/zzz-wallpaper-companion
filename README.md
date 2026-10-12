@@ -57,7 +57,7 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 For wallpapers that embed a game emulator. The companion reads Xbox-style (XInput) controllers and sends button states to the wallpaper at `GET /api/v1/input` (server-sent events). It only polls while a wallpaper is listening.
 
-**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal. `capture` decides when that is:
+**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), C (Y), D (X), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal. `capture` decides when that is:
 
 - `desktop` (default): while the desktop has focus. Click the wallpaper to play; switching to any window pauses. **Pause/Break** toggles it from anywhere.
 - `key`: only after **Pause/Break** turns it on.
@@ -65,9 +65,7 @@ For wallpapers that embed a game emulator. The companion reads Xbox-style (XInpu
 
 Keys are read with a Windows low-level keyboard hook, which exists only while play mode is on and is removed when the wallpaper stops listening. Each state includes `captured` and a timestamp (`at`) so the wallpaper can show its state and input lag.
 
-**ROM files:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). `GET /api/v1/roms` lists the `.gba`, `.gbc` and `.gb` files in it and `GET /api/v1/roms/<name>` sends one to the wallpaper. Nothing outside that folder and no other file type is ever served.
-
-**Game saves:** `GET`/`POST /api/v1/roms/<name>/save` and `/state` read and write `Game.sav` (the game's own save; the previous one is kept as `Game.sav.bak`) and `Game.state` (resume snapshot) next to the ROM. Only ROMs in the ROM folder can have saves.
+**Game cartridges:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). Each game is a folder there holding `game.<ext>` (`.gba`, `.gbc`, `.gb`, `.nes`, `.sfc`, `.smc`, `.md`, `.gen`, `.smd`, `.sms`, `.gg`), its save (`save.sav`, or `save.srm` for SNES and Sega, previous copy kept as `.bak`), `state.state` (older copies `state-1` to `state-3`, at least 10 minutes apart), and optionally `label.png` and `cart.json` (`{"title", "color"}`). Game files dropped loose into the folder are moved into a cartridge folder of their own, with any `Game.sav`/`Game.state` from earlier versions. `GET /api/v1/carts` lists cartridges; `GET /api/v1/carts/<id>/rom|save|state|label` reads a file and `POST .../save|state` writes one. Nothing outside the cartridge folders can be read or written.
 
 ## Troubleshooting
 

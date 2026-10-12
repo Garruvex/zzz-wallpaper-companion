@@ -32,6 +32,8 @@ const (
 	xRB        = 0x0200
 	xA         = 0x1000
 	xB         = 0x2000
+	xX         = 0x4000
+	xY         = 0x8000
 	stickDead  = 16000
 	maxPads    = 4
 	// Asking XInput about an empty slot is slow, so empty slots are checked
@@ -113,8 +115,8 @@ func (s *winSource) DesktopFocused() bool {
 
 func (s *winSource) Keyboard() Keyboard { return theHook }
 
-// padMask maps an Xbox pad to the GBA layout: the east button is GBA A and the
-// south button is GBA B, as on Nintendo hardware.
+// padMask maps an Xbox pad to the Nintendo layout by position: east is A,
+// south is B, west is Y and north is X.
 func padMask(p xinputGamepad) uint32 {
 	var m uint32
 	set := func(cond bool, bit uint) {
@@ -129,6 +131,8 @@ func padMask(p xinputGamepad) uint32 {
 	set(b&xDpadRight != 0 || p.thumbLX > stickDead, ButtonRight)
 	set(b&xB != 0, ButtonA)
 	set(b&xA != 0, ButtonB)
+	set(b&xX != 0, ButtonY)
+	set(b&xY != 0, ButtonX)
 	set(b&xLB != 0 || p.leftTrigger > 128, ButtonL)
 	set(b&xRB != 0 || p.rightTrigger > 128, ButtonR)
 	set(b&xStart != 0, ButtonStart)

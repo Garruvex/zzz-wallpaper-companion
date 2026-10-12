@@ -11,6 +11,7 @@ import (
 // wallpaper can pass them straight through.
 const (
 	ButtonB      = 0
+	ButtonY      = 1
 	ButtonSelect = 2
 	ButtonStart  = 3
 	ButtonUp     = 4
@@ -18,6 +19,7 @@ const (
 	ButtonLeft   = 6
 	ButtonRight  = 7
 	ButtonA      = 8
+	ButtonX      = 9
 	ButtonL      = 10
 	ButtonR      = 11
 )

@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -53,35 +50,6 @@ func TestPlayModeRejectsBadBody(t *testing.T) {
 		server.http.Handler.ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusBadRequest {
 			t.Fatalf("%s: status %d", body, recorder.Code)
-		}
-	}
-}
-
-func TestROMFolderListsAndServesOnlyROMs(t *testing.T) {
-	server := testServer(t)
-	dir := server.ensureROMDir()
-	if err := os.WriteFile(filepath.Join(dir, "Test Game.gba"), []byte("ROMDATA"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("secret"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	get := func(target string) *httptest.ResponseRecorder {
-		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+target, nil)
-		request.RemoteAddr = "127.0.0.1:1234"
-		recorder := httptest.NewRecorder()
-		server.http.Handler.ServeHTTP(recorder, request)
-		return recorder
-	}
-	if r := get("/api/v1/roms"); r.Code != http.StatusOK || !strings.Contains(r.Body.String(), "Test Game.gba") || strings.Contains(r.Body.String(), "notes") {
-		t.Fatalf("list: %d %q", r.Code, r.Body.String())
-	}
-	if r := get("/api/v1/roms/" + url.PathEscape("Test Game.gba")); r.Code != http.StatusOK || r.Body.String() != "ROMDATA" {
-		t.Fatalf("rom: %d %q", r.Code, r.Body.String())
-	}
-	for _, bad := range []string{"notes.txt", "missing.gba", "..%2Fx.gba", "%2Fetc%2Fpasswd.gba"} {
-		if r := get("/api/v1/roms/" + bad); r.Code == http.StatusOK {
-			t.Fatalf("served %q", bad)
 		}
 	}
 }
