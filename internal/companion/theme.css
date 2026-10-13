@@ -37,3 +37,9 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .zzz-pill.is-reset .zzz-pill-disc{background:#ff7a00}
 .has-settings-dock{padding-bottom:180px}.settings-dock{position:fixed;inset:auto 0 0;z-index:100;background:#080808;border-top:2px solid #242424;padding:14px 4vw 10px;box-shadow:0 -10px 24px #0005}.settings-dock .settings-actions{--zzz-u:clamp(.48px,calc((100vw - 72px)/600),1px);flex-wrap:nowrap;padding:8px 0 10px;gap:32px}.settings-dock #status,.settings-dock .status{display:block;text-align:right;margin:0;min-height:20px;font-size:13px}.settings-dock .shell-footer{padding:4px 0 0;font-size:10px}.settings-dock .zzz-pill{flex-shrink:0}
 @media(max-width:720px){.has-settings-dock{padding-bottom:145px}.settings-dock{padding:10px 18px 8px}.settings-dock .settings-actions{gap:20px;padding:8px 0}.settings-dock #status,.settings-dock .status{font-size:12px}.settings-dock .shell-footer{font-size:9px}}
+
+/* Active game and category share the dropdown's complete selection ring. */
+.game.is-playing .game-row{animation:select-beat 2.4s ease-in-out infinite;box-shadow:none}
+.shell-nav a[aria-current=page]{animation:select-beat 2.4s ease-in-out infinite,selection-breathe 2.4s ease-in-out infinite;color:#050505}
+@media(prefers-reduced-motion:reduce){.game.is-playing .game-row,.shell-nav a[aria-current=page]{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}.shell-nav a[aria-current=page]{background:var(--select-yellow)}}
+.nav-items{padding:12px;margin:-12px;gap:12px}
