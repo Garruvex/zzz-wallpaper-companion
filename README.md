@@ -53,6 +53,22 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 | yt-dlp channel | `nightly` | `nightly` (recommended) or `stable` |
 | Launch on Windows startup | Off | Starts quietly in the notification area after sign-in |
 
+## Game controller and play mode (optional)
+
+For wallpapers that embed a game emulator. The companion reads Xbox-style (XInput) controllers and sends button states to the wallpaper at `GET /api/v1/input` (server-sent events). It only polls while a wallpaper is listening.
+
+**Play mode** (`POST /api/v1/input/play-mode`, `{"enabled": true, "capture": "desktop"}`) is turned on by the wallpaper while its game channel is open. While the game has the input ("captured"), the controller and these keys go to the game only: arrow keys, X (A), Z (B), C (Y), D (X), A (L), S (R), Enter (Start), Backspace (Select). Other apps don't receive those keys; every other key works as normal, and a game key pressed together with Ctrl, Alt, Shift or the Windows key is never taken (so Win+arrows, Ctrl+C, Alt+Enter keep working). `capture` decides when that is:
+
+- `desktop` (default): while the desktop has focus. Click the wallpaper to play; switching to any window pauses. **Pause/Break** toggles it from anywhere.
+- `key`: only after **Pause/Break** turns it on.
+- `always`: whenever play mode is on.
+
+Keys are read with a Windows low-level keyboard hook, which exists only while play mode is on and is removed when the wallpaper stops listening. Each state includes `captured` and a timestamp (`at`) so the wallpaper can show its state and input lag.
+
+**Games page:** tray menu › **Games…** (or `http://127.0.0.1:<port>/games`). Drop game files onto it to add them; a file that is the same game as one already there (same SHA-1) reuses that game and its saves. **Play on TV** tells the wallpaper which game to put in its deck (`GET`/`POST /api/v1/games/current`). Per game you can download or import the save, go back to one of the last three resume points, reset progress, or remove the game. Nothing is deleted: replaced files move to the game's `backups` folder and removed games to `roms/.removed`. "On shelf" decides which games get one of the wallpaper's 14 shelf tapes (`shelf` in `cart.json`; games you never asked about fill free tapes in title order, and the list reports the outcome as `onShelf`). A reset or import raises the game's revision (`rev` in `cart.json`); saves the wallpaper sends with an older `X-Cart-Rev` are refused, so a game still running can't write its old progress back.
+
+**Game cartridges:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). Each game is a folder there holding `game.<ext>` (`.gba`, `.gbc`, `.gb`, `.nes`, `.sfc`, `.smc`, `.md`, `.gen`, `.smd`, `.sms`, `.gg`), its save (`save.sav`, or `save.srm` for SNES and Sega, previous copy kept as `.bak`), `state.state` (older copies `state-1` to `state-3`, at least 10 minutes apart), and optionally `label.png` and `cart.json` (`{"title", "color"}`). Game files dropped loose into the folder are moved into a cartridge folder of their own, with any `Game.sav`/`Game.state` from earlier versions. `GET /api/v1/carts` lists cartridges; `GET /api/v1/carts/<id>/rom|save|state|label` reads a file and `POST .../save|state` writes one. Nothing outside the cartridge folders can be read or written.
+
 ## Troubleshooting
 
 **Wallpaper says "Start the optional localhost companion"**

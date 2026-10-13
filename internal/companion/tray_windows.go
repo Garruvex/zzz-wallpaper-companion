@@ -5,7 +5,11 @@ package companion
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 	"unsafe"
@@ -15,6 +19,7 @@ import (
 var trayIconICO []byte
 
 const (
+	wmNull          = 0x0000
 	wmDestroy       = 0x0002
 	wmCommand       = 0x0111
 	wmApp           = 0x8000
@@ -48,6 +53,8 @@ const (
 	cmdStartup     = 1005
 	cmdAutoUpdate  = 1006
 	cmdAppUpdate   = 1007
+	cmdROMs        = 1008
+	cmdGames       = 1009
 )
 
 type point struct{ x, y int32 }
@@ -97,11 +104,17 @@ var (
 	trayUpdater           *UpdateManager
 	trayConfig            *ConfigStore
 	trayQuit              func()
+	trayIcon              notifyIconData
+	taskbarCreated        uint32 // broadcast when Explorer restarts and drops every tray icon
 )
 
 func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *UpdateManager, quit func(), settingsPort int, connectionWarning string) error {
 	trayPort, trayDataDir, trayResolver, trayUpdater, trayConfig, trayQuit = settingsPort, dataDir, resolver, updater, config, quit
 	trayConnectionWarning = connectionWarning
+	// A window only receives messages on the thread that created it. Without
+	// this the Go scheduler can move the loop to another thread, and the tray
+	// icon then silently stops answering clicks.
+	runtime.LockOSThread()
 	instance, _, _ := kernel32.NewProc("GetModuleHandleW").Call(0)
 	className, _ := syscall.UTF16PtrFromString("ZZZWallpaperCompanionTray")
 	wndProc := syscall.NewCallback(windowProc)
@@ -114,6 +127,8 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 	if hwnd == 0 {
 		return createErr
 	}
+	registered, _, _ := user32.NewProc("RegisterWindowMessageW").Call(uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("TaskbarCreated"))))
+	taskbarCreated = uint32(registered)
 	icon := loadTrayIcon(instance)
 	data := notifyIconData{size: uint32(unsafe.Sizeof(notifyIconData{})), hwnd: hwnd, id: 1, flags: nifMessage | nifIcon | nifTip, callbackMessage: wmTray, icon: icon}
 	copy(data.tip[:], syscall.StringToUTF16("ZZZ Wallpaper Companion"))
@@ -121,6 +136,7 @@ func runTray(config *ConfigStore, dataDir string, resolver *Resolver, updater *U
 	if ok == 0 {
 		return addErr
 	}
+	trayIcon = data
 	go showStartupNotification(hwnd, connectionWarning)
 	defer shell32.NewProc("Shell_NotifyIconW").Call(nimDelete, uintptr(unsafe.Pointer(&data)))
 	var message msg
@@ -159,6 +175,11 @@ func showStartupNotification(hwnd uintptr, connectionWarning string) {
 }
 
 func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
+	if taskbarCreated != 0 && message == taskbarCreated {
+		// Explorer restarted (or the taskbar was rebuilt): put the icon back.
+		shell32.NewProc("Shell_NotifyIconW").Call(nimAdd, uintptr(unsafe.Pointer(&trayIcon)))
+		return 0
+	}
 	switch message {
 	case wmTray:
 		if lParam == wmRButtonUp {
@@ -172,6 +193,12 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 		switch uint16(wParam) {
 		case cmdSettings:
 			openURL(settingsURL(trayPort))
+		case cmdGames:
+			openURL(fmt.Sprintf("http://127.0.0.1:%d/games", trayPort))
+		case cmdROMs:
+			romDir := filepath.Join(trayDataDir, "roms")
+			_ = os.MkdirAll(romDir, 0o755)
+			_ = exec.Command("explorer.exe", romDir).Start()
 		case cmdLogs:
 			_ = exec.Command("explorer.exe", trayDataDir).Start()
 		case cmdUpdate:
@@ -246,12 +273,17 @@ func showTrayMenu(hwnd uintptr) {
 	appendMenuFlags(menu, cmdAutoUpdate, "Automatically download compatible updates", flags)
 	appendMenu(menu, cmdAppUpdate, "Check for companion updates")
 	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
+	appendMenu(menu, cmdGames, "Games…")
+	appendMenu(menu, cmdROMs, "Open game ROM folder")
 	appendMenu(menu, cmdLogs, "Open data folder")
 	appendMenu(menu, cmdQuit, "Quit")
 	var cursor point
 	user32.NewProc("GetCursorPos").Call(uintptr(unsafe.Pointer(&cursor)))
 	user32.NewProc("SetForegroundWindow").Call(hwnd)
 	user32.NewProc("TrackPopupMenu").Call(menu, tpmRightButton, uintptr(cursor.x), uintptr(cursor.y), 0, hwnd, 0)
+	// Documented requirement for tray menus: without this, the menu can fail
+	// to close properly and the next right-click does nothing.
+	user32.NewProc("PostMessageW").Call(hwnd, wmNull, 0, 0)
 }
 
 func appendMenu(menu uintptr, id uint16, label string) {
