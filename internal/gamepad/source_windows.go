@@ -50,6 +50,7 @@ var (
 	procUnhookWindowsHookEx = user32.NewProc("UnhookWindowsHookEx")
 	procCallNextHookEx      = user32.NewProc("CallNextHookEx")
 	procGetMessage          = user32.NewProc("GetMessageW")
+	procPeekMessage         = user32.NewProc("PeekMessageW")
 	procPostThreadMessage   = user32.NewProc("PostThreadMessageW")
 	procGetAsyncKeyState    = user32.NewProc("GetAsyncKeyState")
 	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
@@ -144,11 +145,12 @@ func padMask(p xinputGamepad) uint32 {
 // keyHook is a low-level keyboard hook. Windows allows one callback per
 // process here, so there is a single instance.
 type keyHook struct {
-	keys     keyState
-	mu       sync.Mutex
-	threadID uintptr
-	events   chan<- struct{}
-	done     chan struct{}
+	lifecycle sync.Mutex
+	keys      keyState
+	mu        sync.Mutex
+	threadID  uintptr
+	events    chan<- struct{}
+	done      chan struct{}
 }
 
 const (
@@ -166,7 +168,6 @@ type kbdllHookStruct struct {
 
 var (
 	theHook     = &keyHook{}
-	hookHandle  uintptr
 	hookProcPtr = syscall.NewCallback(hookProc)
 )
 
@@ -195,7 +196,7 @@ func hookProc(code int, wParam uintptr, lParam uintptr) uintptr {
 			}
 		}
 	}
-	result, _, _ := procCallNextHookEx.Call(hookHandle, uintptr(code), wParam, lParam)
+	result, _, _ := procCallNextHookEx.Call(0, uintptr(code), wParam, lParam)
 	return result
 }
 
@@ -215,6 +216,8 @@ func (k *keyHook) signal() {
 // Start installs the hook on its own thread, which must pump messages for
 // Windows to call it.
 func (k *keyHook) Start(events chan<- struct{}) {
+	k.lifecycle.Lock()
+	defer k.lifecycle.Unlock()
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	if k.done != nil {
@@ -228,13 +231,16 @@ func (k *keyHook) Start(events chan<- struct{}) {
 		defer runtime.UnlockOSThread()
 		defer close(done)
 		module, _, _ := procGetModuleHandle.Call(0)
-		hookHandle, _, _ = procSetWindowsHookEx.Call(whKeyboardLL, hookProcPtr, module, 0)
+		var msg [48]byte
+		// Create the queue before publishing the thread ID: Stop can post
+		// WM_QUIT immediately after Start returns.
+		procPeekMessage.Call(uintptr(unsafe.Pointer(&msg[0])), 0, 0, 0, 0)
+		hookHandle, _, _ := procSetWindowsHookEx.Call(whKeyboardLL, hookProcPtr, module, 0)
 		thread, _, _ := procGetCurrentThreadID.Call()
 		ready <- thread
 		if hookHandle == 0 {
 			return
 		}
-		var msg [48]byte
 		for {
 			result, _, _ := procGetMessage.Call(uintptr(unsafe.Pointer(&msg[0])), 0, 0, 0)
 			if result == 0 || int32(result) == -1 {
@@ -242,12 +248,13 @@ func (k *keyHook) Start(events chan<- struct{}) {
 			}
 		}
 		procUnhookWindowsHookEx.Call(hookHandle)
-		hookHandle = 0
 	}(k.done)
 	k.threadID = <-ready
 }
 
 func (k *keyHook) Stop() {
+	k.lifecycle.Lock()
+	defer k.lifecycle.Unlock()
 	k.mu.Lock()
 	done, thread := k.done, k.threadID
 	k.done, k.events = nil, nil
@@ -258,6 +265,8 @@ func (k *keyHook) Stop() {
 	k.keys.setGrab(false)
 	procPostThreadMessage.Call(thread, wmQuit, 0, 0)
 	<-done
+	k.keys.pause.Store(false)
+	k.keys.presses.Store(0)
 }
 
 func (k *keyHook) SetGrab(on bool)   { k.keys.setGrab(on) }

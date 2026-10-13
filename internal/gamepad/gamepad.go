@@ -96,6 +96,7 @@ type Hub struct {
 	focusKnown bool
 	last       Snapshot
 	stop       chan struct{}
+	done       chan struct{}
 	wake       chan struct{}
 }
 
@@ -110,8 +111,16 @@ func (h *Hub) Subscribe() (updates <-chan Snapshot, cancel func()) {
 	h.mu.Lock()
 	h.subs[ch] = struct{}{}
 	if len(h.subs) == 1 {
+		previous := h.done
 		h.stop = make(chan struct{})
-		go h.run(h.stop)
+		h.done = make(chan struct{})
+		go func(stop, done, previous chan struct{}) {
+			defer close(done)
+			if previous != nil {
+				<-previous
+			}
+			h.run(stop)
+		}(h.stop, h.done, previous)
 	}
 	ch <- h.last
 	h.mu.Unlock()

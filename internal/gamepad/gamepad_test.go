@@ -240,3 +240,52 @@ func TestShortcutsWithModifiersAlwaysPassThrough(t *testing.T) {
 		t.Fatal("Win+Pause must pass through")
 	}
 }
+
+// A reconnect must not install a replacement hook before the old pump has
+// finished removing its hook.
+type slowStopKeyboard struct {
+	fakeKeyboard
+	stopping chan struct{}
+	release  chan struct{}
+	starts   chan struct{}
+}
+
+func (k *slowStopKeyboard) Start(events chan<- struct{}) {
+	k.fakeKeyboard.Start(events)
+	k.starts <- struct{}{}
+}
+func (k *slowStopKeyboard) Stop() { close(k.stopping); <-k.release; k.fakeKeyboard.Stop() }
+
+type reconnectSource struct{ kb *slowStopKeyboard }
+
+func (s *reconnectSource) Controller() (uint32, bool) { return 0, false }
+func (s *reconnectSource) DesktopFocused() bool       { return true }
+func (s *reconnectSource) Keyboard() Keyboard         { return s.kb }
+func TestReconnectWaitsForOldKeyboardShutdown(t *testing.T) {
+	kb := &slowStopKeyboard{stopping: make(chan struct{}), release: make(chan struct{}), starts: make(chan struct{}, 2)}
+	hub := NewHub(&reconnectSource{kb: kb})
+	_, cancel := hub.Subscribe()
+	hub.SetPlayMode(true, CaptureDesktop)
+	select {
+	case <-kb.starts:
+	case <-time.After(time.Second):
+		t.Fatal("first hook did not start")
+	}
+	cancel()
+	select {
+	case <-kb.stopping:
+	case <-time.After(time.Second):
+		t.Fatal("first hook did not stop")
+	}
+	_, cancelNext := hub.Subscribe()
+	hub.SetPlayMode(true, CaptureDesktop)
+	select {
+	case <-kb.starts:
+		t.Fatal("replacement started before shutdown finished")
+	case <-time.After(30 * time.Millisecond):
+	}
+	// No second hook is needed for this assertion; disable before releasing.
+	hub.SetPlayMode(false, CaptureDesktop)
+	close(kb.release)
+	cancelNext()
+}
