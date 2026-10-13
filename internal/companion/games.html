@@ -29,7 +29,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear</span></label>
 <p id="shelfNote"></p>
 <p id="status" role="status">Loading games…</p>
-<div id="games"></div>
+<div class="library-columns" aria-hidden="true"><span>Game</span><span>Playback</span><span>Shelf</span><span>Saves</span><span>Library</span></div><div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
 <script>
 const $ = id => document.getElementById(id);
@@ -115,7 +115,7 @@ function render() {
   for (const cart of carts) {
     const onTV = current.id === cart.id;
     const shown = open.has(cart.id);
-    const row = el('div', { className: 'row' },
+    const row = el('div', { className: 'game-row' },
       el('div', { className: 'title' },
         el('b', { textContent: cart.title }),
         el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
@@ -129,7 +129,9 @@ function render() {
         if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
           run(`${cart.title} removed.`, () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/remove`, { method: 'POST' }));
       }, 'danger'));
-    list.append(el('div', { className: 'game' }, row, shown ? savesPanel(cart) : ''));
+        for (const action of [...row.children].slice(1)) { const cell=el('div',{className:'game-cell'});action.replaceWith(cell);cell.append(action); }
+    row.querySelector('.title').title=cart.rom;
+    list.append(el('div', { className: `game${onTV ? ' is-playing' : ''}` }, row, shown ? savesPanel(cart) : ''));
   }
 }
 
@@ -150,6 +152,6 @@ for (const type of ['dragenter', 'dragover']) drop.addEventListener(type, event 
 for (const type of ['dragleave', 'drop']) drop.addEventListener(type, () => drop.classList.remove('over'));
 drop.addEventListener('drop', event => { event.preventDefault(); upload([...event.dataTransfer.files]); });
 refresh();
-setInterval(() => { if (!busy && !document.hidden) refresh(); }, 4000);
+setInterval(() => { if (!busy && !document.hidden && !games.contains(document.activeElement)) refresh(); }, 4000);
 </script>
 </main></body></html>
