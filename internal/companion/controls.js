@@ -29,11 +29,11 @@
       popup.children[active]?.scrollIntoView({block:'nearest'});
     };
     const place=()=>{
-      const rect=trigger.getBoundingClientRect(); const available=Math.max(100,Math.max(rect.top,innerHeight-rect.bottom)-20);
+      const rect=trigger.getBoundingClientRect(); const bottom=document.querySelector('.settings-dock')?.getBoundingClientRect().top || innerHeight; const available=Math.max(100,Math.max(rect.top,bottom-rect.bottom)-20);
       popup.style.width=`${rect.width}px`;popup.style.maxHeight=`${Math.min(340,available)}px`;
       popup.style.left=`${Math.max(8,Math.min(rect.left,innerWidth-rect.width-8))}px`;
       const height=popup.offsetHeight;
-      popup.style.top=`${rect.bottom+height+10<=innerHeight?rect.bottom+8:Math.max(8,rect.top-height-8)}px`;
+      popup.style.top=`${rect.bottom+height+10<=bottom?rect.bottom+8:Math.max(8,rect.top-height-8)}px`;
     };
     const close=(focus=false)=>{popup.hidden=true;wrapper.classList.remove('is-open');trigger.setAttribute('aria-expanded','false');trigger.removeAttribute('aria-activedescendant');if(opened===control)opened=null;if(focus)trigger.focus();};
     const choose=index=>{
@@ -78,16 +78,17 @@
   addEventListener('resize',()=>opened?.close());addEventListener('scroll',event=>{if(opened&&event.target!==opened.popup)opened.close();},true);
 
   // Reuse the approved wallpaper pill component, including its cap geometry.
-  const icons={save:'<svg viewBox="0 0 22 20" aria-hidden="true"><path d="M2.5 10.5L8.5 16.5L22.15 0.35" stroke="#000" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',reset:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 3.5L16.5 16.5M16.5 3.5L3.5 16.5" stroke="#000" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg>'};
+  const icons={save:'<svg viewBox="0 0 22 20" aria-hidden="true"><path d="M2.5 10.5L8.5 16.5L22.15 0.35" stroke="#000" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',reset:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9a7 7 0 1 1 1 7M4 3v6h6" stroke="#000" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg>'};
   function pill(label,kind,action){
-    const node=document.createElement('div');node.className=`zzz-pill ${kind==='save'?'is-confirm':'is-cancel'}`;node.setAttribute('role','button');node.tabIndex=0;
+    const node=document.createElement('div');node.className=`zzz-pill ${kind==='save'?'is-confirm':'is-reset'}`;node.setAttribute('role','button');node.tabIndex=0;
     node.innerHTML=`<span class="zzz-pill-cap"><span class="zzz-pill-disc">${icons[kind]}</span></span><span class="zzz-pill-label"></span>`;
     node.querySelector('.zzz-pill-label').textContent=label;
     const invoke=()=>{if(node.getAttribute('aria-disabled')!=='true')action();};node.addEventListener('click',invoke);node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();invoke();}});return node;
   }
   for(const form of document.querySelectorAll('#settings,#form,#dateForm')){
     const native=form.querySelector('button[type=submit],button:not([type])');if(!native)continue;
-    const actions=document.createElement('div');actions.className='settings-actions';form.append(actions);
+    const dock=document.createElement('footer');dock.className='settings-dock';dock.setAttribute('aria-label','Settings actions');
+    const actions=document.createElement('div');actions.className='settings-actions';dock.append(actions);document.body.append(dock);document.body.classList.add('has-settings-dock');
     const status=document.getElementById('status');
     const save=pill('Save','save',()=>form.requestSubmit(native));native.hidden=true;actions.append(save);
     const disabled=()=>save.setAttribute('aria-disabled',String(native.disabled));new MutationObserver(disabled).observe(native,{attributes:true,attributeFilter:['disabled']});disabled();
@@ -100,6 +101,7 @@
       });actions.prepend(reset);
       const busy=()=>reset.setAttribute('aria-disabled',String(native.disabled));new MutationObserver(busy).observe(native,{attributes:true,attributeFilter:['disabled']});busy();
     }
-    if(status)actions.after(status);
+    if(status){status.setAttribute('role','status');dock.prepend(status);}
+    const version=document.querySelector('.shell-footer');if(version)dock.append(version);
   }
 })();
