@@ -40,6 +40,6 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 
 /* Active game and category share the dropdown's complete selection ring. */
 .game.is-playing .game-row{animation:select-beat 2.4s ease-in-out infinite;box-shadow:none}
-.shell-nav a[aria-current=page]{animation:select-beat 2.4s ease-in-out infinite,selection-breathe 2.4s ease-in-out infinite;color:#050505}
-@media(prefers-reduced-motion:reduce){.game.is-playing .game-row,.shell-nav a[aria-current=page]{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}.shell-nav a[aria-current=page]{background:var(--select-yellow)}}
+.shell-nav a[aria-current=page]{animation:selection-breathe 2.4s ease-in-out infinite;color:#050505;box-shadow:none}
+@media(prefers-reduced-motion:reduce){.game.is-playing .game-row{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}.shell-nav a[aria-current=page]{animation:none;background:var(--select-yellow);box-shadow:none}}
 .nav-items{padding:12px;margin:-12px;gap:12px}
