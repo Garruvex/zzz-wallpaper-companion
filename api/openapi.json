@@ -1,0 +1,3178 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ZZZ Wallpaper Companion API",
+    "version": "1.0.0",
+    "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current local serving origin and port"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Lyrics"
+    },
+    {
+      "name": "System"
+    },
+    {
+      "name": "Dates"
+    },
+    {
+      "name": "Holidays"
+    },
+    {
+      "name": "Maps"
+    },
+    {
+      "name": "YouTube"
+    },
+    {
+      "name": "Settings"
+    },
+    {
+      "name": "Games"
+    },
+    {
+      "name": "Input"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "health.get",
+        "tags": [
+          "Health"
+        ],
+        "summary": "health.get",
+        "description": "Dependency readiness is distinct from connectivity; ready follows FFmpeg availability. Capability flags describe implemented features.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/health.Status"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/heartbeat": {
+      "post": {
+        "operationId": "heartbeat.renew",
+        "tags": [
+          "Health"
+        ],
+        "summary": "heartbeat.renew",
+        "description": "Renews a per-session 20-second lease. keepStreamAlive=false cancels an active relay for this session only. Protocol ranges must overlap 2–2; no wire protocol increment.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/heartbeat.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Incompatible protocol",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/heartbeat.Incompatible"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/heartbeat.Request"
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "lease-renewal",
+          "stream-release"
+        ]
+      }
+    },
+    "/api/youtube/heartbeat": {
+      "post": {
+        "operationId": "heartbeat.renewLegacy",
+        "tags": [
+          "Health"
+        ],
+        "summary": "heartbeat.renew",
+        "description": "Renews a per-session 20-second lease. keepStreamAlive=false cancels an active relay for this session only. Protocol ranges must overlap 2–2; no wire protocol increment.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/heartbeat.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Incompatible protocol",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/heartbeat.Incompatible"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/heartbeat.Request"
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "lease-renewal",
+          "stream-release"
+        ],
+        "deprecated": true,
+        "x-alias-of": "heartbeat.renew"
+      }
+    },
+    "/api/v1/lyrics": {
+      "post": {
+        "operationId": "lyrics.lookup",
+        "tags": [
+          "Lyrics"
+        ],
+        "summary": "lyrics.lookup",
+        "description": "Looks up normalized track metadata; disk/memory cache and upstream provider access. A new uncached lookup cancels the previous service lookup. Request decoding errors are 400; invalid normalized metadata and upstream errors are 502. Cancellation can end without a JSON body.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/lyrics.Response"
+                },
+                "example": {
+                  "status": "ready",
+                  "trackKey": "track",
+                  "source": "test",
+                  "synced": true,
+                  "lines": [
+                    {
+                      "timeMs": 1000,
+                      "text": "line"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/lyrics.Request"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 16384,
+        "x-client-timeout-ms": 15000,
+        "x-side-effects": [
+          "lyrics-cache",
+          "previous-lookup-cancellation"
+        ]
+      }
+    },
+    "/api/v1/system-stats": {
+      "get": {
+        "operationId": "system.stats",
+        "tags": [
+          "System"
+        ],
+        "summary": "system.stats",
+        "description": "Latest sample collected once per second. GPU is omitted when unavailable. Percentage usage and byte counters.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/system.Snapshot"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-client-timeout-ms": 3000
+      }
+    },
+    "/api/v1/dates": {
+      "get": {
+        "operationId": "dates.list",
+        "tags": [
+          "Dates"
+        ],
+        "summary": "dates.list",
+        "description": "Read saved dates. A corrupt file is preserved and returns 500.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dates.Document"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "x-client-timeout-ms": 4000
+      },
+      "post": {
+        "operationId": "dates.save",
+        "tags": [
+          "Dates"
+        ],
+        "summary": "dates.save",
+        "description": "Replace the complete document with optimistic revision checking. Success increments revision. Rejects trailing JSON. Never automatically retry writes.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dates.Document"
+                },
+                "example": {
+                  "version": 1,
+                  "revision": 1,
+                  "events": [
+                    {
+                      "id": "a",
+                      "name": "Alex",
+                      "date": "2000-02-29",
+                      "kind": "birthday",
+                      "yearly": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or lease conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dates.Document"
+              },
+              "example": {
+                "version": 1,
+                "revision": 0,
+                "events": [
+                  {
+                    "id": "a",
+                    "name": "Alex",
+                    "date": "2000-02-29",
+                    "kind": "birthday",
+                    "yearly": true
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 262144,
+        "x-side-effects": [
+          "dates-persistence"
+        ]
+      }
+    },
+    "/api/v1/holiday-settings": {
+      "get": {
+        "operationId": "holidays.settings.get",
+        "tags": [
+          "Holidays"
+        ],
+        "summary": "holidays.settings.get",
+        "description": "Read saved country/region; corrupt settings are preserved.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/holidays.Settings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "holidays.settings.save",
+        "tags": [
+          "Holidays"
+        ],
+        "summary": "holidays.settings.save",
+        "description": "Replace selection after country validation; preserve previous settings on persistence failure. Reject trailing JSON; do not retry automatically.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/holidays.Settings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/holidays.Settings"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 2048,
+        "x-side-effects": [
+          "holiday-settings-persistence",
+          "holiday-cache"
+        ]
+      }
+    },
+    "/api/v1/holiday-countries": {
+      "get": {
+        "operationId": "holidays.countries",
+        "tags": [
+          "Holidays"
+        ],
+        "summary": "holidays.countries",
+        "description": "Country discovery cached for 7 days. Failure can return 200 with error text and Taiwan/China fallback. Failed refresh attempts are throttled for 15 minutes.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/holidays.Countries"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "holiday-cache"
+        ]
+      }
+    },
+    "/api/v1/holiday-subdivisions": {
+      "get": {
+        "operationId": "holidays.subdivisions",
+        "tags": [
+          "Holidays"
+        ],
+        "summary": "holidays.subdivisions",
+        "description": "Derive regions from public holidays. TW/CN return an empty array. Upstream calls use 12-second timeouts.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/holidays.Subdivision"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2200
+            }
+          }
+        ],
+        "x-side-effects": [
+          "holiday-cache"
+        ]
+      }
+    },
+    "/api/v1/holidays": {
+      "get": {
+        "operationId": "holidays.list",
+        "tags": [
+          "Holidays"
+        ],
+        "summary": "holidays.list",
+        "description": "Uses saved selection. Cache keyed by country/year, filtered by selected region. Last-good data survives failed refreshes; 200 may contain available=false and error. Unselected country returns empty records, available=true.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/holidays.Calendar"
+                },
+                "example": {
+                  "country": "US",
+                  "subdivision": "",
+                  "year": 2026,
+                  "available": true,
+                  "stale": false,
+                  "source": "https://nagerholidays.com",
+                  "records": [
+                    {
+                      "date": "2026-01-01",
+                      "name": "New Year",
+                      "kind": "holiday",
+                      "national": true
+                    }
+                  ],
+                  "error": ""
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2200
+            }
+          }
+        ],
+        "x-client-timeout-ms": 30000,
+        "x-side-effects": [
+          "holiday-cache"
+        ]
+      }
+    },
+    "/api/v1/map-tiles/{z}/{x}/{y}": {
+      "get": {
+        "operationId": "maps.tile",
+        "tags": [
+          "Maps"
+        ],
+        "summary": "maps.tile",
+        "description": "PNG proxy for visible tiles. z 0–19; x/y less than 2^z. Four upstream slots; provider timeout 15 seconds. Persistent provider cache policy (fallback 7 days), conditional revalidation and one-hour minimum provider-block backoff. Do not load as JSON.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "disabled",
+        "responses": {
+          "200": {
+            "description": "PNG image",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, max-age derived from remaining expiry"
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 19
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "x-response-type": "binary",
+        "x-side-effects": [
+          "map-cache"
+        ]
+      }
+    },
+    "/api/youtube/resolve": {
+      "get": {
+        "operationId": "youtube.resolve",
+        "tags": [
+          "YouTube"
+        ],
+        "summary": "youtube.resolve",
+        "description": "50-second resolution context. Returns provider URLs and expiry metadata. hlsCompat=1 selects HLS compatibility mode. yt-dlp installation returns 503 with Retry-After: 15.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/youtube.Media"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{6,64}$"
+            }
+          },
+          {
+            "name": "hlsCompat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only value 1 enables compatibility mode."
+          }
+        ],
+        "x-side-effects": [
+          "resolver-cache"
+        ]
+      }
+    },
+    "/api/youtube/playlist": {
+      "get": {
+        "operationId": "youtube.playlist",
+        "tags": [
+          "YouTube"
+        ],
+        "summary": "youtube.playlist",
+        "description": "50-second context; yt-dlp failure (including unavailable install) is currently 502.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/youtube.Playlist"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{6,64}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/youtube/hls": {
+      "get": {
+        "operationId": "youtube.hls",
+        "tags": [
+          "YouTube"
+        ],
+        "summary": "youtube.hls",
+        "description": "HTTPS googlevideo.com/subdomain URLs only; no credentials or explicit port. Validates redirects. Forwards Range and upstream status, Accept-Ranges, Content-Range. Rewrites manifest URLs using configured port; manifests limited to 2 MiB, other resources copied as streams. Resolver HTTP timeout 2 minutes.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "disabled",
+        "responses": {
+          "200": {
+            "description": "Manifest or media resource; upstream Content-Type preserved for non-manifests.",
+            "content": {
+              "application/vnd.apple.mpegurl": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Upstream partial content",
+            "headers": {
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Other upstream status and body forwarded for manifests/media; media type follows upstream.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-response-type": "stream"
+      }
+    },
+    "/api/youtube/transcode": {
+      "get": {
+        "operationId": "youtube.transcode",
+        "tags": [
+          "YouTube"
+        ],
+        "summary": "youtube.transcode",
+        "description": "Live WebM relay requires an active keepStreamAlive=true heartbeat session. Lease checked each second; replacement cancels previous relay for the same session. No generic buffered request timeout or server write timeout. Media element owns consumption.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "disabled",
+        "responses": {
+          "200": {
+            "description": "Live WebM stream",
+            "headers": {
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "video/webm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or lease conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{6,64}$"
+            }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          }
+        ],
+        "x-response-type": "stream",
+        "x-side-effects": [
+          "ffmpeg-process",
+          "session-relay-replacement"
+        ]
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "settings.get",
+        "tags": [
+          "Settings"
+        ],
+        "summary": "settings.get",
+        "description": "Saved settings, including configured port. Listener moves only on restart.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.Document"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "settings.save",
+        "tags": [
+          "Settings"
+        ],
+        "summary": "settings.save",
+        "description": "Replace settings; changing startup setting modifies Windows startup registration. Port change requires restart. A config validation or persistence error currently returns 400; startup registration failure returns 500.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.Saved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/settings.Document"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 16384,
+        "x-side-effects": [
+          "settings-persistence",
+          "windows-startup-registration"
+        ]
+      }
+    },
+    "/api/v1/carts": {
+      "get": {
+        "operationId": "games.carts.list",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.list",
+        "description": "Lists cartridges and computes 14-slot shelf. Despite GET, loose ROMs and associated saves are moved into cartridge folders. Explicit explorer action required.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Carts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "rom-folder-creation",
+          "loose-rom-migration"
+        ]
+      },
+      "post": {
+        "operationId": "games.carts.add",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.add",
+        "description": "Raw supported ROM upload, 1 byte–64 MiB; query name determines extension. Deduplicates by SHA1 (200 existing, 201 new).",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Added"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New cartridge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Added"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 67108864,
+        "x-side-effects": [
+          "rom-upload",
+          "loose-rom-migration"
+        ]
+      }
+    },
+    "/api/v1/carts/{id}/{file}": {
+      "get": {
+        "operationId": "games.carts.file.get",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.file.get",
+        "description": "rom/save/state/label reads; missing file is 404. ServeContent handles Range and modification conditions; download=1 adds attachment filename. Literal details route takes precedence. Cart ID must be a nonhidden folder basename.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "disabled",
+        "responses": {
+          "200": {
+            "description": "File up to 64 MiB; label is image/png, others octet-stream.",
+            "headers": {
+              "Last-Modified": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial file",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified"
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing resource or unsupported action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Range rejected by ServeContent; text response.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rom",
+                "save",
+                "state",
+                "label"
+              ]
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Modified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-response-type": "binary"
+      },
+      "post": {
+        "operationId": "games.carts.file.save",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.file.save",
+        "description": "Only save/state writable; 1 byte–8 MiB, atomic replacement. Optional X-Cart-Rev rejects stale saves; omitted header remains compatible. Previous save .bak retained; states rotate up to three backups when at least 10 minutes old. Identical data returns 204.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "204": {
+            "description": "Saved; no response body"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing resource or unsupported action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or lease conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "save",
+                "state"
+              ]
+            }
+          },
+          {
+            "name": "X-Cart-Rev",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8388608,
+        "x-side-effects": [
+          "save-persistence",
+          "save-backups"
+        ]
+      }
+    },
+    "/api/v1/carts/{id}/details": {
+      "get": {
+        "operationId": "games.carts.details",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.details",
+        "description": "Metadata, save file details (nullable when absent) and available numbered state backups. Computes/persists ROM hash when missing.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Details"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing resource or unsupported action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-side-effects": [
+          "rom-hash-cache"
+        ]
+      }
+    },
+    "/api/v1/carts/{id}/do/{action}": {
+      "post": {
+        "operationId": "games.carts.action",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.carts.action",
+        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Revision"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Removal or shelf update succeeded"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing resource or unsupported action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision or lease conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "reset",
+                "restore",
+                "import",
+                "remove",
+                "shelf"
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "description": "Required for restore."
+          },
+          {
+            "name": "on",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "For shelf: 1=true; all other values=false."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "description": "Required only for import: raw 1 byte–8 MiB save.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "save-reset-import-restore",
+          "cartridge-removal",
+          "shelf-settings"
+        ]
+      }
+    },
+    "/api/v1/games/current": {
+      "get": {
+        "operationId": "games.selection.get",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.selection.get",
+        "description": "In-memory selection; seq resets on restart.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Selection"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "games.selection.save",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.selection.save",
+        "description": "Select existing cart or clear with empty ID; increments seq, fresh=false. May migrate loose ROMs while finding a cart.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.Selection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing resource or unsupported action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/games.SelectRequest"
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "game-selection",
+          "loose-rom-migration"
+        ]
+      }
+    },
+    "/api/v1/input": {
+      "get": {
+        "operationId": "input.stream",
+        "tags": [
+          "Input"
+        ],
+        "summary": "input.stream",
+        "description": "SSE data events containing input.Snapshot JSON; comment keep-alive every 15 seconds. Hardware polls only with subscribers. Last disconnect resets input capture. EventSource handles reconnect; do not buffer as JSON.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "disabled",
+        "responses": {
+          "200": {
+            "description": "SSE: data: {snapshot} followed by blank line; : keep-alive comments.",
+            "headers": {
+              "X-Accel-Buffering": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Local resource failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          }
+        },
+        "x-response-type": "event-stream",
+        "x-side-effects": [
+          "native-input-subscription"
+        ]
+      }
+    },
+    "/api/v1/input/play-mode": {
+      "post": {
+        "operationId": "input.playMode.save",
+        "tags": [
+          "Input"
+        ],
+        "summary": "input.playMode.save",
+        "description": "Changes native keyboard/controller capture while input subscribers exist; resets when final subscriber leaves. Capture desktop/key/always or empty (desktop default).",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "explicit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/input.Snapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/input.PlayMode"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 1024,
+        "x-side-effects": [
+          "native-input-capture"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "common.Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "health.Status": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          },
+          "protocolMin": {
+            "type": "integer"
+          },
+          "protocolMax": {
+            "type": "integer"
+          },
+          "ytDlpReady": {
+            "type": "boolean"
+          },
+          "ffmpegReady": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "ready",
+          "name",
+          "protocolVersion",
+          "version",
+          "protocolMin",
+          "protocolMax",
+          "ytDlpReady",
+          "ffmpegReady",
+          "capabilities"
+        ]
+      },
+      "heartbeat.Request": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{16,128}$"
+          },
+          "keepStreamAlive": {
+            "type": "boolean"
+          },
+          "protocolMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "protocolMax": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "wallpaperVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "protocolMin",
+          "protocolMax"
+        ],
+        "additionalProperties": false
+      },
+      "heartbeat.Response": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "compatible": {
+            "type": "boolean"
+          },
+          "leaseUntil": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix milliseconds; lease expires 20 seconds after heartbeat."
+          },
+          "streamActive": {
+            "type": "boolean"
+          },
+          "companionVersion": {
+            "type": "string"
+          },
+          "protocolMin": {
+            "type": "integer"
+          },
+          "protocolMax": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ready",
+          "compatible",
+          "leaseUntil",
+          "streamActive",
+          "companionVersion",
+          "protocolMin",
+          "protocolMax"
+        ]
+      },
+      "heartbeat.Incompatible": {
+        "type": "object",
+        "properties": {
+          "compatible": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "companionVersion": {
+            "type": "string"
+          },
+          "protocolMin": {
+            "type": "integer"
+          },
+          "protocolMax": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "compatible",
+          "error",
+          "companionVersion",
+          "protocolMin",
+          "protocolMax"
+        ]
+      },
+      "lyrics.Request": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "album": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Seconds."
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "Omitted Go fields take zero values. Invalid normalized metadata is currently reported as 502, not 400."
+      },
+      "lyrics.Line": {
+        "type": "object",
+        "properties": {
+          "timeMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timeMs",
+          "text"
+        ]
+      },
+      "lyrics.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "instrumental",
+              "not_found",
+              "error"
+            ]
+          },
+          "trackKey": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "synced": {
+            "type": "boolean"
+          },
+          "instrumental": {
+            "type": "boolean"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/lyrics.Line"
+            }
+          },
+          "plainLines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "trackKey",
+          "synced"
+        ]
+      },
+      "system.Snapshot": {
+        "type": "object",
+        "properties": {
+          "cpu": {
+            "type": "number"
+          },
+          "memory": {
+            "type": "number"
+          },
+          "memoryUsedBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "memoryTotalBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gpu": {
+            "type": "number"
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sampledAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix milliseconds."
+          }
+        },
+        "required": [
+          "cpu",
+          "memory",
+          "memoryUsedBytes",
+          "memoryTotalBytes",
+          "uptimeSeconds",
+          "sampledAt"
+        ]
+      },
+      "dates.Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique in document; maximum 100 UTF-8 bytes."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Nonblank; trimmed on save."
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Calendar date; year 1000–9999."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "birthday",
+              "custom"
+            ]
+          },
+          "yearly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "date",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "dates.Document": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "events": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/dates.Event"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "events"
+        ],
+        "additionalProperties": false,
+        "description": "Revision defaults to 0 when omitted. Writes must match current revision; success increments it. Events must be a non-null array."
+      },
+      "holidays.Settings": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "pattern": "^(?:[A-Z]{2})?$"
+          },
+          "subdivision": {
+            "type": "string",
+            "pattern": "^(?:[A-Z]{2}-[A-Z0-9]{1,6})?$"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Empty country and subdivision disable selection. Region must belong to country. TW/CN accept national selection only. Omitted fields default to empty strings."
+      },
+      "holidays.Country": {
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "countryCode",
+          "name"
+        ]
+      },
+      "holidays.Countries": {
+        "type": "object",
+        "properties": {
+          "countries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/holidays.Country"
+            }
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "countries",
+          "stale",
+          "error"
+        ]
+      },
+      "holidays.Subdivision": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "holidays.Record": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "holiday",
+              "observed",
+              "workday"
+            ]
+          },
+          "national": {
+            "type": "boolean"
+          },
+          "subdivisions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "name",
+          "kind",
+          "national"
+        ]
+      },
+      "holidays.Calendar": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "subdivision": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/holidays.Record"
+            }
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "country",
+          "subdivision",
+          "year",
+          "available",
+          "stale",
+          "source",
+          "records",
+          "error"
+        ]
+      },
+      "settings.Document": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "minimum": 1024,
+            "maximum": 65535
+          },
+          "maxHeight": {
+            "type": "integer",
+            "enum": [
+              360,
+              480,
+              720,
+              1080
+            ]
+          },
+          "updateChannel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "nightly"
+            ]
+          },
+          "launchOnStartup": {
+            "type": "boolean"
+          },
+          "transcodeHeight": {
+            "type": "integer",
+            "enum": [
+              240,
+              360,
+              480,
+              720,
+              1080
+            ]
+          },
+          "autoUpdate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "port",
+          "maxHeight",
+          "updateChannel",
+          "transcodeHeight"
+        ],
+        "additionalProperties": false,
+        "description": "Omitted booleans become false on POST. No merge with saved settings."
+      },
+      "settings.Saved": {
+        "type": "object",
+        "properties": {
+          "saved": {
+            "type": "boolean"
+          },
+          "restartRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved",
+          "restartRequired"
+        ]
+      },
+      "youtube.Media": {
+        "type": "object",
+        "properties": {
+          "videoUrl": {
+            "type": "string"
+          },
+          "audioUrl": {
+            "type": "string"
+          },
+          "videoFormatId": {
+            "type": "string"
+          },
+          "audioFormatId": {
+            "type": "string"
+          },
+          "extension": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "videoCodec": {
+            "type": "string"
+          },
+          "audioCodec": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "track": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "album": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "isLive": {
+            "type": "boolean"
+          },
+          "muxed": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds, derived from provider URL expire query."
+          }
+        },
+        "required": [
+          "videoUrl",
+          "audioUrl",
+          "videoFormatId",
+          "audioFormatId",
+          "extension",
+          "isLive",
+          "muxed"
+        ]
+      },
+      "youtube.PlaylistItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "youtube.Playlist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/youtube.PlaylistItem"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "items"
+        ]
+      },
+      "games.Cart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "system": {
+            "type": "string"
+          },
+          "rom": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "label": {
+            "type": "boolean"
+          },
+          "rev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha1": {
+            "type": "string"
+          },
+          "shelf": {
+            "type": "boolean"
+          },
+          "onShelf": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "system",
+          "rom",
+          "label",
+          "rev",
+          "onShelf"
+        ]
+      },
+      "games.Carts": {
+        "type": "object",
+        "properties": {
+          "carts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/games.Cart"
+            }
+          }
+        },
+        "required": [
+          "carts"
+        ]
+      },
+      "games.Added": {
+        "type": "object",
+        "properties": {
+          "cart": {
+            "$ref": "#/components/schemas/games.Cart"
+          },
+          "existing": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cart",
+          "existing"
+        ]
+      },
+      "games.Selection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fresh": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "seq",
+          "fresh"
+        ]
+      },
+      "games.SelectRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "description": "Empty/omitted id clears selection. Unknown JSON fields are accepted."
+      },
+      "games.FileInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "modified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "modified"
+        ],
+        "nullable": true
+      },
+      "games.Details": {
+        "type": "object",
+        "properties": {
+          "cart": {
+            "$ref": "#/components/schemas/games.Cart"
+          },
+          "save": {
+            "$ref": "#/components/schemas/games.FileInfo"
+          },
+          "saveBackup": {
+            "$ref": "#/components/schemas/games.FileInfo"
+          },
+          "state": {
+            "$ref": "#/components/schemas/games.FileInfo"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "n": {
+                  "type": "integer"
+                },
+                "modified": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "n",
+                "modified"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cart",
+          "save",
+          "saveBackup",
+          "state",
+          "states"
+        ]
+      },
+      "games.Revision": {
+        "type": "object",
+        "properties": {
+          "rev": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rev"
+        ]
+      },
+      "input.PlayMode": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "capture": {
+            "type": "string",
+            "enum": [
+              "desktop",
+              "key",
+              "always",
+              ""
+            ],
+            "description": "Empty capture defaults to desktop."
+          }
+        },
+        "additionalProperties": false
+      },
+      "input.Snapshot": {
+        "type": "object",
+        "properties": {
+          "buttons": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "playMode": {
+            "type": "boolean"
+          },
+          "captured": {
+            "type": "boolean"
+          },
+          "controller": {
+            "type": "boolean"
+          },
+          "at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "buttons",
+          "playMode",
+          "captured",
+          "controller",
+          "at"
+        ]
+      }
+    }
+  }
+}

@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/apidocs"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/lyrics"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/systemstats"
@@ -70,6 +71,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
 	mux := http.NewServeMux()
+	apidocs.Register(mux)
 	mux.HandleFunc("GET /ui/theme.css", companionTheme)
 	mux.HandleFunc("GET /ui/shell.js", companionShell)
 	mux.HandleFunc("GET /api/health", s.health)
@@ -640,7 +642,7 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZZZ Wallpaper Companion</title><style>
 :root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#111315;color:#f3f4f4}body{margin:0}.bar{height:5px;background:#f3c942}.wrap{max-width:620px;margin:0 auto;padding:36px 22px}h1{font-size:25px;margin:0 0 7px}.sub{color:#aeb5b8;margin:0 0 30px}.section{border-top:1px solid #34383a;padding:22px 0}label{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;margin:0 0 18px}small{display:block;color:#949b9e;margin-top:4px}.warning{color:#f3c942}input,select{box-sizing:border-box;width:100%;background:#1c2022;color:#fff;border:1px solid #4a5053;padding:9px;border-radius:4px;font:inherit}input[type=checkbox]{width:auto;justify-self:end}button{background:#f3c942;color:#171717;border:0;padding:10px 18px;border-radius:4px;font-weight:700;cursor:pointer}.status{margin-left:12px;color:#aeb5b8}@media(max-width:520px){label{grid-template-columns:1fr}}
-</style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#f3c942">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#f3c942">Public Holidays — country and region</a></p><p><a href="/games" style="color:#f3c942">Games — add games, play them on the TV, manage saves</a></p>{{end}}<form id="settings"><div class="section">
+</style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#f3c942">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#f3c942">Public Holidays — country and region</a></p><p><a href="/games" style="color:#f3c942">Games — add games, play them on the TV, manage saves</a></p><p><a href="/docs" style="color:#f3c942">API Explorer — local documentation</a></p>{{end}}<form id="settings"><div class="section">
 <label><span>Companion port<small>Default: 8765. Leave unchanged unless you know what you are doing. Match this value in Wallpaper Engine Companion App settings. Restart required.</small></span><input id="port" type="number" min="1024" max="65535" value="{{.Port}}"></label>
 <label><span>Maximum resolution<small>Higher resolutions use more bandwidth and GPU memory.</small></span><select id="height">{{range $v := heights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>Live-stream resolution<small class="warning">Higher resolutions substantially increase CPU usage while FFmpeg converts HLS to WebM. 1080p is experimental and may use heavy CPU.</small></span><select id="transcodeHeight">{{range $v := transcodeHeights}}<option>{{$v}}</option>{{end}}</select></label>
