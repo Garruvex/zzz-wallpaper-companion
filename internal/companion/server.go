@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	apiregistry "github.com/Garruvex/zzz-wallpaper-companion/internal/api"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/apidocs"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/lyrics"
@@ -70,46 +71,52 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
-	mux := http.NewServeMux()
-	apidocs.Register(mux)
-	mux.HandleFunc("GET /ui/theme.css", companionTheme)
-	mux.HandleFunc("GET /ui/shell.js", companionShell)
-	mux.HandleFunc("GET /api/health", s.health)
-	mux.HandleFunc("GET /api/v1/map-tiles/{z}/{x}/{y}", s.mapTiles.serve)
-	mux.HandleFunc("GET /api/youtube/resolve", s.resolve)
-	mux.HandleFunc("GET /api/youtube/playlist", s.playlist)
-	mux.HandleFunc("GET /api/youtube/hls", s.hlsProxy)
-	mux.HandleFunc("GET /api/youtube/transcode", s.transcode)
-	mux.HandleFunc("POST /api/v1/heartbeat", s.youtubeHeartbeat)
-	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
-	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
-	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
-	mux.HandleFunc("GET /api/v1/carts", s.listCarts)
-	mux.HandleFunc("GET /api/v1/carts/{id}/{file}", s.getCartFile)
-	mux.HandleFunc("POST /api/v1/carts/{id}/{file}", s.putCartFile)
-	mux.HandleFunc("POST /api/v1/carts", s.addGame)
-	mux.HandleFunc("GET /api/v1/carts/{id}/details", s.gameDetails)
-	mux.HandleFunc("POST /api/v1/carts/{id}/do/{action}", s.gameAction)
-	mux.HandleFunc("GET /api/v1/games/current", s.getCurrentGame)
-	mux.HandleFunc("POST /api/v1/games/current", s.setCurrentGame)
-	mux.HandleFunc("GET /games", s.gamesPage)
-	mux.HandleFunc("GET /api/v1/input", s.inputStream)
-	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
-	mux.HandleFunc("GET /api/v1/dates", s.getDates)
-	mux.HandleFunc("POST /api/v1/dates", s.saveDates)
-	mux.HandleFunc("GET /dates", s.datesPage)
-	mux.HandleFunc("GET /holidays", s.holidaysPage)
-	mux.HandleFunc("GET /licenses/unicode", s.unicodeLicensePage)
-	mux.HandleFunc("GET /api/v1/holiday-settings", s.holidaySettings)
-	mux.HandleFunc("POST /api/v1/holiday-settings", s.holidaySettings)
-	mux.HandleFunc("GET /api/v1/holiday-countries", s.holidayCountries)
-	mux.HandleFunc("GET /api/v1/holiday-subdivisions", s.holidaySubdivisions)
-	mux.HandleFunc("GET /api/v1/holidays", s.getHolidays)
-	mux.HandleFunc("GET /api/settings", s.getSettings)
-	mux.HandleFunc("POST /api/settings", s.saveSettings)
-	mux.HandleFunc("GET /resource/svg/cross.svg", s.probeImage)
-	mux.HandleFunc("GET /settings", s.settingsPage)
-	mux.HandleFunc("GET /", s.root)
+	handlers := map[string]http.HandlerFunc{
+		"health.get":             s.health,
+		"maps.tile":              s.mapTiles.serve,
+		"youtube.resolve":        s.resolve,
+		"youtube.playlist":       s.playlist,
+		"youtube.hls":            s.hlsProxy,
+		"youtube.transcode":      s.transcode,
+		"heartbeat.renew":        s.youtubeHeartbeat,
+		"heartbeat.renewLegacy":  s.youtubeHeartbeat,
+		"lyrics.lookup":          s.lookupLyrics,
+		"system.stats":           s.getSystemStats,
+		"games.carts.list":       s.listCarts,
+		"games.carts.file.get":   s.getCartFile,
+		"games.carts.file.save":  s.putCartFile,
+		"games.carts.add":        s.addGame,
+		"games.carts.details":    s.gameDetails,
+		"games.carts.action":     s.gameAction,
+		"games.selection.get":    s.getCurrentGame,
+		"games.selection.save":   s.setCurrentGame,
+		"input.stream":           s.inputStream,
+		"input.playMode.save":    s.setPlayMode,
+		"dates.list":             s.getDates,
+		"dates.save":             s.saveDates,
+		"holidays.settings.get":  s.holidaySettings,
+		"holidays.settings.save": s.holidaySettings,
+		"holidays.countries":     s.holidayCountries,
+		"holidays.subdivisions":  s.holidaySubdivisions,
+		"holidays.list":          s.getHolidays,
+		"settings.get":           s.getSettings,
+		"settings.save":          s.saveSettings,
+	}
+	resources := map[string]http.Handler{
+		"GET /ui/theme.css":           http.HandlerFunc(companionTheme),
+		"GET /ui/shell.js":            http.HandlerFunc(companionShell),
+		"GET /games":                  http.HandlerFunc(s.gamesPage),
+		"GET /dates":                  http.HandlerFunc(s.datesPage),
+		"GET /holidays":               http.HandlerFunc(s.holidaysPage),
+		"GET /licenses/unicode":       http.HandlerFunc(s.unicodeLicensePage),
+		"GET /resource/svg/cross.svg": http.HandlerFunc(s.probeImage),
+		"GET /settings":               http.HandlerFunc(s.settingsPage),
+		"GET /":                       http.HandlerFunc(s.root),
+	}
+	mux, err := apiregistry.Build(apiregistry.Operations(), handlers, resources, apidocs.Routes())
+	if err != nil {
+		panic(fmt.Errorf("Companion API registration: %w", err))
+	}
 	s.http = &http.Server{
 		Handler:           localOnly(cors(mux)),
 		ReadHeaderTimeout: 5 * time.Second,

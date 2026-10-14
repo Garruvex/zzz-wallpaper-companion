@@ -37,6 +37,7 @@ func TestContractStructureAndRoutes(t *testing.T) {
 	}
 	ids := map[string]bool{}
 	routes := map[string]bool{}
+	bindings := map[string]string{}
 	mux := http.NewServeMux()
 	for path, item := range doc.Paths {
 		for method, op := range item {
@@ -62,6 +63,7 @@ func TestContractStructureAndRoutes(t *testing.T) {
 			// Actual ServeMux semantics allow details over the file wildcard.
 			mux.HandleFunc(pattern, func(http.ResponseWriter, *http.Request) {})
 			routes[pattern] = true
+			bindings[op.OperationID] = pattern
 		}
 	}
 	// Structural coverage only; handlers retain semantic validation.
@@ -112,6 +114,18 @@ func TestContractStructureAndRoutes(t *testing.T) {
 			t.Fatal(err)
 		}
 		ast.Inspect(source, func(n ast.Node) bool {
+			// Normal listener binds by operation ID; resource maps stay separate.
+			if pair, ok := n.(*ast.KeyValueExpr); ok {
+				if literal, ok := pair.Key.(*ast.BasicLit); ok && literal.Kind == token.STRING {
+					key, _ := strconv.Unquote(literal.Value)
+					if pattern, ok := bindings[key]; ok {
+						delete(routes, pattern)
+					}
+					if resources[key] {
+						delete(resources, key)
+					}
+				}
+			}
 			call, ok := n.(*ast.CallExpr)
 			if !ok {
 				return true
@@ -137,10 +151,7 @@ func TestContractStructureAndRoutes(t *testing.T) {
 				return true
 			}
 			if strings.Contains(pattern, " /api/") {
-				if !routes[pattern] {
-					t.Errorf("undocumented API route %s", pattern)
-				}
-				delete(routes, pattern)
+				t.Errorf("API route bypasses operation registry: %s", pattern)
 			} else {
 				if !resources[pattern] {
 					t.Errorf("unclassified resource route %s", pattern)

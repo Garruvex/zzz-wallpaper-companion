@@ -25,4 +25,25 @@ Swagger UI 5.33.1 assets are taken from https://github.com/swagger-api/swagger-u
 
 Explorer GET execution is enabled initially. The action checkbox enables POST, and per-request confirmation also protects side-effecting GET cartridge listing. File/media/SSE endpoints always reject execution through the explorer. Reads may populate caches; this is recorded in each operation's side-effect metadata.
 
-Next slice: explicit handler registry and deterministic generated operations/bindings for health, lyrics and system statistics. No client singleton, runtime consumer, protocol or streaming policy changes in this slice.
+## Registry and generation
+
+The normal listener binds all 29 operations by operation ID through internal/api. It uses the existing APIServer services and handlers. Pages and docs are separate resource groups checked on the same private ServeMux; duplicate/equivalent/ambiguous patterns and missing/unused handlers fail registration before the mux is exposed. More-specific routes and GET/HEAD semantics stay intact. Recovery settings routes remain independent.
+
+Generate deliberately from this checkout (requires Node and gofmt):
+
+    node tools/generate-contract.cjs --wallpaper "<wallpaper checkout>"
+    node tools/generate-contract.cjs --check --wallpaper "<wallpaper checkout>"
+    node --test tools/generate-contract.test.cjs
+
+Omit --wallpaper to generate/check only server metadata. Generated outputs are committed for offline builds. Contract digests use SHA256 of UTF-8 JSON with CRLF normalized to LF. Generation does not edit the contract or implement feature behavior. Go tests compare embedded contract metadata/digest against generated bindings. Wallpaper npm test verifies its bundled artifact against contract-pin.json; the cross-repository --check compares it against the canonical source as well.
+
+contract-pin.json records the Companion revision containing the canonical contract, its digest/version and the generated operation artifact digest. The source revision remains stable when the contract is unchanged. A changed canonical contract must be committed before generating wallpaper artifacts so the pin points to recoverable contract bytes. Release revision pairing for server/wallpaper builds remains a later release step.
+
+The wallpaper facade now uses named health, heartbeat, lyrics, system, dates, holiday-calendar and YouTube operations. Calendar adapters receive the same app facade and retain their polling/cache lifecycle. Legacy date merging persists its one-time attempt before sending and reconciles through reads; uncertain outcomes never trigger a blind resend. Map tiles use generated concrete URLs/Leaflet templates; Leaflet retains binary loading/cache behavior. YouTubeSession uses generated resolve/playlist JSON (60-second budgets), legacy lease renewal and transcode/HLS URL builders. Renewals are serialized before release; each playback session captures its own port/ID, independently of shared health. Native media consumers retain streaming; JSON transport rejects binary/stream execution. Other SSE consumers still require dedicated adapters. Existing heartbeat protocol and stream ownership remain intact; playlist UI remains unsupported. There is no new client singleton or automatic write retry.
+
+Real wallpaper-client integration is opt-in:
+
+    $env:COMPANION_WALLPAPER_PATH = '<wallpaper checkout>'
+    go test ./internal/companion -run TestWallpaperClientIntegration -count=1 -v
+
+This starts the real handler on a random loopback port and exercises the generated client for health, heartbeat, system stats, lyrics validation, date read/save/conflict, both calendar adapters including legacy merge, and generated binary tile URLs against a local fixture provider. Tile checks include PNG signature bytes, private/max-age headers, invalid coordinates and cache reuse (two client reads, one provider download). YouTube checks exercise resolve/playlist validation and inspect server lease state after one playback session releases while another remains retained, independently of shared health. Test writes affect temporary data only. Native tray/media/Leaflet rendering, FFmpeg playback and live provider success are outside this test.

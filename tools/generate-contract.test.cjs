@@ -1,0 +1,40 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+test('generation is deterministic, detects drift and integrates a synthetic declaration', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'companion-generator-'));
+  t.after(() => {
+    const resolved = path.resolve(root);
+    if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('companion-generator-')) throw new Error('Unexpected temporary test path');
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
+  fs.mkdirSync(path.join(root, 'api'));
+  fs.mkdirSync(path.join(root, 'tools'));
+  fs.copyFileSync(path.join(__dirname, 'generate-contract.cjs'), path.join(root, 'tools/generate-contract.cjs'));
+  const original = JSON.parse(fs.readFileSync(path.join(__dirname, '../api/openapi.json')));
+  const spec = path.join(root, 'api/openapi.json');
+  const run = (...args) => spawnSync(process.execPath, ['tools/generate-contract.cjs', ...args], { cwd: root, encoding: 'utf8' });
+  fs.writeFileSync(spec, JSON.stringify(original, null, 2) + '\n');
+  assert.equal(run().status, 0);
+  const output = path.join(root, 'internal/api/operations_generated.go');
+  const first = fs.readFileSync(output, 'utf8');
+  assert.equal(run('--check').status, 0);
+  assert.equal(run().status, 0);
+  assert.equal(fs.readFileSync(output, 'utf8'), first);
+  fs.writeFileSync(spec, fs.readFileSync(spec, 'utf8').replace(/\n/g, '\r\n'));
+  assert.equal(run('--check').status, 0, 'Windows line endings retain the same digest');
+  fs.appendFileSync(output, '// manual edit\n');
+  assert.match(run('--check').stderr, /Generated artifact drift/);
+  original.paths['/api/synthetic'] = { get: { ...original.paths['/api/health'].get, operationId: 'synthetic.get' } };
+  fs.writeFileSync(spec, JSON.stringify(original, null, 2) + '\n');
+  assert.equal(run().status, 0);
+  assert.match(fs.readFileSync(output, 'utf8'), /ID: "synthetic.get", Method: "GET", Path: "\/api\/synthetic"/);
+  original.paths['/api/synthetic'].get.operationId = 'health.get';
+  fs.writeFileSync(spec, JSON.stringify(original));
+  assert.match(run().stderr, /duplicate operation ID health.get/);
+  assert.match(run('--wallpaper').stderr, /Usage/);
+});
