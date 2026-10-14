@@ -91,6 +91,15 @@ func TestOccupiedPortKeepsSettingsAvailableWithoutMovingWallpaperServices(t *tes
 	if response.StatusCode != 404 {
 		t.Fatal("recovery must not silently expose wallpaper services")
 	}
+	response, err = http.Get(base + "/ui/api.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ = io.ReadAll(response.Body)
+	response.Body.Close()
+	if response.StatusCode != 200 || !strings.Contains(string(body), "CompanionAPI") {
+		t.Fatal("recovery settings helper unavailable")
+	}
 	settings.Port = 9001
 	payload := fmt.Sprintf(`{"port":%d,"maxHeight":%d,"updateChannel":%q,"launchOnStartup":%t,"transcodeHeight":%d,"autoUpdate":%t}`, settings.Port, settings.MaxHeight, settings.UpdateChannel, settings.LaunchOnStartup, settings.TranscodeHeight, settings.AutoUpdate)
 	response, err = http.Post(base+"/api/settings", "application/json", strings.NewReader(payload))

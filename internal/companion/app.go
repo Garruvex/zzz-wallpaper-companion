@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -65,6 +66,14 @@ func Run() {
 		log.SetOutput(logFile)
 	}
 	log.Printf("starting ZZZ Wallpaper Companion %s (build %s)", version, buildNumber)
+	// GUI builds have no visible stderr. Keep runtime panics and fatal
+	// errors available even when they happen outside the main goroutine.
+	if crashFile, crashErr := os.OpenFile(filepath.Join(dataDir, "crash.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600); crashErr == nil {
+		if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+			log.Printf("enable crash log: %v", err)
+		}
+		crashFile.Close()
+	}
 
 	config, err := newConfigStore(filepath.Join(dataDir, "settings.json"))
 	if err != nil {

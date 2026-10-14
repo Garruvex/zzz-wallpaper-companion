@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	apiregistry "github.com/Garruvex/zzz-wallpaper-companion/internal/api"
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/apidocs"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/lyrics"
 	"github.com/Garruvex/zzz-wallpaper-companion/internal/systemstats"
@@ -69,43 +71,53 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/health", s.health)
-	mux.HandleFunc("GET /api/v1/map-tiles/{z}/{x}/{y}", s.mapTiles.serve)
-	mux.HandleFunc("GET /api/youtube/resolve", s.resolve)
-	mux.HandleFunc("GET /api/youtube/playlist", s.playlist)
-	mux.HandleFunc("GET /api/youtube/hls", s.hlsProxy)
-	mux.HandleFunc("GET /api/youtube/transcode", s.transcode)
-	mux.HandleFunc("POST /api/v1/heartbeat", s.youtubeHeartbeat)
-	mux.HandleFunc("POST /api/youtube/heartbeat", s.youtubeHeartbeat)
-	mux.HandleFunc("POST /api/v1/lyrics", s.lookupLyrics)
-	mux.HandleFunc("GET /api/v1/system-stats", s.getSystemStats)
-	mux.HandleFunc("GET /api/v1/carts", s.listCarts)
-	mux.HandleFunc("GET /api/v1/carts/{id}/{file}", s.getCartFile)
-	mux.HandleFunc("POST /api/v1/carts/{id}/{file}", s.putCartFile)
-	mux.HandleFunc("POST /api/v1/carts", s.addGame)
-	mux.HandleFunc("GET /api/v1/carts/{id}/details", s.gameDetails)
-	mux.HandleFunc("POST /api/v1/carts/{id}/do/{action}", s.gameAction)
-	mux.HandleFunc("GET /api/v1/games/current", s.getCurrentGame)
-	mux.HandleFunc("POST /api/v1/games/current", s.setCurrentGame)
-	mux.HandleFunc("GET /games", s.gamesPage)
-	mux.HandleFunc("GET /api/v1/input", s.inputStream)
-	mux.HandleFunc("POST /api/v1/input/play-mode", s.setPlayMode)
-	mux.HandleFunc("GET /api/v1/dates", s.getDates)
-	mux.HandleFunc("POST /api/v1/dates", s.saveDates)
-	mux.HandleFunc("GET /dates", s.datesPage)
-	mux.HandleFunc("GET /holidays", s.holidaysPage)
-	mux.HandleFunc("GET /licenses/unicode", s.unicodeLicensePage)
-	mux.HandleFunc("GET /api/v1/holiday-settings", s.holidaySettings)
-	mux.HandleFunc("POST /api/v1/holiday-settings", s.holidaySettings)
-	mux.HandleFunc("GET /api/v1/holiday-countries", s.holidayCountries)
-	mux.HandleFunc("GET /api/v1/holiday-subdivisions", s.holidaySubdivisions)
-	mux.HandleFunc("GET /api/v1/holidays", s.getHolidays)
-	mux.HandleFunc("GET /api/settings", s.getSettings)
-	mux.HandleFunc("POST /api/settings", s.saveSettings)
-	mux.HandleFunc("GET /resource/svg/cross.svg", s.probeImage)
-	mux.HandleFunc("GET /settings", s.settingsPage)
-	mux.HandleFunc("GET /", s.root)
+	handlers := map[string]http.HandlerFunc{
+		"health.get":             s.health,
+		"maps.tile":              s.mapTiles.serve,
+		"youtube.resolve":        s.resolve,
+		"youtube.playlist":       s.playlist,
+		"youtube.hls":            s.hlsProxy,
+		"youtube.transcode":      s.transcode,
+		"heartbeat.renew":        s.youtubeHeartbeat,
+		"heartbeat.renewLegacy":  s.youtubeHeartbeat,
+		"lyrics.lookup":          s.lookupLyrics,
+		"system.stats":           s.getSystemStats,
+		"games.carts.list":       s.listCarts,
+		"games.carts.file.get":   s.getCartFile,
+		"games.carts.file.save":  s.putCartFile,
+		"games.carts.add":        s.addGame,
+		"games.carts.details":    s.gameDetails,
+		"games.carts.action":     s.gameAction,
+		"games.selection.get":    s.getCurrentGame,
+		"games.selection.save":   s.setCurrentGame,
+		"input.stream":           s.inputStream,
+		"input.playMode.save":    s.setPlayMode,
+		"dates.list":             s.getDates,
+		"dates.save":             s.saveDates,
+		"holidays.settings.get":  s.holidaySettings,
+		"holidays.settings.save": s.holidaySettings,
+		"holidays.countries":     s.holidayCountries,
+		"holidays.subdivisions":  s.holidaySubdivisions,
+		"holidays.list":          s.getHolidays,
+		"settings.get":           s.getSettings,
+		"settings.save":          s.saveSettings,
+	}
+	resources := map[string]http.Handler{
+		"GET /ui/api.js":              http.HandlerFunc(companionBrowserAPI),
+		"GET /ui/theme.css":           http.HandlerFunc(companionTheme),
+		"GET /ui/shell.js":            http.HandlerFunc(companionShell),
+		"GET /games":                  http.HandlerFunc(s.gamesPage),
+		"GET /dates":                  http.HandlerFunc(s.datesPage),
+		"GET /holidays":               http.HandlerFunc(s.holidaysPage),
+		"GET /licenses/unicode":       http.HandlerFunc(s.unicodeLicensePage),
+		"GET /resource/svg/cross.svg": http.HandlerFunc(s.probeImage),
+		"GET /settings":               http.HandlerFunc(s.settingsPage),
+		"GET /":                       http.HandlerFunc(s.root),
+	}
+	mux, err := apiregistry.Build(apiregistry.Operations(), handlers, resources, apidocs.Routes())
+	if err != nil {
+		panic(fmt.Errorf("Companion API registration: %w", err))
+	}
 	s.http = &http.Server{
 		Handler:           localOnly(cors(mux)),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -638,7 +650,7 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZZZ Wallpaper Companion</title><style>
 :root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#111315;color:#f3f4f4}body{margin:0}.bar{height:5px;background:#f3c942}.wrap{max-width:620px;margin:0 auto;padding:36px 22px}h1{font-size:25px;margin:0 0 7px}.sub{color:#aeb5b8;margin:0 0 30px}.section{border-top:1px solid #34383a;padding:22px 0}label{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;margin:0 0 18px}small{display:block;color:#949b9e;margin-top:4px}.warning{color:#f3c942}input,select{box-sizing:border-box;width:100%;background:#1c2022;color:#fff;border:1px solid #4a5053;padding:9px;border-radius:4px;font:inherit}input[type=checkbox]{width:auto;justify-self:end}button{background:#f3c942;color:#171717;border:0;padding:10px 18px;border-radius:4px;font-weight:700;cursor:pointer}.status{margin-left:12px;color:#aeb5b8}@media(max-width:520px){label{grid-template-columns:1fr}}
-</style></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#f3c942">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#f3c942">Public Holidays — country and region</a></p><p><a href="/games" style="color:#f3c942">Games — add games, play them on the TV, manage saves</a></p>{{end}}<form id="settings"><div class="section">
+</style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#f3c942">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#f3c942">Public Holidays — country and region</a></p><p><a href="/games" style="color:#f3c942">Games — add games, play them on the TV, manage saves</a></p><p><a href="/docs" style="color:#f3c942">API Explorer — local documentation</a></p>{{end}}<form id="settings"><div class="section">
 <label><span>Companion port<small>Default: 8765. Leave unchanged unless you know what you are doing. Match this value in Wallpaper Engine Companion App settings. Restart required.</small></span><input id="port" type="number" min="1024" max="65535" value="{{.Port}}"></label>
 <label><span>Maximum resolution<small>Higher resolutions use more bandwidth and GPU memory.</small></span><select id="height">{{range $v := heights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>Live-stream resolution<small class="warning">Higher resolutions substantially increase CPU usage while FFmpeg converts HLS to WebM. 1080p is experimental and may use heavy CPU.</small></span><select id="transcodeHeight">{{range $v := transcodeHeights}}<option>{{$v}}</option>{{end}}</select></label>
@@ -646,7 +658,8 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 <label><span>Launch on Windows startup<small>Start quietly in the notification area after you sign in.</small></span><input id="startup" type="checkbox" {{if .LaunchOnStartup}}checked{{end}}></label>
 <label><span>Automatic companion updates<small>Download compatible verified releases and install them on the next restart.</small></span><input id="autoUpdate" type="checkbox" {{if .AutoUpdate}}checked{{end}}></label>
 </div><button type="submit">Save settings</button><span class="status" id="status"></span></form></main><script>
-const initial={port:{{.Port}},maxHeight:{{.MaxHeight}},updateChannel:{{printf "%q" .UpdateChannel}},launchOnStartup:{{.LaunchOnStartup}},transcodeHeight:{{.TranscodeHeight}},autoUpdate:{{.AutoUpdate}}};
+const settings=document.getElementById('settings'),status=document.getElementById('status'),port=document.getElementById('port'),height=document.getElementById('height'),channel=document.getElementById('channel'),startup=document.getElementById('startup'),transcodeHeight=document.getElementById('transcodeHeight'),autoUpdate=document.getElementById('autoUpdate');
+const initial={port:{{.Port}},maxHeight:{{.MaxHeight}},updateChannel:{{.UpdateChannel}},launchOnStartup:{{.LaunchOnStartup}},transcodeHeight:{{.TranscodeHeight}},autoUpdate:{{.AutoUpdate}}};
 height.value=initial.maxHeight;channel.value=initial.updateChannel;transcodeHeight.value=initial.transcodeHeight;
-settings.addEventListener('submit',async e=>{e.preventDefault();status.textContent='Saving...';try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({port:Number(port.value),maxHeight:Number(height.value),updateChannel:channel.value,launchOnStartup:startup.checked,transcodeHeight:Number(transcodeHeight.value),autoUpdate:autoUpdate.checked})});const j=await r.json();if(!r.ok)throw new Error(j.error);status.textContent=j.restartRequired?'Saved. Restart the companion.':'Saved.'}catch(e){status.textContent=e.message}});
+let saving=false;settings.addEventListener('submit',async e=>{e.preventDefault();if(saving)return;saving=true;const submit=settings.querySelector('button[type=submit]');submit.disabled=true;status.textContent='Saving...';try{const j=await CompanionAPI.request('settings.save',{body:{port:Number(port.value),maxHeight:Number(height.value),updateChannel:channel.value,launchOnStartup:startup.checked,transcodeHeight:Number(transcodeHeight.value),autoUpdate:autoUpdate.checked}});status.textContent=j.restartRequired?'Saved. Restart the companion.':'Saved.'}catch(e){status.textContent=e.message}finally{saving=false;submit.disabled=false}});
 </script></body></html>`))

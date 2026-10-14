@@ -22,27 +22,21 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .empty{color:var(--muted);padding:18px 0}
 button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent)}
 #shelfNote{margin:0}
-</style></head><body><div class="bar"></div><main>
+</style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main>
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
 <p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
 <label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear</span></label>
 <p id="shelfNote"></p>
 <p id="status" role="status">Loading games…</p>
-<div id="games"></div>
+<div class="library-columns" aria-hidden="true"><span>Game</span><span>Playback</span><span>Shelf</span><span>Saves</span><span>Library</span></div><div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
 <script>
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
 
-const api = async (path, options = {}) => {
-  const response = await fetch(path, options);
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!response.ok) throw new Error(data.error || response.statusText);
-  return data;
-};
+const api = (id, parameters) => CompanionAPI.request(id, parameters);
 const when = iso => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 const size = bytes => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`;
 const say = text => { $('status').textContent = text; };
@@ -58,8 +52,8 @@ async function run(message, task) {
 
 async function refresh() {
   try {
-    [{ carts }, current] = await Promise.all([api('/api/v1/carts'), api('/api/v1/games/current')]);
-    await Promise.all([...open].map(async id => { details[id] = await api(`/api/v1/carts/${encodeURIComponent(id)}/details`).catch(() => null); }));
+    [{ carts }, current] = await Promise.all([api('games.carts.list'), api('games.selection.get')]);
+    await Promise.all([...open].map(async id => { details[id] = await api("games.carts.details", { path: { id } }).catch(() => null); }));
     if ($('status').textContent === 'Loading games…') say('');
   } catch (error) { say('Could not reach the companion.'); }
   render();
@@ -68,13 +62,14 @@ async function refresh() {
 function savesPanel(cart) {
   const info = details[cart.id];
   if (!info) return el('div', { className: 'saves' }, 'Loading…');
-  const base = `/api/v1/carts/${encodeURIComponent(cart.id)}`;
+  const fileUrl = file => CompanionAPI.url('games.carts.file.get', { path: { id: cart.id, file }, query: { download: 1 } });
+  const action = (action, query = {}) => api('games.carts.action', { path: { id: cart.id, action }, query });
   const panel = el('div', { className: 'saves' });
   const save = info.save;
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Game save ' }), el('small', { textContent: save ? `${size(save.size)} · ${when(save.modified)}` : 'none yet' })),
     el('span', { className: 'row' },
-      save ? el('a', { className: 'button', href: `${base}/save?download=1`, textContent: 'Download' }) : '',
+      save ? el('a', { className: 'button', href: fileUrl('save'), textContent: 'Download' }) : '',
       button('Import…', () => importSave(cart)))));
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Resume point ' }), el('small', { textContent: info.state ? `where you left off · ${when(info.state.modified)}` : 'none yet' }))));
@@ -83,14 +78,14 @@ function savesPanel(cart) {
       el('small', { textContent: `Earlier resume point · ${when(point.modified)}` }),
       button('Go back to this', () => {
         if (confirm(`Go back to the resume point from ${when(point.modified)}? The current one is kept in the game's backups folder.`))
-          run('Restored. The TV reloads the game if it is playing it.', () => api(`${base}/do/restore?state=${point.n}`, { method: 'POST' }));
+          run('Restored. The TV reloads the game if it is playing it.', () => action('restore', { state: point.n }));
       })));
   }
   panel.append(el('div', { className: 'line' },
     el('small', { textContent: 'Deleted saves move to the game\'s backups folder, so a mistake can be undone by hand.' }),
     button('Delete save', () => {
       if (confirm(`Delete the save and resume points of ${cart.title}? It starts from the beginning next time. The files move to its backups folder.`))
-        run('Save deleted.', () => api(`${base}/do/reset`, { method: 'POST' }));
+        run('Save deleted.', () => action('reset'));
     }, 'danger')));
   return panel;
 }
@@ -101,7 +96,7 @@ function importSave(cart) {
   input.onchange = () => {
     const file = input.files[0];
     if (!file || !confirm(`Use ${file.name} as the save for ${cart.title}? The game starts from that save; the current save and resume points move to its backups folder.`)) return;
-    run('Save imported.', () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/import`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file }));
+    run('Save imported.', () => api('games.carts.action', { path: { id: cart.id, action: 'import' }, body: file }));
   };
   input.click();
 }
@@ -115,7 +110,7 @@ function render() {
   for (const cart of carts) {
     const onTV = current.id === cart.id;
     const shown = open.has(cart.id);
-    const row = el('div', { className: 'row' },
+    const row = el('div', { className: 'game-row' },
       el('div', { className: 'title' },
         el('b', { textContent: cart.title }),
         el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
@@ -123,23 +118,25 @@ function render() {
         el('small', { textContent: cart.rom })),
       onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
       button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
-        () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/shelf?on=${cart.onShelf ? 0 : 1}`, { method: 'POST' })), cart.onShelf ? 'shelf on' : 'shelf'),
+        () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
       button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }),
       button('Remove', () => {
         if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
-          run(`${cart.title} removed.`, () => api(`/api/v1/carts/${encodeURIComponent(cart.id)}/do/remove`, { method: 'POST' }));
+          run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
       }, 'danger'));
-    list.append(el('div', { className: 'game' }, row, shown ? savesPanel(cart) : ''));
+        for (const action of [...row.children].slice(1)) { const cell=el('div',{className:'game-cell'});action.replaceWith(cell);cell.append(action); }
+    row.querySelector('.title').title=cart.rom;
+    list.append(el('div', { className: `game${onTV ? ' is-playing' : ''}` }, row, shown ? savesPanel(cart) : ''));
   }
 }
 
-const select = id => api('/api/v1/games/current', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(() => '');
+const select = id => api('games.selection.save', { body: { id } }).then(() => '');
 
 async function upload(files) {
   for (const file of files) {
     await run(`Added ${file.name}.`, async () => {
       say(`Adding ${file.name}…`);
-      const result = await api(`/api/v1/carts?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file });
+      const result = await api('games.carts.add', { query: { name: file.name }, body: file });
       return result.existing ? `${file.name} is already in the library as ${result.cart.title}; its saves are kept.` : `Added ${result.cart.title}.`;
     });
   }
@@ -150,6 +147,6 @@ for (const type of ['dragenter', 'dragover']) drop.addEventListener(type, event 
 for (const type of ['dragleave', 'drop']) drop.addEventListener(type, () => drop.classList.remove('over'));
 drop.addEventListener('drop', event => { event.preventDefault(); upload([...event.dataTransfer.files]); });
 refresh();
-setInterval(() => { if (!busy && !document.hidden) refresh(); }, 4000);
+setInterval(() => { if (!busy && !document.hidden && !games.contains(document.activeElement)) refresh(); }, 4000);
 </script>
 </main></body></html>
