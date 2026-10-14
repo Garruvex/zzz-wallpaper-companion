@@ -17,7 +17,7 @@ import (
 
 func TestOfflineDocsUseExistingAccessPolicy(t *testing.T) {
 	s := testServer(t)
-	for _, path := range []string{"/docs", "/docs/index.html", "/docs/explorer.js", "/docs/swagger-ui-bundle.js", "/docs/swagger-ui.css", "/openapi.json"} {
+	for _, path := range []string{"/ui/api.js", "/docs", "/docs/index.html", "/docs/explorer.js", "/docs/swagger-ui-bundle.js", "/docs/swagger-ui.css", "/openapi.json"} {
 		t.Run(path, func(t *testing.T) {
 			for _, tc := range []struct {
 				remote, origin string

@@ -104,7 +104,7 @@ func TestContractStructureAndRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resources := map[string]bool{"GET /": true, "GET /settings": true, "GET /dates": true, "GET /holidays": true, "GET /games": true, "GET /licenses/unicode": true, "GET /resource/svg/cross.svg": true, "GET /ui/theme.css": true, "GET /ui/shell.js": true}
+	resources := map[string]bool{"GET /ui/api.js": true, "GET /": true, "GET /settings": true, "GET /dates": true, "GET /holidays": true, "GET /games": true, "GET /licenses/unicode": true, "GET /resource/svg/cross.svg": true, "GET /ui/theme.css": true, "GET /ui/shell.js": true}
 	for _, filename := range files {
 		if strings.HasSuffix(filename, "_test.go") {
 			continue
@@ -144,7 +144,7 @@ func TestContractStructureAndRoutes(t *testing.T) {
 				t.Fatal(err)
 			}
 			if filepath.Base(filename) == "connection.go" {
-				recovery := map[string]bool{"GET /settings": true, "GET /api/settings": true, "POST /api/settings": true}
+				recovery := map[string]bool{"GET /ui/api.js": true, "GET /settings": true, "GET /api/settings": true, "POST /api/settings": true}
 				if !recovery[pattern] {
 					t.Errorf("unexpected recovery route %s", pattern)
 				}

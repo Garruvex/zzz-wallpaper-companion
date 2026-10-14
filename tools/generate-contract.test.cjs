@@ -33,6 +33,7 @@ test('generation is deterministic, detects drift and integrates a synthetic decl
   fs.writeFileSync(spec, JSON.stringify(original, null, 2) + '\n');
   assert.equal(run().status, 0);
   assert.match(fs.readFileSync(output, 'utf8'), /ID: "synthetic.get", Method: "GET", Path: "\/api\/synthetic"/);
+  assert.match(fs.readFileSync(path.join(root, 'internal/companion/operations_generated.js'), 'utf8'), /"synthetic.get"/);
   original.paths['/api/synthetic'].get.operationId = 'health.get';
   fs.writeFileSync(spec, JSON.stringify(original));
   assert.match(run().stderr, /duplicate operation ID health.get/);

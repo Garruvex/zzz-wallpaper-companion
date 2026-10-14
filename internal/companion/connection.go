@@ -42,6 +42,7 @@ func (s *APIServer) prepareListener() (net.Listener, string, error) {
 		return nil, warning, fmt.Errorf("cannot open recovery settings: %w", recoveryErr)
 	}
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ui/api.js", companionBrowserAPI)
 	mux.HandleFunc("GET /settings", func(w http.ResponseWriter, r *http.Request) { s.renderSettings(w, warning) })
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("POST /api/settings", s.saveSettings)

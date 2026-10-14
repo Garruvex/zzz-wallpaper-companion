@@ -16,6 +16,19 @@ var shellJS string
 //go:embed controls.js
 var controlsJS string
 
+//go:embed operations_generated.js
+var operationsJS string
+
+//go:embed browser-client.js
+var browserClientJS string
+
+func companionBrowserAPI(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	io.WriteString(w, operationsJS)
+	io.WriteString(w, browserClientJS)
+}
+
 //go:embed pills.css
 var pillsCSS string
 
