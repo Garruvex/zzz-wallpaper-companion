@@ -41,11 +41,6 @@ var systemsByExt = map[string]system{
 	// Baseline PS1 uses a single image, not a loose CUE/BIN disc set.
 	".bin": {"psx", ".srm"}, ".img": {"psx", ".srm"}, ".pbp": {"psx", ".srm"},
 	".chd": {"psx", ".srm"},
-}
-
-// Retired formats remain readable so existing cartridges and saves stay accessible.
-// They are excluded from uploads and automatic loose-ROM imports.
-var retiredSystemsByExt = map[string]system{
 	".iso": {"psp", ".zzzpsp"}, ".cso": {"psp", ".zzzpsp"}, ".elf": {"psp", ".zzzpsp"},
 }
 
@@ -124,11 +119,7 @@ func readCart(root, id string) (cart, bool) {
 			continue
 		}
 		name := entry.Name()
-		sys, ok := romSystem(name)
-		if !ok {
-			sys, ok = retiredSystemsByExt[strings.ToLower(filepath.Ext(name))]
-		}
-		if ok && c.ROM == "" {
+		if sys, ok := romSystem(name); ok && c.ROM == "" {
 			c.ROM, c.System, c.save = name, sys.ID, "save"+sys.SaveExt
 		}
 		if strings.EqualFold(name, "label.png") {

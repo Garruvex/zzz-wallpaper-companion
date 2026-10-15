@@ -65,13 +65,8 @@ func (s *APIServer) setCurrentGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.ID != "" {
-		c, ok := s.cartByID(body.ID)
-		if !ok {
+		if _, ok := s.cartByID(body.ID); !ok {
 			writeError(w, http.StatusNotFound, "no such game")
-			return
-		}
-		if c.System == "psp" {
-			writeError(w, http.StatusConflict, "PSP is no longer supported; existing games and saves are preserved")
 			return
 		}
 	}
@@ -145,7 +140,7 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Query().Get("name"))
 	sys, ok := romSystem(name)
 	if !ok {
-		writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd)")
+		writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
 		return
 	}
 	// Stream large disc uploads to disk while hashing instead of allocating
@@ -373,10 +368,6 @@ func applyShelf(carts []cart) {
 	for _, wanted := range []bool{true, false} {
 		for i := range carts {
 			c := &carts[i]
-			if c.System == "psp" {
-				c.OnShelf = false
-				continue
-			}
 			explicit := c.Shelf != nil && *c.Shelf
 			unset := c.Shelf == nil
 			if left > 0 && ((wanted && explicit) || (!wanted && unset)) {
@@ -390,14 +381,10 @@ func applyShelf(carts []cart) {
 // setShelf puts a game on the shelf or takes it off.
 func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	on := r.URL.Query().Get("on") == "1"
-	if on && c.System == "psp" {
-		writeError(w, http.StatusBadRequest, "PSP is no longer supported")
-		return
-	}
 	if on {
 		taken := 0
 		for _, other := range s.cartList() {
-			if other.System != "psp" && other.ID != c.ID && other.Shelf != nil && *other.Shelf {
+			if other.ID != c.ID && other.Shelf != nil && *other.Shelf {
 				taken++
 			}
 		}

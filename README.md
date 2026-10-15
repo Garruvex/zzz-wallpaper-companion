@@ -298,4 +298,4 @@ Calendars refresh weekly and are cached in `holidays.json` beside the companion 
 
 Nager’s API permits private/non-profit projects; commercial use requires sponsorship: [terms](https://nagerholidays.com/legal/termsofservice). Region names come from Unicode CLDR; its license is included in `internal/companion/UNICODE_LICENSE.txt`.
 
-PSP playback and new PSP imports are disabled due to poor wallpaper-host performance. Existing PSP cartridges and saves remain accessible for download and management.
+Experimental PSP imports/playback are available for the matching EmulatorJS 4.3.0 prerelease wallpaper build. OpenGL rendering is enabled; GTA Vice City Stories has a known intro hang.

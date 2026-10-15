@@ -11,6 +11,7 @@ func TestExperimentalDiscImportsAndSaves(t *testing.T) {
 	server := testServer(t)
 	for _, sample := range []struct{ name, system, save string }{
 		{"Raiden.chd", "psx", "save.srm"}, {"PS1.pbp", "psx", "save.srm"},
+		{"Patapon.iso", "psp", "save.zzzpsp"}, {"Portable.cso", "psp", "save.zzzpsp"},
 	} {
 		response := cartRequest(t, server, http.MethodPost, "/api/v1/carts?name="+sample.name, []byte(sample.name))
 		if response.Code != http.StatusCreated {
@@ -45,54 +46,12 @@ func TestDiscLimitsAndUploadCleanup(t *testing.T) {
 		t.Fatal("incorrect save limits")
 	}
 	server := testServer(t)
-	response := cartRequest(t, server, http.MethodPost, "/api/v1/carts?name=Empty.chd", nil)
+	response := cartRequest(t, server, http.MethodPost, "/api/v1/carts?name=Empty.iso", nil)
 	if response.Code != http.StatusBadRequest {
 		t.Fatal(response.Code)
 	}
 	entries, err := os.ReadDir(server.romDir())
 	if err != nil || len(entries) != 0 {
 		t.Fatalf("empty upload left files: %v %v", entries, err)
-	}
-}
-
-func TestRetiredPSPPreservesFilesButCannotImportOrPlay(t *testing.T) {
-	server := testServer(t)
-	dir := filepath.Join(server.ensureROMDir(), "OldPSP")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "game.iso"), []byte("original game"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "save.zzzpsp"), []byte("original save"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "cart.json"), []byte(`{"shelf":true}`), 0644); err != nil {
-		t.Fatal(err)
-	}
-	carts := server.cartList()
-	if len(carts) != 1 || carts[0].System != "psp" || carts[0].OnShelf {
-		t.Fatalf("retired cart: %+v", carts)
-	}
-	for _, extension := range []string{"iso", "cso", "elf"} {
-		response := cartRequest(t, server, http.MethodPost, "/api/v1/carts?name=New."+extension, []byte("new"))
-		if response.Code != http.StatusBadRequest {
-			t.Fatalf("upload %s: %d", extension, response.Code)
-		}
-	}
-	response := cartRequest(t, server, http.MethodPost, "/api/v1/games/current", []byte(`{"id":"OldPSP"}`))
-	if response.Code != http.StatusConflict {
-		t.Fatalf("play: %d %s", response.Code, response.Body)
-	}
-	response = cartRequest(t, server, http.MethodPost, "/api/v1/carts/OldPSP/do/shelf?on=1", nil)
-	if response.Code != http.StatusBadRequest {
-		t.Fatalf("shelf: %d %s", response.Code, response.Body)
-	}
-	response = cartRequest(t, server, http.MethodGet, "/api/v1/carts/OldPSP/save", nil)
-	if response.Code != http.StatusOK || response.Body.String() != "original save" {
-		t.Fatalf("save: %d %s", response.Code, response.Body)
-	}
-	if got := read(t, filepath.Join(dir, "game.iso")); got != "original game" {
-		t.Fatal(got)
 	}
 }
