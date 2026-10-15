@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ZZZ Wallpaper Companion API",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
   },
   "servers": [
@@ -1516,7 +1516,7 @@
           "Games"
         ],
         "summary": "games.carts.add",
-        "description": "Raw supported ROM upload, streamed to a temporary file and deduplicated by SHA1 (200 existing, 201 new). Cartridge ROMs: 1 byte–64 MiB. Experimental PS1 single images (.bin .img .pbp .chd) and PSP (.iso .cso .elf): 1 byte–2 GiB. PBP is PS1; no loose CUE/BIN sets or PSP PBP import yet.",
+        "description": "Raw supported ROM upload, streamed to a temporary file and deduplicated by SHA1 (200 existing, 201 new). Cartridge ROMs: 1 byte–64 MiB. Experimental PS1 single images (.bin .img .pbp .chd): 1 byte–2 GiB. PBP is PS1; no loose CUE/BIN sets. PSP uploads and playback are disabled; existing PSP cartridges and saves remain accessible.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -1618,7 +1618,7 @@
         "x-explorer-execution": "disabled",
         "responses": {
           "200": {
-            "description": "Binary file within per-system limits: cartridge ROMs 64 MiB, PS1/PSP images 2 GiB, PS1/PSP states 256 MiB, PSP save bundles 64 MiB, other saves and labels 8 MiB. Labels are image/png; others octet-stream.",
+            "description": "Binary file within per-system limits: cartridge ROMs 64 MiB, PS1 images 2 GiB, PS1 states 256 MiB, PSP save bundles 64 MiB, other saves and labels 8 MiB. Labels are image/png; others octet-stream.",
             "headers": {
               "Last-Modified": {
                 "schema": {
@@ -1759,7 +1759,7 @@
           "Games"
         ],
         "summary": "games.carts.file.save",
-        "description": "Only save/state writable; nonempty bytes with per-system limits, atomic replacement. Optional X-Cart-Rev rejects stale saves; omitted header remains compatible. Previous save .bak retained; states rotate up to three backups when at least 10 minutes old. Identical data returns 204. PS1/PSP snapshots allow up to 256 MiB; PSP save bundles (.zzzpsp) allow up to 64 MiB. Other saves retain the 8 MiB limit. PSP save bytes are an opaque versioned memory-stick bundle owned by the wallpaper adapter.",
+        "description": "Only save/state writable; nonempty bytes with per-system limits, atomic replacement. Optional X-Cart-Rev rejects stale saves; omitted header remains compatible. Previous save .bak retained; states rotate up to three backups when at least 10 minutes old. Identical data returns 204. PS1 snapshots allow up to 256 MiB; PSP save bundles (.zzzpsp) allow up to 64 MiB. Other saves retain the 8 MiB limit. Retired PSP save bytes are preserved as opaque versioned memory-stick bundles.",
         "x-protocol-range": {
           "min": 2,
           "max": 2

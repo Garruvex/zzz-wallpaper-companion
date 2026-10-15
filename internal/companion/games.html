@@ -26,15 +26,15 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
 <p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
-<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd,.iso,.cso,.elf" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd), PSP (.iso/.cso/.elf)</span></label>
-<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1. PSP requires a compatible wallpaper host; in-game saves download as a .zzzpsp bundle.</p>
+<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd)</span></label>
+<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1.</p>
 <p id="shelfNote"></p>
 <p id="status" role="status">Loading games…</p>
 <div class="library-columns" aria-hidden="true"><span>Game</span><span>Playback</span><span>Shelf</span><span>Saves</span><span>Library</span></div><div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
 <script>
 const $ = id => document.getElementById(id);
-const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
+const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · UNSUPPORTED' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
 
 const api = (id, parameters) => CompanionAPI.request(id, parameters);
@@ -104,7 +104,7 @@ function importSave(cart) {
 
 function render() {
   const onShelf = carts.filter(cart => cart.onShelf).length;
-  $('shelfNote').textContent = carts.length ? `The wallpaper's shelf shows ${onShelf} of its 14 tapes. Turn "On shelf" on for the games you want there; the rest stay playable from this page.` : '';
+  $('shelfNote').textContent = carts.length ? `The wallpaper's shelf shows ${onShelf} of its 14 tapes. Turn "On shelf" on for the games you want there; other supported games stay playable from this page.` : '';
   const list = $('games');
   list.replaceChildren();
   if (!carts.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Drop a game file above.' })); return; }
@@ -117,8 +117,8 @@ function render() {
         el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
         onTV ? el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }) : '',
         el('small', { textContent: cart.rom })),
-      onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
-      button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
+      onTV ? button('Eject', () => run('Ejected.', () => select(''))) : cart.system === 'psp' ? el('small', { textContent: 'Not supported' }) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
+      cart.system === 'psp' ? el('small', { textContent: 'Off shelf' }) : button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
         () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
       button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }),
       button('Remove', () => {
