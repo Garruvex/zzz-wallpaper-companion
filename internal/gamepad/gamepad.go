@@ -22,6 +22,10 @@ const (
 	ButtonX      = 9
 	ButtonL      = 10
 	ButtonR      = 11
+	ButtonL2     = 12
+	ButtonR2     = 13
+	ButtonL3     = 14
+	ButtonR3     = 15
 )
 
 // CaptureMode decides when the game takes the keyboard and controller.
@@ -49,10 +53,15 @@ func ParseCaptureMode(value string) (CaptureMode, bool) {
 
 // Snapshot is what a subscriber receives whenever something changes.
 type Snapshot struct {
-	Buttons   uint32 `json:"buttons"`
-	PlayMode  bool   `json:"playMode"`
-	Captured  bool   `json:"captured"`
-	Connected bool   `json:"controller"`
+	Buttons uint32 `json:"buttons"`
+	// New clients use the digital mask without legacy stick/trigger aliases.
+	DigitalButtons uint32 `json:"digitalButtons"`
+	// LX, LY, RX, RY; positive means right/down; -32767..32767.
+	Axes         [4]int16 `json:"axes"`
+	InputVersion int      `json:"inputVersion"`
+	PlayMode     bool     `json:"playMode"`
+	Captured     bool     `json:"captured"`
+	Connected    bool     `json:"controller"`
 	// At is when this state was read (Unix ms), so the wallpaper can show input lag.
 	At int64 `json:"at"`
 }
@@ -63,6 +72,14 @@ type Source interface {
 	DesktopFocused() bool
 	Keyboard() Keyboard
 }
+
+type ControllerState struct {
+	Buttons, DigitalButtons uint32
+	Axes                    [4]int16
+	Connected               bool
+}
+
+type detailedSource interface{ DetailedController() ControllerState }
 
 // Keyboard is a key hook that exists only while play mode is on.
 type Keyboard interface {
@@ -101,7 +118,7 @@ type Hub struct {
 }
 
 func NewHub(source Source) *Hub {
-	return &Hub{source: source, keyboard: source.Keyboard(), mode: CaptureDesktop, subs: make(map[chan Snapshot]struct{}), wake: make(chan struct{}, 1)}
+	return &Hub{source: source, keyboard: source.Keyboard(), mode: CaptureDesktop, subs: make(map[chan Snapshot]struct{}), wake: make(chan struct{}, 1), last: Snapshot{InputVersion: 2}}
 }
 
 // Subscribe registers a listener. The returned channel receives the current
@@ -135,7 +152,7 @@ func (h *Hub) Subscribe() (updates <-chan Snapshot, cancel func()) {
 			// Nobody is watching, so the key hook must not stay installed.
 			h.playMode = false
 			close(h.stop)
-			h.last = Snapshot{}
+			h.last = Snapshot{InputVersion: 2}
 		}
 	}
 }
@@ -207,7 +224,13 @@ func (h *Hub) run(stop <-chan struct{}) {
 
 // step works out whether the game has the input right now and publishes it.
 func (h *Hub) step(stop <-chan struct{}, hooked bool) {
-	pad, connected := h.source.Controller()
+	var state ControllerState
+	if source, ok := h.source.(detailedSource); ok {
+		state = source.DetailedController()
+	} else {
+		state.Buttons, state.Connected = h.source.Controller()
+		state.DigitalButtons = state.Buttons
+	}
 	focused := h.source.DesktopFocused()
 	presses := 0
 	if hooked {
@@ -232,14 +255,17 @@ func (h *Hub) step(stop <-chan struct{}, hooked bool) {
 	if hooked {
 		h.keyboard.SetGrab(captured)
 	}
-	var buttons uint32
+	var buttons, digital uint32
+	var axes [4]int16
 	if captured {
-		buttons = pad
+		buttons, digital, axes = state.Buttons, state.DigitalButtons, state.Axes
 		if hooked {
-			buttons |= h.keyboard.Keys()
+			keys := h.keyboard.Keys()
+			buttons |= keys
+			digital |= keys
 		}
 	}
-	h.publishLocked(Snapshot{Buttons: buttons, PlayMode: h.playMode, Captured: captured, Connected: connected})
+	h.publishLocked(Snapshot{Buttons: buttons, DigitalButtons: digital, Axes: axes, InputVersion: 2, PlayMode: h.playMode, Captured: captured, Connected: state.Connected})
 }
 
 func (h *Hub) publishLocked(next Snapshot) {

@@ -138,17 +138,32 @@ var unsafeNameChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
 // already in the library, that cartridge (and its saves) is returned instead.
 func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Query().Get("name"))
-	if _, ok := romSystem(name); !ok {
-		writeError(w, http.StatusBadRequest, "not a supported game file (.gba .gbc .gb .nes .sfc .smc .md .gen .smd .sms .gg)")
+	sys, ok := romSystem(name)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
 		return
 	}
-	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxROMBytes))
-	if err != nil || len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "game file must be 1 byte to 64 MB")
+	// Stream large disc uploads to disk while hashing instead of allocating
+	// an image-sized buffer in Companion.
+	upload, err := os.CreateTemp(s.ensureROMDir(), ".upload-*")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not stage game upload")
 		return
 	}
-	sum := sha1.Sum(data)
-	hash := hex.EncodeToString(sum[:])
+	defer os.Remove(upload.Name())
+	defer upload.Close()
+	limit := romByteLimit(sys.ID)
+	hasher := sha1.New()
+	n, err := io.Copy(io.MultiWriter(upload, hasher), http.MaxBytesReader(w, r.Body, limit))
+	if err != nil || n == 0 {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("game file must be 1 byte to %d MiB", limit>>20))
+		return
+	}
+	if err := upload.Close(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not stage game upload")
+		return
+	}
+	hash := hex.EncodeToString(hasher.Sum(nil))
 	for _, c := range s.cartList() {
 		if romHash(c) == hash {
 			c.SHA1 = hash
@@ -174,7 +189,7 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "could not create the game folder")
 		return
 	}
-	if err := writeFileAtomic(filepath.Join(dir, "game"+strings.ToLower(filepath.Ext(name))), data); err != nil {
+	if err := os.Rename(upload.Name(), filepath.Join(dir, "game"+strings.ToLower(filepath.Ext(name)))); err != nil {
 		writeError(w, http.StatusInternalServerError, "could not write the game")
 		return
 	}
@@ -304,9 +319,10 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		}
 		s.changedSaves(w, c)
 	case "import":
-		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCartFileBytes))
+		limit := cartByteLimit(c, "save")
+		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 		if err != nil || len(data) == 0 {
-			writeError(w, http.StatusBadRequest, "save file must be 1 byte to 8 MB")
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("save file must be 1 byte to %d MiB", limit>>20))
 			return
 		}
 		if err := shelve(c, append([]string{c.save}, stateNames()...)...); err != nil {

@@ -26,14 +26,15 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
 <p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
-<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear</span></label>
+<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd,.iso,.cso,.elf" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd), PSP (.iso/.cso/.elf)</span></label>
+<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1. PSP requires a compatible wallpaper host; in-game saves download as a .zzzpsp bundle.</p>
 <p id="shelfNote"></p>
 <p id="status" role="status">Loading games…</p>
 <div class="library-columns" aria-hidden="true"><span>Game</span><span>Playback</span><span>Shelf</span><span>Saves</span><span>Library</span></div><div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
 <script>
 const $ = id => document.getElementById(id);
-const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR' };
+const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
 
 const api = (id, parameters) => CompanionAPI.request(id, parameters);
@@ -136,7 +137,7 @@ async function upload(files) {
   for (const file of files) {
     await run(`Added ${file.name}.`, async () => {
       say(`Adding ${file.name}…`);
-      const result = await api('games.carts.add', { query: { name: file.name }, body: file });
+      const result = await CompanionAPI.request('games.carts.add', { query: { name: file.name }, body: file }, { timeout: 300000 });
       return result.existing ? `${file.name} is already in the library as ${result.cart.title}; its saves are kept.` : `Added ${result.cart.title}.`;
     });
   }

@@ -28,6 +28,8 @@ const (
 	xDpadRight = 0x0008
 	xStart     = 0x0010
 	xBack      = 0x0020
+	xLStick    = 0x0040
+	xRStick    = 0x0080
 	xLB        = 0x0100
 	xRB        = 0x0200
 	xA         = 0x1000
@@ -79,14 +81,18 @@ type winSource struct {
 func NewSource() Source { return &winSource{} }
 
 func (s *winSource) Controller() (uint32, bool) {
+	state := s.DetailedController()
+	return state.Buttons, state.Connected
+}
+
+func (s *winSource) DetailedController() ControllerState {
 	if procXInputGetState == nil {
-		return 0, false
+		return ControllerState{}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.tick++
-	var mask uint32
-	found := false
+	var resultState ControllerState
 	for i := 0; i < maxPads; i++ {
 		if !s.connected[i] && s.tick%emptySlotEvery != 1 {
 			continue
@@ -95,11 +101,59 @@ func (s *winSource) Controller() (uint32, bool) {
 		result, _, _ := procXInputGetState.Call(uintptr(i), uintptr(unsafe.Pointer(&state)))
 		s.connected[i] = result == 0
 		if s.connected[i] {
-			found = true
-			mask |= padMask(state.gamepad)
+			resultState.Buttons |= padMask(state.gamepad)
+			if !resultState.Connected {
+				p := state.gamepad
+				resultState.DigitalButtons = digitalPadMask(p)
+				resultState.Axes = [4]int16{padAxis(int32(p.thumbLX)), padAxis(-int32(p.thumbLY)), padAxis(int32(p.thumbRX)), padAxis(-int32(p.thumbRY))}
+			}
+			resultState.Connected = true
 		}
 	}
-	return mask, found
+	return resultState
+}
+
+func padAxis(v int32) int16 {
+	const dead = 7849
+	if v >= -dead && v <= dead {
+		return 0
+	}
+	negative := v < 0
+	if negative {
+		v = -v
+	}
+	if v > 32767 {
+		v = 32767
+	}
+	v = (v - dead) * 32767 / (32767 - dead)
+	if v < 32767 {
+		v = v / 256 * 256
+	}
+	if negative {
+		v = -v
+	}
+	return int16(v)
+}
+
+func digitalPadMask(p xinputGamepad) uint32 {
+	// Keep positional face buttons; remove stick-to-D-pad/trigger aliases.
+	digital := p
+	digital.thumbLX, digital.thumbLY = 0, 0
+	digital.leftTrigger, digital.rightTrigger = 0, 0
+	m := padMask(digital)
+	if p.leftTrigger > 30 {
+		m |= 1 << ButtonL2
+	}
+	if p.rightTrigger > 30 {
+		m |= 1 << ButtonR2
+	}
+	if p.buttons&xLStick != 0 {
+		m |= 1 << ButtonL3
+	}
+	if p.buttons&xRStick != 0 {
+		m |= 1 << ButtonR3
+	}
+	return m
 }
 
 // DesktopFocused is true when the desktop (the window the wallpaper is drawn

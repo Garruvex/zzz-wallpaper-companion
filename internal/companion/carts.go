@@ -38,16 +38,42 @@ var systemsByExt = map[string]system{
 	".sfc": {"snes", ".srm"}, ".smc": {"snes", ".srm"},
 	".md": {"segaMD", ".srm"}, ".gen": {"segaMD", ".srm"}, ".smd": {"segaMD", ".srm"},
 	".sms": {"segaMS", ".srm"}, ".gg": {"segaGG", ".srm"},
+	// Baseline PS1 uses a single image, not a loose CUE/BIN disc set.
+	".bin": {"psx", ".srm"}, ".img": {"psx", ".srm"}, ".pbp": {"psx", ".srm"},
+	".chd": {"psx", ".srm"},
+	".iso": {"psp", ".zzzpsp"}, ".cso": {"psp", ".zzzpsp"}, ".elf": {"psp", ".zzzpsp"},
 }
 
 const (
-	maxROMBytes      = 64 << 20
+	maxROMBytes      = 2 << 30
 	maxCartFileBytes = 8 << 20
 	stateBackups     = 3
 	// A new backup is taken when the current state is at least this old, so
 	// the backups reach back in time instead of all being 30 seconds apart.
 	stateBackupAge = 10 * time.Minute
 )
+
+func romByteLimit(sys string) int64 {
+	if sys == "psp" || sys == "psx" {
+		return maxROMBytes
+	}
+	return 64 << 20
+}
+
+func cartByteLimit(c cart, kind string) int64 {
+	if kind == "rom" {
+		return romByteLimit(c.System)
+	}
+	if c.System == "psp" || c.System == "psx" {
+		if kind == "state" {
+			return 256 << 20
+		}
+		if c.System == "psp" && kind == "save" {
+			return 64 << 20
+		}
+	}
+	return maxCartFileBytes
+}
 
 type cart struct {
 	ID     string `json:"id"`
@@ -230,7 +256,7 @@ func (s *APIServer) getCartFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > maxROMBytes {
+	if err != nil || !info.Mode().IsRegular() || info.Size() > cartByteLimit(c, kind) {
 		writeError(w, http.StatusNotFound, "not there yet")
 		return
 	}
@@ -255,9 +281,10 @@ func (s *APIServer) putCartFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, err.Error())
 		return
 	}
-	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCartFileBytes))
+	limit := cartByteLimit(c, kind)
+	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 	if err != nil || len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "file must be 1 byte to 8 MB")
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("file must be 1 byte to %d MiB", limit>>20))
 		return
 	}
 	if old, err := os.ReadFile(path); err == nil {
