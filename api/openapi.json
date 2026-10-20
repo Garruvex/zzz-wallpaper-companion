@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ZZZ Wallpaper Companion API",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
   },
   "servers": [
@@ -317,7 +317,7 @@
           "System"
         ],
         "summary": "system.stats",
-        "description": "Latest sample collected once per second. GPU is omitted when unavailable. Percentage usage and byte counters.",
+        "description": "Latest sample collected once per second. GPU and network rates are omitted when unavailable. Percentage usage, byte counters and byte-per-second rates.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -2551,6 +2551,16 @@
           },
           "gpu": {
             "type": "number"
+          },
+          "netDownBytesPerSec": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Received bytes per second across the physical network adapters, eased over about two seconds. Omitted when unavailable."
+          },
+          "netUpBytesPerSec": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sent bytes per second across the physical network adapters, eased over about two seconds. Omitted when unavailable."
           },
           "uptimeSeconds": {
             "type": "integer",
