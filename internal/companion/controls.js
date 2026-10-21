@@ -70,7 +70,6 @@
     const control={sync,close,wrapper,popup,trigger};adapters.push(control);
     new MutationObserver(sync).observe(input,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','selected','checked'],characterData:true});sync();
   }
-  document.querySelectorAll('select,input[type=checkbox]').forEach(dropdown);
   document.addEventListener('pointerdown',event=>{if(opened&&!opened.wrapper.contains(event.target)&&!opened.popup.contains(event.target))opened.close();});
   document.addEventListener('change',()=>queueMicrotask(syncAll));
   document.addEventListener('reset',()=>queueMicrotask(syncAll));
@@ -85,6 +84,9 @@
     node.querySelector('.zzz-pill-label').textContent=label;
     const invoke=()=>{if(node.getAttribute('aria-disabled')!=='true')action();};node.addEventListener('click',invoke);node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();invoke();}});return node;
   }
+  // The shell runs enhance() for each tab it shows and teardown() when it leaves one.
+  function enhance(){
+  document.querySelectorAll('select,input[type=checkbox]').forEach(dropdown);
   for(const form of document.querySelectorAll('#settings,#form,#dateForm')){
     const native=form.querySelector('button[type=submit],button:not([type])');if(!native)continue;
     const dock=document.createElement('footer');dock.className='settings-dock';dock.setAttribute('aria-label','Settings actions');
@@ -104,4 +106,14 @@
     if(status){status.setAttribute('role','status');dock.prepend(status);}
     const version=document.querySelector('.shell-footer');if(version)dock.append(version);
   }
+  }
+  // The version footer goes back to the page before the dock that holds it is removed.
+  function teardown(footer){
+    opened?.close();adapters.length=0;
+    if(footer)document.body.append(footer);
+    document.querySelectorAll('.zzz-options,.settings-dock').forEach(node=>node.remove());
+    document.body.classList.remove('has-settings-dock');
+  }
+  window.companionControls={enhance,teardown};
+  enhance();
 })();

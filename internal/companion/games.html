@@ -109,6 +109,7 @@ function importSave(cart) {
 }
 
 function render() {
+  if (visit.signal.aborted) return; // a reply that lands after leaving the tab
   $('file').accept = $('file').accept.replace(PSP_FILES, '') + (psp.unlocked ? PSP_FILES : '');
   for (const node of document.querySelectorAll('.psp')) node.hidden = !psp.unlocked;
   const onShelf = carts.filter(cart => cart.onShelf).length;
@@ -162,23 +163,35 @@ drop.addEventListener('drop', event => { event.preventDefault(); upload([...even
 
 const pspLock = unlocked => unlocked === undefined ? api('games.psp.get') : api('games.psp.save', { body: { unlocked } });
 
-// The secret: up up down down left right left right B A. Typing it again locks PSP.
-const SECRET = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-let typed = 0;
-document.addEventListener('keydown', event => {
-  if (event.target.closest?.('input, textarea, select')) return;
-  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-  typed = key === SECRET[typed] ? typed + 1 : key === SECRET[0] ? 1 : 0;
-  if (typed < SECRET.length) return;
-  typed = 0;
+// Leaving the Games tab stops its timer and the secret listener.
+const visit = new AbortController();
+document.addEventListener('zzz:leave', () => visit.abort(), { once: true });
+
+// The secret sequence unlocks PSP; typing it again locks it. Only its SHA-256
+// is kept here: the last SECRET_KEYS keys, joined by spaces, must hash to
+// SECRET_HASH. Each key has to follow the one before within SECRET_GAP_MS,
+// or the sequence starts over. Keys typed into a text field don't count.
+const SECRET_HASH = 'dd5866d170f7a3cb3ba0536f9dd26a6a7ca3401444cdeba736b914d8191275eb';
+const SECRET_KEYS = 10, SECRET_GAP_MS = 1500;
+let typed = [], lastKey = 0;
+const sha256 = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(byte => byte.toString(16).padStart(2, '0')).join('');
+document.addEventListener('keydown', async event => {
+  if (event.repeat || ['Shift', 'Control', 'Alt', 'Meta'].includes(event.key) || event.target.closest?.('input, textarea, select')) return;
+  const now = performance.now();
+  if (now - lastKey > SECRET_GAP_MS) typed = [];
+  lastKey = now;
+  typed = [...typed, event.key.length === 1 ? event.key.toLowerCase() : event.key].slice(-SECRET_KEYS);
+  if (typed.length < SECRET_KEYS || await sha256(typed.join(' ')) !== SECRET_HASH) return;
+  typed = [];
   const unlock = !psp.unlocked;
   run(unlock ? 'PSP unlocked. It is still experimental, so a game may hang or crash.' : 'PSP locked again. Your PSP games and saves are kept.', async () => {
     psp = await pspLock(unlock);
     drop.classList.remove('unlocked'); void drop.offsetWidth;
     if (unlock) drop.classList.add('unlocked');
   });
-});
+}, { signal: visit.signal });
 refresh();
-setInterval(() => { if (!busy && !document.hidden && !games.contains(document.activeElement)) refresh(); }, 4000);
+const poll = setInterval(() => { if (!busy && !document.hidden && !$('games').contains(document.activeElement)) refresh(); }, 4000);
+visit.signal.addEventListener('abort', () => clearInterval(poll));
 </script>
 </main></body></html>
