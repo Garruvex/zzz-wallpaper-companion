@@ -9,6 +9,9 @@ import (
 
 func TestExperimentalDiscImportsAndSaves(t *testing.T) {
 	server := testServer(t)
+	if err := server.setPSPUnlocked(true); err != nil {
+		t.Fatal(err)
+	}
 	for _, sample := range []struct{ name, system, save string }{
 		{"Raiden.chd", "psx", "save.srm"}, {"PS1.pbp", "psx", "save.srm"},
 		{"Patapon.iso", "psp", "save.zzzpsp"}, {"Portable.cso", "psp", "save.zzzpsp"},
@@ -46,6 +49,9 @@ func TestDiscLimitsAndUploadCleanup(t *testing.T) {
 		t.Fatal("incorrect save limits")
 	}
 	server := testServer(t)
+	if err := server.setPSPUnlocked(true); err != nil {
+		t.Fatal(err)
+	}
 	response := cartRequest(t, server, http.MethodPost, "/api/v1/carts?name=Empty.iso", nil)
 	if response.Code != http.StatusBadRequest {
 		t.Fatal(response.Code)

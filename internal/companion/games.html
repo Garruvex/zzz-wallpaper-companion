@@ -22,12 +22,15 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .empty{color:var(--muted);padding:18px 0}
 button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent)}
 #shelfNote{margin:0}
+.game.locked .title,.game.locked button.primary,.game.locked button.shelf{opacity:.45}
+#drop.unlocked{animation:unlocked 1.2s ease-out}
+@keyframes unlocked{0%{border-color:#fff;background:#2b2f12}25%{border-color:#4ad7ff}50%{border-color:#b4ff3c}100%{border-color:#4a5053;background:transparent}}
 </style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main>
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
 <p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
-<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd,.iso,.cso,.elf" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd), PSP (.iso/.cso/.elf)</span></label>
-<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1. PSP uses the experimental EmulatorJS 4.3.0 prerelease with GPU rendering. GTA: Vice City Stories may hang during its intro. PSP requires a compatible wallpaper host; in-game saves download as a .zzzpsp bundle.</p>
+<label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd)<span class="psp" hidden>, PSP (.iso/.cso/.elf)</span></span></label>
+<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1.<span class="psp" hidden> PSP uses the experimental EmulatorJS 4.3.0 prerelease with GPU rendering. GTA: Vice City Stories may hang during its intro. PSP requires a compatible wallpaper host; in-game saves download as a .zzzpsp bundle.</span></p>
 <p id="shelfNote"></p>
 <p id="status" role="status">Loading games…</p>
 <div class="library-columns" aria-hidden="true"><span>Game</span><span>Playback</span><span>Shelf</span><span>Saves</span><span>Library</span></div><div id="games" aria-label="Game library"></div>
@@ -36,6 +39,9 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
+// PSP stays locked (greyed out, no PSP uploads) until the secret sequence is typed.
+let psp = { unlocked: false, locked: [] };
+const PSP_FILES = ',.iso,.cso,.elf';
 
 const api = (id, parameters) => CompanionAPI.request(id, parameters);
 const when = iso => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
@@ -53,7 +59,7 @@ async function run(message, task) {
 
 async function refresh() {
   try {
-    [{ carts }, current] = await Promise.all([api('games.carts.list'), api('games.selection.get')]);
+    [{ carts }, current, psp] = await Promise.all([api('games.carts.list'), api('games.selection.get'), pspLock()]);
     await Promise.all([...open].map(async id => { details[id] = await api("games.carts.details", { path: { id } }).catch(() => null); }));
     if ($('status').textContent === 'Loading games…') say('');
   } catch (error) { say('Could not reach the companion.'); }
@@ -103,22 +109,28 @@ function importSave(cart) {
 }
 
 function render() {
+  $('file').accept = $('file').accept.replace(PSP_FILES, '') + (psp.unlocked ? PSP_FILES : '');
+  for (const node of document.querySelectorAll('.psp')) node.hidden = !psp.unlocked;
   const onShelf = carts.filter(cart => cart.onShelf).length;
   $('shelfNote').textContent = carts.length ? `The wallpaper's shelf shows ${onShelf} of its 14 tapes. Turn "On shelf" on for the games you want there; the rest stay playable from this page.` : '';
   const list = $('games');
   list.replaceChildren();
-  if (!carts.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Drop a game file above.' })); return; }
-  for (const cart of carts) {
+  const library = [...carts, ...psp.locked].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
+  if (!library.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Drop a game file above.' })); return; }
+  for (const cart of library) {
+    const locked = psp.locked.includes(cart);
     const onTV = current.id === cart.id;
     const shown = open.has(cart.id);
+    const lockedButton = label => Object.assign(button(label, null, label === 'Play on TV' ? 'primary' : 'shelf'), { disabled: true, title: 'PSP games are locked' });
     const row = el('div', { className: 'game-row' },
       el('div', { className: 'title' },
         el('b', { textContent: cart.title }),
-        el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
+        el('span', { className: `chip${onTV ? ' on' : ''}`, textContent: locked ? 'PSP · LOCKED' : onTV ? 'ON TV' : (SYSTEMS[cart.system] || cart.system) }),
         onTV ? el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }) : '',
         el('small', { textContent: cart.rom })),
-      onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
-      button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
+      locked ? lockedButton('Play on TV')
+        : onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
+      locked ? lockedButton('On shelf') : button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
         () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
       button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }),
       button('Remove', () => {
@@ -127,7 +139,7 @@ function render() {
       }, 'danger'));
         for (const action of [...row.children].slice(1)) { const cell=el('div',{className:'game-cell'});action.replaceWith(cell);cell.append(action); }
     row.querySelector('.title').title=cart.rom;
-    list.append(el('div', { className: `game${onTV ? ' is-playing' : ''}` }, row, shown ? savesPanel(cart) : ''));
+    list.append(el('div', { className: `game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, row, shown ? savesPanel(cart) : ''));
   }
 }
 
@@ -147,6 +159,25 @@ const drop = $('drop');
 for (const type of ['dragenter', 'dragover']) drop.addEventListener(type, event => { event.preventDefault(); drop.classList.add('over'); });
 for (const type of ['dragleave', 'drop']) drop.addEventListener(type, () => drop.classList.remove('over'));
 drop.addEventListener('drop', event => { event.preventDefault(); upload([...event.dataTransfer.files]); });
+
+const pspLock = unlocked => unlocked === undefined ? api('games.psp.get') : api('games.psp.save', { body: { unlocked } });
+
+// The secret: up up down down left right left right B A. Typing it again locks PSP.
+const SECRET = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+let typed = 0;
+document.addEventListener('keydown', event => {
+  if (event.target.closest?.('input, textarea, select')) return;
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  typed = key === SECRET[typed] ? typed + 1 : key === SECRET[0] ? 1 : 0;
+  if (typed < SECRET.length) return;
+  typed = 0;
+  const unlock = !psp.unlocked;
+  run(unlock ? 'PSP unlocked. It is still experimental, so a game may hang or crash.' : 'PSP locked again. Your PSP games and saves are kept.', async () => {
+    psp = await pspLock(unlock);
+    drop.classList.remove('unlocked'); void drop.offsetWidth;
+    if (unlock) drop.classList.add('unlocked');
+  });
+});
 refresh();
 setInterval(() => { if (!busy && !document.hidden && !games.contains(document.activeElement)) refresh(); }, 4000);
 </script>

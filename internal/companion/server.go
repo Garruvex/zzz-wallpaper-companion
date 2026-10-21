@@ -90,6 +90,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"games.carts.action":     s.gameAction,
 		"games.selection.get":    s.getCurrentGame,
 		"games.selection.save":   s.setCurrentGame,
+		"games.psp.get":          s.getPSPLock,
+		"games.psp.save":         s.savePSPLock,
 		"input.stream":           s.inputStream,
 		"input.playMode.save":    s.setPlayMode,
 		"dates.list":             s.getDates,

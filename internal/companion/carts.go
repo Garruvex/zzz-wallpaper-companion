@@ -154,15 +154,16 @@ func readCart(root, id string) (cart, bool) {
 
 // wrapLooseROMs gives every ROM file sitting directly in the ROM folder its
 // own cartridge folder, bringing along saves made by earlier versions
-// (Game.sav, Game.sav.bak, Game.state).
-func wrapLooseROMs(root string) {
+// (Game.sav, Game.sav.bak, Game.state). Loose PSP files wait where they are
+// while PSP is locked.
+func wrapLooseROMs(root string, pspUnlocked bool) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return
 	}
 	for _, entry := range entries {
 		sys, ok := romSystem(entry.Name())
-		if !ok || !entry.Type().IsRegular() {
+		if !ok || !entry.Type().IsRegular() || (sys.ID == "psp" && !pspUnlocked) {
 			continue
 		}
 		base := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
@@ -196,9 +197,11 @@ func wrapLooseROMs(root string) {
 	}
 }
 
-func (s *APIServer) cartList() []cart {
+// libraryCarts is every cartridge in the ROM folder, locked PSP games
+// included, in title order.
+func (s *APIServer) libraryCarts() []cart {
 	root := s.ensureROMDir()
-	wrapLooseROMs(root)
+	wrapLooseROMs(root, s.pspUnlocked())
 	entries, _ := os.ReadDir(root)
 	carts := []cart{}
 	for _, entry := range entries {
@@ -209,6 +212,19 @@ func (s *APIServer) cartList() []cart {
 		}
 	}
 	sort.Slice(carts, func(i, j int) bool { return strings.ToLower(carts[i].Title) < strings.ToLower(carts[j].Title) })
+	return carts
+}
+
+// cartList is the games that can be played: the library without locked PSP
+// games. This is all the wallpaper ever sees.
+func (s *APIServer) cartList() []cart {
+	unlocked := s.pspUnlocked()
+	carts := []cart{}
+	for _, c := range s.libraryCarts() {
+		if !pspLocked(c, unlocked) {
+			carts = append(carts, c)
+		}
+	}
 	applyShelf(carts)
 	return carts
 }
@@ -230,6 +246,9 @@ func (s *APIServer) cartFile(r *http.Request) (c cart, path, kind string, ok boo
 	}
 	switch kind = r.PathValue("file"); kind {
 	case "rom":
+		if pspLocked(c, s.pspUnlocked()) {
+			return cart{}, "", "", false
+		}
 		path = c.ROM
 	case "save":
 		path = c.save

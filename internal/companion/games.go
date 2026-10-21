@@ -65,8 +65,13 @@ func (s *APIServer) setCurrentGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.ID != "" {
-		if _, ok := s.cartByID(body.ID); !ok {
+		c, ok := s.cartByID(body.ID)
+		if !ok {
 			writeError(w, http.StatusNotFound, "no such game")
+			return
+		}
+		if pspLocked(c, s.pspUnlocked()) {
+			writeError(w, http.StatusConflict, "PSP games are locked")
 			return
 		}
 	}
@@ -139,8 +144,13 @@ var unsafeNameChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
 func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Query().Get("name"))
 	sys, ok := romSystem(name)
-	if !ok {
-		writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
+	unlocked := s.pspUnlocked()
+	if !ok || pspLocked(cart{System: sys.ID}, unlocked) {
+		if unlocked {
+			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
+		} else {
+			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM or PS1 single image (.bin .img .pbp .chd)")
+		}
 		return
 	}
 	// Stream large disc uploads to disk while hashing instead of allocating
@@ -381,6 +391,10 @@ func applyShelf(carts []cart) {
 // setShelf puts a game on the shelf or takes it off.
 func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	on := r.URL.Query().Get("on") == "1"
+	if on && pspLocked(c, s.pspUnlocked()) {
+		writeError(w, http.StatusConflict, "PSP games are locked")
+		return
+	}
 	if on {
 		taken := 0
 		for _, other := range s.cartList() {
