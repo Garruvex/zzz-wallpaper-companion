@@ -22,11 +22,15 @@ var operationsJS string
 //go:embed browser-client.js
 var browserClientJS string
 
+//go:embed status.js
+var statusJS string
+
 func companionBrowserAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	io.WriteString(w, operationsJS)
 	io.WriteString(w, browserClientJS)
+	io.WriteString(w, statusJS)
 }
 
 // The shared ZZZ UI kit, copied from the wallpaper by its tools/export-ui-kit.cjs

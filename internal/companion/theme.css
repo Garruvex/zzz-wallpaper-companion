@@ -43,3 +43,9 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .shell-nav a[aria-current=page]{animation:selection-breathe 2.4s ease-in-out infinite;color:#050505;box-shadow:none}
 @media(prefers-reduced-motion:reduce){.game.is-playing .game-row{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}.shell-nav a[aria-current=page]{animation:none;background:var(--select-yellow);box-shadow:none}}
 .nav-items{padding:12px;margin:-12px;gap:12px}
+/* Status lines are message bars (the shared UI kit's .zzz-message): a floating notice above the
+   settings dock, or at the bottom of a page that has no dock. They never take clicks. */
+#status,.status{position:fixed;left:0;right:0;bottom:24px;z-index:90;display:flex;justify-content:center;min-height:0;margin:0;padding:0 4vw;color:inherit;font-size:inherit;pointer-events:none}
+#status:empty,.status:empty{display:none}
+.settings-dock #status,.settings-dock .status{position:absolute;bottom:100%;margin:0 0 14px;justify-content:flex-end;font-size:inherit;min-height:0}
+@media(max-width:720px){.settings-dock #status,.settings-dock .status{padding:0 18px}}

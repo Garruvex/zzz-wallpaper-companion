@@ -102,7 +102,7 @@
       const reset=pill(createPill,'Reset','reset',()=>{
         const mapping={port:'port',height:'maxHeight',transcodeHeight:'transcodeHeight',channel:'updateChannel',startup:'launchOnStartup',autoUpdate:'autoUpdate'};
         for(const [id,key] of Object.entries(mapping)){const input=document.getElementById(id);if(input.type==='checkbox')input.checked=defaults[key];else input.value=defaults[key];}
-        document.dispatchEvent(new Event('zzz:sync'));status.textContent='Defaults restored. Press Save to apply.';
+        document.dispatchEvent(new Event('zzz:sync'));companionSay('Defaults restored. Press Save to apply.');
       });actions.prepend(reset);follow(reset,native);
     }
     if(status){status.setAttribute('role','status');dock.prepend(status);}

@@ -46,3 +46,21 @@ func TestUIKitIsServed(t *testing.T) {
 		t.Fatalf("kit script: %d %s", r.Code, r.Header().Get("Content-Type"))
 	}
 }
+
+// Status lines are message bars from the kit: pages go through companionSay, never straight to the element.
+func TestStatusLinesUseTheMessageBar(t *testing.T) {
+	s := testServer(t)
+	helper := cartRequest(t, s, http.MethodGet, "/ui/api.js", nil).Body.String()
+	if !strings.Contains(helper, "window.companionSay") || !strings.Contains(helper, "createMessage") {
+		t.Fatal("/ui/api.js does not carry the status helper")
+	}
+	for _, path := range []string{"/settings", "/dates", "/holidays", "/games"} {
+		body := cartRequest(t, s, http.MethodGet, path, nil).Body.String()
+		if strings.Contains(body, "status.textContent") || strings.Contains(body, "$('status').textContent") {
+			t.Errorf("%s writes its status as plain text", path)
+		}
+	}
+	if strings.Contains(controlsJS, "status.textContent") {
+		t.Error("controls.js writes a status as plain text")
+	}
+}
