@@ -133,17 +133,23 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
    lit, the ones already past are dimmed and listed last. */
 #preview .group-title{margin:22px 0 10px 6px;list-style:none}
 .holiday-row{display:flex;align-items:center;gap:16px;margin:0 0 10px;padding:8px 18px 8px 8px;border-radius:18px;background:#202124;box-shadow:inset 0 0 0 2px #2d2f33;list-style:none}
-.date-block{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:56px;border-radius:12px;background:#050506;box-shadow:inset 3px 0 0 var(--zzz-lime)}
-.date-block b{font:900 italic 26px/1 var(--zzz-font);color:#fff}
-.date-block i{margin-top:2px;font:900 11px/1 var(--zzz-font);font-style:normal;letter-spacing:.12em;color:var(--zzz-lime)}
+/* The date block is the game's item slot (template 14): a rounded square with a thick grey rim and a
+   thin black outline, a dark panel with the day over the month, and a coloured strip curving along the
+   bottom (the accent). The next holiday carries the game's yellow corner badge, like its "1ST". */
+.date-block{--strip:#10a8ff;position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:66px;height:68px;padding-bottom:10px;border-radius:15px;background:#3b3d42;box-shadow:0 0 0 2px #000}
+.date-block::before{content:"";position:absolute;inset:5px;border-radius:11px;background:var(--strip);box-shadow:inset 0 0 0 1.5px #000}
+.date-block::after{content:"";position:absolute;left:5px;right:5px;top:5px;bottom:16px;border-radius:0 0 10px 10px;background:radial-gradient(ellipse 85% 75% at 50% 35%,#24262b,#0b0c0e 75%);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.date-block b,.date-block i{position:relative;z-index:1}
+.date-block b{font:900 italic 24px/1 var(--zzz-font);color:#fff}
+.date-block i{margin-top:3px;font:900 10px/1 var(--zzz-font);font-style:normal;letter-spacing:.12em;color:#c9cbc4}
+.date-block em{position:absolute;z-index:2;left:2px;bottom:8px;font:italic 900 11px/1 var(--zzz-font);color:#0c0d0f;-webkit-text-stroke:3px #ffd21f;paint-order:stroke fill;text-shadow:0 0 0 #000}
 .holiday-title{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
 .holiday-title b{font:900 18px/1.3 var(--zzz-font);color:#fff}
 .holiday-title .chip{margin:0}
-.holiday-row.is-next{background:#262a14;box-shadow:inset 0 0 0 2px var(--zzz-lime)}
+.holiday-row.is-next{--strip:#ffae00;background:#26272b}
+.holiday-row.is-next .date-block{--strip:#ffae00}
 .holiday-row.is-past{background:#1a1b1e;box-shadow:inset 0 0 0 2px #25272a}
-.holiday-row.is-past .date-block{box-shadow:inset 3px 0 0 #3a3c40}
-.holiday-row.is-past .date-block b{color:#8b8f96}
-.holiday-row.is-past .date-block i{color:#62656b}
+.holiday-row.is-past .date-block{--strip:#59625e;opacity:.7}
 .holiday-row.is-past .holiday-title b{color:#8b8f96}
 /* Games: the actions as a row of equal buttons. */
 .game.zzz-item{margin:0 0 16px;padding:8px}
@@ -220,3 +226,15 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 @media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%;justify-content:flex-end}}
 /* A lit tag (ON TV, NEXT): lime fill, dark text, on any page. */
 .chip.on{background:var(--zzz-lime);color:var(--zzz-ink)}
+/* The tape number tile is a button that opens the 01-14 picker; the tiles in the picker are the same
+   white tiles, the current one lit, the ones other games have dimmed. */
+button.tape-num{border:0;padding:0;cursor:pointer}
+button.tape-num:focus-visible,.tape-cell:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+button.tape-num:active,.tape-cell:active{background:var(--zzz-lime)}
+button.tape-num:disabled,.tape-cell:disabled{cursor:default}
+.tape-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 8px 0 78px;padding:12px 14px;border-radius:18px;background:#17181b;box-shadow:inset 0 0 0 2px #2d2f33}
+.tape-picker small{flex:none;margin:0 6px 0 0;font:900 13px/1 var(--zzz-font);color:#9a9ea4}
+.tape-cell{width:46px;height:36px;border:0;padding:0;border-radius:18px;background:#f4f4ee;color:#0c0d0f;font:900 italic 16px/1 var(--zzz-font);cursor:pointer}
+.tape-cell.is-taken{background:#3a3c40;color:#b8bcc2}
+.tape-cell.is-current{background:var(--zzz-lime);color:var(--zzz-ink)}
+@media(max-width:900px){.tape-picker{margin-left:0}}

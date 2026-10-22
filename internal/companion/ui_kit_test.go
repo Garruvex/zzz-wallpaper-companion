@@ -103,7 +103,7 @@ func TestShellHasThreeTopTabsAndNoHoverOrYellow(t *testing.T) {
 	}
 }
 
-// Panels are built like the game's: a title card per section and item cards (a black title bar over
+// Panels are built like the game's item cards (a black title bar over
 // a body) for settings, forms, saved dates, holiday months and games.
 func TestPanelsUseTitleAndItemCards(t *testing.T) {
 	s := testServer(t)
@@ -113,7 +113,7 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 			t.Errorf("/ui/api.js lacks %s", want)
 		}
 	}
-	for _, want := range []string{"companionTitleCard(", "companionCard(", "zzz-item-bar"} {
+	for _, want := range []string{"companionCard(", "zzz-item-bar"} {
 		if !strings.Contains(shellJS, want) {
 			t.Errorf("shell.js lacks %s", want)
 		}
@@ -131,6 +131,13 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 	// The Library is the shelf as a list, 01 to 14, numbered like the tapes.
 	if !strings.Contains(gamesHTML, "tape-num") || !strings.Contains(gamesHTML, "tape <= 14") {
 		t.Error("the Library is not listed by tape")
+	}
+	// The number tile moves a game to another tape, and a section is not titled again over its cards.
+	if !strings.Contains(gamesHTML, "tapePicker(") || !strings.Contains(gamesHTML, "action: 'tape'") {
+		t.Error("the tape number cannot be changed")
+	}
+	if strings.Contains(shellJS, "companionTitleCard(") {
+		t.Error("the shell puts a repeated title card over each section")
 	}
 	if strings.Contains(gamesHTML, "library-columns") {
 		t.Error("the Games page still has the table headings")

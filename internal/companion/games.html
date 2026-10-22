@@ -37,6 +37,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
+let picking = ''; // the game whose tape picker is open
 // While PSP is locked its games are greyed out and PSP files are not offered.
 let psp = { unlocked: false, locked: [] };
 const PSP_FILES = ',.iso,.cso,.elf';
@@ -140,6 +141,32 @@ function render() {
 
 const tapeNumber = tape => el('span', { className: 'tape-num', textContent: tape ? String(tape).padStart(2, '0') : '--' });
 
+// The number tile is a button: it opens a picker of tapes 01 to 14 under the game's line. Choosing a
+// tape moves the game there (a game on it swaps places; an off-shelf game puts its owner off).
+function tapeButton(cart, tape) {
+  const tile = el('button', { type: 'button', className: 'tape-num tape-pick', disabled: busy || psp.locked.includes(cart),
+    title: tape ? 'Move to another tape' : 'Put on a tape',
+    onclick: () => { picking = picking === cart.id ? '' : cart.id; render(); } }, tape ? String(tape).padStart(2, '0') : '--');
+  tile.setAttribute('aria-expanded', String(picking === cart.id));
+  tile.setAttribute('aria-label', tape ? `${cart.title} is on tape ${tape}. Move it to another tape` : `Put ${cart.title} on a tape`);
+  return tile;
+}
+
+function tapePicker(cart) {
+  const owners = new Map(carts.filter(other => other.tape).map(other => [other.tape, other]));
+  const cells = [];
+  for (let n = 1; n <= 14; n++) {
+    const owner = owners.get(n);
+    const cell = el('button', { type: 'button', className: `tape-cell${cart.tape === n ? ' is-current' : ''}${owner && owner !== cart ? ' is-taken' : ''}`, disabled: busy || cart.tape === n,
+      title: cart.tape === n ? 'This is its tape' : owner ? (cart.tape ? `Swap with ${owner.title}` : `Takes the tape from ${owner.title}, who goes off the shelf`) : 'Free tape',
+      onclick: () => { picking = ''; run(`${cart.title} is on tape ${n}.`, () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n } })); } },
+      String(n).padStart(2, '0'));
+    cell.setAttribute('aria-label', `Tape ${n}${owner && owner !== cart ? `, has ${owner.title}` : ''}`);
+    cells.push(cell);
+  }
+  return el('div', { className: 'tape-picker' }, el('small', { textContent: cart.tape ? 'Move to tape:' : 'Put on tape:' }), ...cells);
+}
+
 // One line per game: tape number, title and tags, its actions, and a fold button for its saves.
 function gameRow(cart, tape) {
   const locked = psp.locked.includes(cart);
@@ -167,8 +194,9 @@ function gameRow(cart, tape) {
   fold.setAttribute('aria-expanded', String(shown));
   fold.setAttribute('aria-label', `${shown ? 'Close' : 'Open'} saves and Remove for ${cart.title}`);
   const actions = el('span', { className: 'tape-actions' }, el('span', { className: 'tape-label', textContent: 'Shelf' }), shelf, el('span', { className: 'tape-divider' }), play);
-  const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, tapeNumber(tape), title, actions, fold);
-  return shown ? el('div', { className: 'tape-item' }, row, savesPanel(cart)) : row;
+  const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, tapeButton(cart, tape), title, actions, fold);
+  const picker = picking === cart.id && !locked ? tapePicker(cart) : '';
+  return shown || picker ? el('div', { className: 'tape-item' }, row, picker, shown ? savesPanel(cart) : '') : row;
 }
 
 const select = id => api('games.selection.save', { body: { id } }).then(() => '');

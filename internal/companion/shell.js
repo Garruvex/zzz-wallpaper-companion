@@ -72,20 +72,9 @@
       body.className = 'zzz-item-body'; body.append(...form.childNodes);
       form.classList.add('zzz-item'); form.append(bar, body);
     }
-    // Every section opens with a title card (its name, and the tab it belongs to), except on a
-    // settings screen, which keeps the game's small grey section labels.
-    const owner = groupOf(path);
-    const titleCard = label => companionTitleCard(main.ownerDocument, label, owner.label);
-    if (owner?.sections && !owner.rows) for (const [key, label] of owner.sections) {
-      const section = main.querySelector(`[data-section="${key}"]`);
-      if (!section) continue;
-      section.querySelector(':scope > h2.group-title')?.remove();
-      section.prepend(titleCard(label));
-    }
-    else if (owner?.tabs && !owner.rows) {
-      const label = owner.tabs.find(([tabPath]) => tabPath === path)?.[1];
-      if (label) main.prepend(titleCard(label));
-    }
+    // No title card on top: the side menu already names the section, and the game's own cards carry a
+    // subject (a character), not the menu entry again. General keeps the small grey section labels the
+    // game's settings screens have.
     return main;
   };
   let target = null; // the tab being opened, so quick arrow presses keep stepping
