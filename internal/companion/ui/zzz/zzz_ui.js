@@ -261,6 +261,47 @@ export function confirmDialog({ title, message = "", confirmLabel = "Confirm", c
   });
 }
 
+// Message bar medals (style/ui/zzz_ui.css, .zzz-message): dark glyphs in a 24 x 24 box.
+const MESSAGE_GLYPHS = {
+  error: [["path", { d: "M6 6l12 12M18 6L6 18", stroke: "currentColor", "stroke-width": 4, "stroke-linecap": "round" }]],
+  caution: [["path", { d: "M12 3.5v10.5", stroke: "currentColor", "stroke-width": 4.2, "stroke-linecap": "round" }], ["circle", { cx: 12, cy: 19.5, r: 2.4, fill: "currentColor" }]],
+  info: [["circle", { cx: 12, cy: 4.6, r: 2.4, fill: "currentColor" }], ["path", { d: "M12 10v10.5", stroke: "currentColor", "stroke-width": 4.2, "stroke-linecap": "round" }]],
+};
+
+// A message bar. kind: "error", "caution" or "info". headline is optional and shown first in
+// the kind's colour; text is the message. Returns the element; place and remove it yourself.
+export function createMessage(doc, kind, { headline = "", text = "" } = {}) {
+  const shapes = MESSAGE_GLYPHS[kind] || MESSAGE_GLYPHS.info;
+  const bar = doc.createElement("div");
+  bar.className = `zzz-message is-${MESSAGE_GLYPHS[kind] ? kind : "info"}`;
+  bar.setAttribute("role", kind === "error" ? "alert" : "status");
+  if (headline) {
+    const head = doc.createElement("em");
+    head.className = "zzz-message-head";
+    head.textContent = headline;
+    bar.appendChild(head);
+  }
+  if (text) {
+    const body = doc.createElement("span");
+    body.className = "zzz-message-text";
+    body.textContent = text;
+    bar.appendChild(body);
+  }
+  const medal = doc.createElement("span");
+  medal.className = "zzz-message-medal";
+  const svg = doc.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  for (const [tag, attrs] of shapes) {
+    const shape = doc.createElementNS(SVG_NS, tag);
+    for (const [name, value] of Object.entries(attrs)) shape.setAttribute(name, String(value));
+    svg.appendChild(shape);
+  }
+  medal.appendChild(svg);
+  bar.appendChild(medal);
+  return bar;
+}
+
 // A short notification bar. Replaces the previous one in the same host; it slides in and out.
 export function showToast(host, text, { ms = 1600, className = "" } = {}) {
   host.__zzzToast?.remove();
