@@ -93,7 +93,8 @@
   let styles = [...document.querySelectorAll('style')];
   const shell=document.createElement('div'); shell.className='shell';
   const nav=document.createElement('nav'); nav.className='shell-nav'; nav.setAttribute('aria-label','Companion pages');
-  const currentGroup=()=>groupOf(page)||groups[0];
+  // While a tab is opening, the menus already show it (target), so a click answers at once.
+  const currentGroup=()=>groupOf(target||page)||groups[0];
   const chosen={}; // the section shown on each page
   const sectionOf=()=>{const list=currentGroup().sections||[];return list.some(([key])=>key===chosen[page])?chosen[page]:list[0]?.[0];};
   const showSection=()=>{const key=sectionOf();if(key)for(const node of main.querySelectorAll('[data-section]'))node.hidden=node.dataset.section!==key;};
@@ -118,8 +119,8 @@
     const group=currentGroup(),section=sectionOf();
     items.replaceChildren();
     for(const [path,label] of group.tabs||[]){
-      const link=document.createElement('a');link.href=path;link.className=path===page?'zzz-sel is-selected':'zzz-sel';link.textContent=label;
-      if(path===page)link.setAttribute('aria-current','page');
+      const link=document.createElement('a');link.href=path;link.className=path===(target||page)?'zzz-sel is-selected':'zzz-sel';link.textContent=label;
+      if(path===(target||page))link.setAttribute('aria-current','page');
       items.append(link);
     }
     for(const [key,label] of group.sections||[]){
@@ -129,7 +130,7 @@
     }
     selectable([...items.children]);
     shell.classList.toggle('no-side',!group.tabs&&!group.sections);
-    showSection();
+    if(!target)showSection();
   };
   const mark=()=>{
     const group=currentGroup();
@@ -153,9 +154,11 @@
     if (!isTab(path) || path === page) return;
     const token = ++visit;
     target = path;
+    mark();
     let source;
     try {
-      const response = await fetch(path, { cache: 'no-store' });
+      // A companion that doesn't answer within 5 s gets a normal page load instead.
+      const response = await fetch(path, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
       if (!response.ok) throw Error(response.statusText);
       source = new DOMParser().parseFromString(await response.text(), 'text/html');
     } catch { location.href = path; return; }
