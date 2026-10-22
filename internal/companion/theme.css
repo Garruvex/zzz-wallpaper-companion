@@ -148,3 +148,23 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .zzz-fold:active::before{background:var(--zzz-ink)}
 .game-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:720px){#settings label.zzz-row{grid-template-columns:1fr;border-radius:28px;padding:14px 16px}.game-actions{grid-template-columns:1fr 1fr}}
+/* The shelf list (Game, Library): one dark pill per tape, its number in a white tile like the tape's
+   tag in the wallpaper, then the title and tags, the actions, and the fold button for the saves.
+   Empty tapes are dimmed. */
+#games .group-title{margin:20px 0 10px 6px}
+.tape-row{display:flex;align-items:center;gap:14px;min-height:60px;margin:0 0 10px;padding:6px 8px;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33}
+.tape-num{flex:none;display:grid;place-items:center;width:54px;height:44px;border-radius:22px;background:#f4f4ee;color:#0c0d0f;font:900 italic 20px/1 var(--zzz-font)}
+.tape-title{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.tape-title b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:900 19px/1.2 var(--zzz-font);color:#fff}
+.tape-title .chip{flex:none;margin:0}
+.tape-actions{flex:none;display:flex;gap:8px}
+.tape-actions button{min-width:112px;min-height:44px;padding:6px 14px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);color:#fff;font:900 italic 13px/1 var(--zzz-font)}
+.tape-actions button.danger{color:#ff9a8f}
+.tape-row.is-playing{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+.tape-row.is-empty{background:#1a1b1e;box-shadow:inset 0 0 0 2px #25272a}
+.tape-row.is-empty .tape-num{background:#36383c;color:#8b8f96}
+.tape-row.is-empty .tape-title{color:#6c7076;font:800 italic 16px/1 var(--zzz-font)}
+.tape-item{margin:0 0 10px}
+.tape-item>.tape-row{margin:0}
+.tape-item>.saves{margin:8px 24px 0}
+@media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%}.tape-actions button{flex:1;min-width:0}}

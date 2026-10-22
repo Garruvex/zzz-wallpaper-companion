@@ -118,10 +118,14 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 			t.Errorf("shell.js lacks %s", want)
 		}
 	}
-	for path, page := range map[string]string{"dates": datesHTML, "holidays": holidaysHTML, "games": gamesHTML} {
+	for path, page := range map[string]string{"dates": datesHTML, "holidays": holidaysHTML} {
 		if !strings.Contains(page, "companionCard(document") {
 			t.Errorf("%s does not render its list as item cards", path)
 		}
+	}
+	// The Library is the shelf as a list, 01 to 14, numbered like the tapes.
+	if !strings.Contains(gamesHTML, "tape-num") || !strings.Contains(gamesHTML, "tape <= 14") {
+		t.Error("the Library is not listed by tape")
 	}
 	if strings.Contains(gamesHTML, "library-columns") {
 		t.Error("the Games page still has the table headings")

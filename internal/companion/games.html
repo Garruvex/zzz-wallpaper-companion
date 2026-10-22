@@ -22,7 +22,7 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .empty{color:var(--muted);padding:18px 0}
 button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent)}
 #shelfNote{margin:0}
-.game.locked .zzz-item-title,.game.locked button.primary,.game.locked button.shelf{opacity:.45}
+.game.locked .tape-title,.game.locked button.primary,.game.locked button.shelf{opacity:.45}
 </style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main>
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
@@ -108,46 +108,57 @@ function importSave(cart) {
   input.click();
 }
 
+// The Library lists the shelf as it is in the wallpaper: tapes 01 to 14 (the numbers on the tapes'
+// tags), empty ones included, then the games that are not on the shelf.
 function render() {
   if (visit.signal.aborted) return; // a reply that lands after leaving the tab
   $('file').accept = $('file').accept.replace(PSP_FILES, '') + (psp.unlocked ? PSP_FILES : '');
   for (const node of document.querySelectorAll('.psp')) node.hidden = !psp.unlocked;
-  const onShelf = carts.filter(cart => cart.onShelf).length;
-  $('shelfNote').textContent = carts.length ? `The wallpaper's shelf shows ${onShelf} of its 14 tapes. Turn "On shelf" on for the games you want there; the rest stay playable from this page.` : '';
+  $('shelfNote').textContent = carts.length ? 'The numbers are the tapes on the wallpaper\'s shelf. Turn "On shelf" on for the games you want there; the rest stay playable from this page.' : '';
   const list = $('games');
   list.replaceChildren();
   const library = [...carts, ...psp.locked].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
-  if (!library.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Drop a game file above.' })); return; }
-  for (const cart of library) {
-    const locked = psp.locked.includes(cart);
-    const onTV = current.id === cart.id;
-    const shown = open.has(cart.id);
-    const lockedButton = label => Object.assign(button(label, null, label === 'Play on TV' ? 'primary' : 'shelf'), { disabled: true, title: 'PSP games are locked' });
-    const actions = el('div', { className: 'game-actions' },
-      locked ? lockedButton('Play on TV')
-        : onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
-      locked ? lockedButton('On shelf') : button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
-        () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
-      button('Remove', () => {
-        if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
-          run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
-      }, 'danger'));
-    for (const action of [...actions.children]) { const cell = el('div', { className: 'game-cell' }); action.replaceWith(cell); cell.append(action); }
-    const tags = [
-      locked ? el('span', { className: 'chip', textContent: 'PSP · LOCKED' }) : '',
-      onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '',
-      locked ? '' : el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }),
-    ];
-    const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Hide saves' : 'Saves', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
-    fold.setAttribute('aria-expanded', String(shown));
-    fold.setAttribute('aria-label', `${shown ? 'Hide' : 'Show'} saves for ${cart.title}`);
-    const card = companionCard(document, cart.title, { tools: [...tags, fold], body: [actions, shown ? savesPanel(cart) : ''] });
-    card.classList.add('game');
-    card.classList.toggle('is-playing', onTV);
-    card.classList.toggle('locked', locked);
-    card.querySelector('.zzz-item-title').title = cart.rom;
-    list.append(card);
+  if (!library.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Add one in Add Games.' })); return; }
+  const byTape = new Map(carts.filter(cart => cart.tape).map(cart => [cart.tape, cart]));
+  list.append(el('h2', { className: 'group-title', textContent: 'On the shelf' }));
+  for (let tape = 1; tape <= 14; tape++) {
+    const cart = byTape.get(tape);
+    list.append(cart ? gameRow(cart, tape) : el('div', { className: 'tape-row is-empty' }, tapeNumber(tape), el('span', { className: 'tape-title', textContent: 'Empty tape' })));
   }
+  const off = library.filter(cart => !cart.tape);
+  if (off.length) {
+    list.append(el('h2', { className: 'group-title', textContent: 'Not on the shelf' }));
+    for (const cart of off) list.append(gameRow(cart));
+  }
+}
+
+const tapeNumber = tape => el('span', { className: 'tape-num', textContent: tape ? String(tape).padStart(2, '0') : '--' });
+
+// One line per game: tape number, title and tags, its actions, and a fold button for its saves.
+function gameRow(cart, tape) {
+  const locked = psp.locked.includes(cart);
+  const onTV = current.id === cart.id;
+  const shown = open.has(cart.id);
+  const lockedButton = label => Object.assign(button(label, null, label === 'Play on TV' ? 'primary' : 'shelf'), { disabled: true, title: 'PSP games are locked' });
+  const title = el('span', { className: 'tape-title', title: cart.rom },
+    el('b', { textContent: cart.title }),
+    locked ? el('span', { className: 'chip', textContent: 'PSP · LOCKED' }) : '',
+    onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '',
+    locked ? '' : el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }));
+  const actions = el('span', { className: 'tape-actions' },
+    locked ? lockedButton('Play on TV')
+      : onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
+    locked ? lockedButton('On shelf') : button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
+      () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
+    button('Remove', () => {
+      if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
+        run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
+    }, 'danger'));
+  const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Hide saves' : 'Saves', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
+  fold.setAttribute('aria-expanded', String(shown));
+  fold.setAttribute('aria-label', `${shown ? 'Hide' : 'Show'} saves for ${cart.title}`);
+  const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, tapeNumber(tape), title, actions, fold);
+  return shown ? el('div', { className: 'tape-item' }, row, savesPanel(cart)) : row;
 }
 
 const select = id => api('games.selection.save', { body: { id } }).then(() => '');
