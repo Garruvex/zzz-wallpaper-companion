@@ -77,7 +77,8 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .top-tabs a:last-child>.tab-shape::after{left:20px;right:0;border-radius:0 999px 999px 0;transform:none}
 .top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after,.top-tabs a:active>.tab-shape::before,.top-tabs a:active>.tab-shape::after,.top-tabs a:focus-visible>.tab-shape::before,.top-tabs a:focus-visible>.tab-shape::after{display:block}
 /* Current tab: filled, black text, lime <-> green, pulsing; the glow follows the outline. */
-.top-tabs a.is-selected>.tab-shape{animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite}
+/* The tab's own pace: a swell every 0.6 s (two per 1.2 s cycle), much quicker than the kit's 3.2 s. */
+.top-tabs a.is-selected>.tab-shape{animation:zzz-tab-pulse 1.2s ease-in-out infinite}
 .top-tabs a.is-selected{color:var(--zzz-ink);filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
 .top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after{animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
 /* Press: the shape fills lime and the text turns black. */
