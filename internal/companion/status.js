@@ -45,3 +45,10 @@ window.companionCard = (doc, title, { tag = 'div', tools = [], body = [] } = {})
   card.append(bar, inner);
   return card;
 };
+
+// Asks with the shared UI kit's Confirm / Cancel dialog; resolves true or false. options: title, message,
+// confirmLabel, cancelLabel. Without the kit (the recovery page) it falls back to the browser's confirm().
+window.companionConfirm = async options => {
+  const module = await import('/ui/zzz/zzz_ui.js').catch(() => null);
+  return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
+};

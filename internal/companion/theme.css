@@ -240,3 +240,12 @@ button.tape-num:disabled,.tape-cell:disabled{cursor:default}
 @media(max-width:900px){.tape-picker{margin-left:0}}
 /* The switch sits at the right end of its row, like the dropdowns did. */
 #settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
+/* Small buttons are the kit's chip button (the panel template's small white buttons), a little larger for
+   this window: white, dark capitals; lime on keyboard focus or press; a red-text variant for the ones
+   that remove something. */
+/* (button.zzz-chipbtn / a.zzz-chipbtn: the kit's own rule loads after the theme, so these need the extra weight.) */
+button.zzz-chipbtn,a.zzz-chipbtn{min-height:0;padding:8px 18px;font:900 13px/1.2 var(--zzz-font);font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;display:inline-block}
+.zzz-chipbtn.is-danger{color:#c4261c}
+.zzz-chipbtn:active{background:var(--zzz-lime);color:var(--zzz-ink)}
+.zzz-chipbtn:disabled{opacity:.4;cursor:default}
+.zzz-chipbtn:focus-visible{box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}

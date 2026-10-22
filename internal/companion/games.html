@@ -49,7 +49,8 @@ const say = (text, kind) => companionSay(text, kind);
 let loaded = false;
 say('Loading games…');
 const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
-const button = (label, action, className = '') => el('button', { type: 'button', className, textContent: label, disabled: busy, onclick: action });
+// Small buttons are the kit's chip button; className 'danger' makes its text red.
+const button = (label, action, className = '') => el('button', { type: 'button', className: `zzz-chipbtn${className.includes('danger') ? ' is-danger' : ''}`, textContent: label, disabled: busy, onclick: action });
 
 async function run(message, task) {
   if (busy) return;
@@ -77,28 +78,28 @@ function savesPanel(cart) {
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Game save ' }), el('small', { textContent: save ? `${size(save.size)} · ${when(save.modified)}` : 'none yet' })),
     el('span', { className: 'row' },
-      save ? el('a', { className: 'button', href: fileUrl('save'), textContent: 'Download' }) : '',
+      save ? el('a', { className: 'zzz-chipbtn', href: fileUrl('save'), textContent: 'Download' }) : '',
       button('Import…', () => importSave(cart)))));
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Resume point ' }), el('small', { textContent: info.state ? `where you left off · ${when(info.state.modified)}` : 'none yet' }))));
   for (const point of info.states) {
     panel.append(el('div', { className: 'line' },
       el('small', { textContent: `Earlier resume point · ${when(point.modified)}` }),
-      button('Go back to this', () => {
-        if (confirm(`Go back to the resume point from ${when(point.modified)}? The current one is kept in the game's backups folder.`))
+      button('Go back to this', async () => {
+        if (await companionConfirm({ title: 'Go back to this resume point?', message: `From ${when(point.modified)}. The current one is kept in the game's backups folder.`, confirmLabel: 'Go back' }))
           run('Restored. The TV reloads the game if it is playing it.', () => action('restore', { state: point.n }));
       })));
   }
   panel.append(el('div', { className: 'line' },
     el('small', { textContent: 'Deleted saves move to the game\'s backups folder, so a mistake can be undone by hand.' }),
-    button('Delete save', () => {
-      if (confirm(`Delete the save and resume points of ${cart.title}? It starts from the beginning next time. The files move to its backups folder.`))
+    button('Delete save', async () => {
+      if (await companionConfirm({ title: 'Delete the save?', message: `${cart.title} starts from the beginning next time. Its save and resume points move to its backups folder.`, confirmLabel: 'Delete' }))
         run('Save deleted.', () => action('reset'));
     }, 'danger')));
   panel.append(el('div', { className: 'line' },
     el('small', { textContent: 'Remove the game and its tape. The game and its saves move to roms/.removed.' }),
-    button('Remove game', () => {
-      if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
+    button('Remove game', async () => {
+      if (await companionConfirm({ title: `Remove ${cart.title}?`, message: 'The game and its tape come off the shelf. The game and its saves move to roms/.removed.', confirmLabel: 'Remove' }))
         run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
     }, 'danger')));
   return panel;
@@ -107,9 +108,9 @@ function savesPanel(cart) {
 function importSave(cart) {
   const input = $('importFile');
   input.value = '';
-  input.onchange = () => {
+  input.onchange = async () => {
     const file = input.files[0];
-    if (!file || !confirm(`Use ${file.name} as the save for ${cart.title}? The game starts from that save; the current save and resume points move to its backups folder.`)) return;
+    if (!file || !await companionConfirm({ title: `Use ${file.name} as the save?`, message: `${cart.title} starts from that save. The current save and resume points move to its backups folder.`, confirmLabel: 'Use it' })) return;
     run('Save imported.', () => api('games.carts.action', { path: { id: cart.id, action: 'import' }, body: file }));
   };
   input.click();

@@ -156,3 +156,25 @@ func TestCheckboxesAreSwitches(t *testing.T) {
 		t.Error("the theme lacks the switch")
 	}
 }
+
+// Small buttons are the kit's chip button, and anything that asks goes through the kit's Confirm /
+// Cancel dialog (companionConfirm), never the browser's own confirm().
+func TestSmallButtonsAndConfirmUseTheKit(t *testing.T) {
+	s := testServer(t)
+	if helper := cartRequest(t, s, http.MethodGet, "/ui/api.js", nil).Body.String(); !strings.Contains(helper, "window.companionConfirm") || !strings.Contains(helper, "confirmDialog") {
+		t.Error("/ui/api.js lacks the confirm helper")
+	}
+	for name, page := range map[string]string{"games": gamesHTML, "dates": datesHTML, "holidays": holidaysHTML} {
+		if strings.Contains(page, "confirm(") && !strings.Contains(page, "companionConfirm(") {
+			t.Errorf("%s asks with the browser's confirm()", name)
+		}
+		for _, line := range strings.Split(page, "\n") {
+			if strings.Contains(line, "confirm(") && !strings.Contains(line, "companionConfirm(") && !strings.Contains(line, "window.confirm") {
+				t.Errorf("%s still has a browser confirm(): %.80s", name, line)
+			}
+		}
+	}
+	if !strings.Contains(gamesHTML, "zzz-chipbtn") || !strings.Contains(datesHTML, "zzz-chipbtn") {
+		t.Error("the Games or Dates buttons are not the kit's chip button")
+	}
+}
