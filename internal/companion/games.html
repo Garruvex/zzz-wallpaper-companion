@@ -49,8 +49,8 @@ const say = (text, kind) => companionSay(text, kind);
 let loaded = false;
 say('Loading games…');
 const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
-// Small buttons are the kit's chip button; className 'danger' makes its text red.
-const button = (label, action, className = '') => el('button', { type: 'button', className: `zzz-chipbtn${className.includes('danger') ? ' is-danger' : ''}`, textContent: label, disabled: busy, onclick: action });
+// Small buttons are all the same: the kit's chip button, restyled as the game's black pill.
+const button = (label, action) => el('button', { type: 'button', className: 'zzz-chipbtn', textContent: label, disabled: busy, onclick: action });
 
 async function run(message, task) {
   if (busy) return;
