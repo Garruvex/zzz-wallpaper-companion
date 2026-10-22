@@ -162,16 +162,17 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .tape-divider{width:2px;height:26px;border-radius:1px;background:#3a3c40}
 /* The game's switch (Skill Info's "Stats"), traced close up: a charcoal outer rim round a black
    border, an inner fill (dark when off, deep green when on), the state in tall narrow capitals, and
-   a polished dome knob in a black socket: dark grey, a bright highlight on its upper left, darker
-   underneath, with a short light indicator line just left of centre. Off: knob left, OFF light on
+   a cap-shaped knob in a black socket (an upside-down cupcake: a flat, lighter top face on a wider,
+   darker base, a bright highlight on its upper left), with a short light indicator line on the face. Off: knob left, OFF light on
    the right. On: the fill turns green, the knob sits right, ON black on the left. */
 .zzz-switch{position:relative;flex:none;width:92px;height:36px;min-height:0;padding:0;border:0;border-radius:18px;background:#0c0d0e;box-shadow:0 0 0 3px #2b2c2f,0 0 0 4px #0b0c0d;color:#c9cbce;font:900 18px/1 var(--zzz-font);cursor:pointer}
 .zzz-switch::before{content:"";position:absolute;inset:4px;border-radius:14px;background:linear-gradient(#1c1d20,#232427)}
 .zzz-switch>span{position:absolute;z-index:1;top:50%;right:14px;transform:translateY(-50%) scaleX(.78);transform-origin:right center}
 .zzz-switch::after{content:"";position:absolute;z-index:2;top:5px;left:5px;width:26px;height:26px;border-radius:50%;
-  background:linear-gradient(#d4d6d9,#d4d6d9) 30% 54%/7px 2px no-repeat,
-    radial-gradient(circle at 31% 27%,rgba(255,255,255,.95) 0,rgba(255,255,255,.45) 9%,transparent 22%),
-    radial-gradient(circle at 50% 38%,#8f9297 0,#5f6267 45%,#2e3033 100%);
+  background:linear-gradient(#d4d6d9,#d4d6d9) 32% 42%/7px 2px no-repeat,
+    radial-gradient(circle at 34% 24%,rgba(255,255,255,.9) 0,rgba(255,255,255,.35) 8%,transparent 16%),
+    radial-gradient(circle 9.5px at 50% 42%,#83868b 0,#6d7075 7.5px,#2a2c2f 8.5px,rgba(42,44,47,0) 9.5px),
+    radial-gradient(circle at 50% 30%,#7a7d82 0,#46494d 55%,#1f2124 100%);
   box-shadow:0 0 0 3px #0b0c0d,inset 1px 1px 1px rgba(255,255,255,.3),inset -1px -2px 3px rgba(0,0,0,.55);transition:transform .15s}
 .zzz-switch.is-on{color:var(--zzz-ink)}
 .zzz-switch.is-on::before{background:linear-gradient(#66b915,#4c9a09)}
