@@ -240,12 +240,12 @@ button.tape-num:disabled,.tape-cell:disabled{cursor:default}
 @media(max-width:900px){.tape-picker{margin-left:0}}
 /* The switch sits at the right end of its row, like the dropdowns did. */
 #settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
-/* Small buttons are the kit's chip button (the panel template's small white buttons), a little larger for
-   this window: white, dark capitals; lime on keyboard focus or press; a red-text variant for the ones
-   that remove something. */
-/* (button.zzz-chipbtn / a.zzz-chipbtn: the kit's own rule loads after the theme, so these need the extra weight.) */
-button.zzz-chipbtn,a.zzz-chipbtn{min-height:0;padding:8px 18px;font:900 13px/1.2 var(--zzz-font);font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;display:inline-block}
-.zzz-chipbtn.is-danger{color:#c4261c}
-.zzz-chipbtn:active{background:var(--zzz-lime);color:var(--zzz-ink)}
-.zzz-chipbtn:disabled{opacity:.4;cursor:default}
-.zzz-chipbtn:focus-visible{box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+/* Small buttons are the game's ("Resource Details"): a black pill with a fine checker texture inside a
+   thick dark-grey rim, white heavy italic text in normal case; lime on press or keyboard focus. The
+   ones that remove something have red text. (button.zzz-chipbtn / a.zzz-chipbtn: the kit's own white
+   .zzz-chipbtn loads after the theme, so these need the extra weight.) */
+button.zzz-chipbtn,a.zzz-chipbtn{display:inline-block;min-height:0;margin:0;padding:7px 20px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);box-shadow:inset 0 0 0 2px #050505;color:#fff;font:900 italic 14px/1.2 var(--zzz-font);letter-spacing:0;text-transform:none;text-decoration:none;text-align:center;cursor:pointer}
+button.zzz-chipbtn.is-danger,a.zzz-chipbtn.is-danger{color:#ff7d72}
+button.zzz-chipbtn:active,a.zzz-chipbtn:active{background:var(--zzz-lime);color:var(--zzz-ink)}
+button.zzz-chipbtn:disabled{opacity:.4;cursor:default}
+button.zzz-chipbtn:focus-visible,a.zzz-chipbtn:focus-visible{outline:none;background:var(--control-checker);box-shadow:inset 0 0 0 2px #050505,0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
