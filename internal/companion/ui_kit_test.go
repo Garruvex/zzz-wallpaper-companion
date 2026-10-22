@@ -64,3 +64,14 @@ func TestStatusLinesUseTheMessageBar(t *testing.T) {
 		t.Error("controls.js writes a status as plain text")
 	}
 }
+
+// The browser's own validation bubbles would swallow a bad entry before the page can say so in a
+// message bar, so these forms check for themselves.
+func TestFormsReportProblemsInTheMessageBar(t *testing.T) {
+	s := testServer(t)
+	for path, form := range map[string]string{"/settings": `<form id="settings" novalidate>`, "/dates": `<form id="dateForm" novalidate>`} {
+		if !strings.Contains(cartRequest(t, s, http.MethodGet, path, nil).Body.String(), form) {
+			t.Errorf("%s: the form lets the browser swallow its own errors", path)
+		}
+	}
+}
