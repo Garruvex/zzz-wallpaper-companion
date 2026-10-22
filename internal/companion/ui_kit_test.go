@@ -143,3 +143,16 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 		t.Error("the Games page still has the table headings")
 	}
 }
+
+// On/off settings are the game's ON / OFF switch, not an Enable / Disable dropdown.
+func TestCheckboxesAreSwitches(t *testing.T) {
+	if !strings.Contains(controlsJS, "function toggle(input)") || !strings.Contains(controlsJS, "querySelectorAll('input[type=checkbox]').forEach(toggle)") {
+		t.Error("checkboxes are not turned into switches")
+	}
+	if strings.Contains(controlsJS, "querySelectorAll('select,input[type=checkbox]')") {
+		t.Error("checkboxes still go through the dropdown")
+	}
+	if !strings.Contains(themeCSS, ".zzz-switch{") {
+		t.Error("the theme lacks the switch")
+	}
+}

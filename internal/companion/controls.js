@@ -70,6 +70,25 @@
     const control={sync,close,wrapper,popup,trigger};adapters.push(control);
     new MutationObserver(sync).observe(input,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','selected','checked'],characterData:true});sync();
   }
+  // A checkbox is the game's ON / OFF switch (the one on the shelf): a button that follows the hidden
+  // checkbox, so the pages keep reading and setting input.checked as before.
+  function toggle(input){
+    const label=input.closest('label');
+    if(label && input.parentElement!==label)label.append(input);
+    const button=document.createElement('button');button.type='button';button.className='zzz-switch';
+    button.setAttribute('role','switch');button.setAttribute('aria-label',rowName(input));
+    const text=document.createElement('span');button.append(text);
+    input.hidden=true;input.after(button);
+    const sync=()=>{button.classList.toggle('is-on',input.checked);button.setAttribute('aria-checked',String(input.checked));text.textContent=input.checked?'ON':'OFF';button.disabled=input.disabled;};
+    button.addEventListener('click',()=>{
+      if(input.disabled)return;
+      input.checked=!input.checked;
+      input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));sync();
+    });
+    input.addEventListener('change',sync);
+    new MutationObserver(sync).observe(input,{attributes:true,attributeFilter:['disabled','checked']});
+    adapters.push({sync,close(){},wrapper:button,popup:button,trigger:button});sync();
+  }
   document.addEventListener('pointerdown',event=>{if(opened&&!opened.wrapper.contains(event.target)&&!opened.popup.contains(event.target))opened.close();});
   document.addEventListener('change',()=>queueMicrotask(syncAll));
   document.addEventListener('reset',()=>queueMicrotask(syncAll));
@@ -88,7 +107,8 @@
   // The shell runs enhance() for each tab it shows and teardown() when it leaves one.
   async function enhance(){
   const visit=++generation;
-  document.querySelectorAll('select,input[type=checkbox]').forEach(dropdown);
+  document.querySelectorAll('select').forEach(dropdown);
+  document.querySelectorAll('input[type=checkbox]').forEach(toggle);
   const {createPill}=await kit;
   if(visit!==generation)return;
   for(const form of document.querySelectorAll('#settings,#form,#dateForm')){

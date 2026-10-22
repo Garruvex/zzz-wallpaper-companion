@@ -238,3 +238,5 @@ button.tape-num:disabled,.tape-cell:disabled{cursor:default}
 .tape-cell.is-taken{background:#3a3c40;color:#b8bcc2}
 .tape-cell.is-current{background:var(--zzz-lime);color:var(--zzz-ink)}
 @media(max-width:900px){.tape-picker{margin-left:0}}
+/* The switch sits at the right end of its row, like the dropdowns did. */
+#settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
