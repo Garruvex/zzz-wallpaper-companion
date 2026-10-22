@@ -51,10 +51,13 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 @media(max-width:720px){.settings-dock #status,.settings-dock .status{padding:0 18px}}
 /* Tabs use the kit's selection states (.zzz-sel): the current tab's border breathes lime <-> green
    and pulses, keyboard focus breathes, a press fills lime. Nothing reacts to the mouse resting on it. */
-.shell-nav a,.subtabs a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
+.shell-nav a,.top-tabs a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
 .shell-nav a{border-bottom:0}
-/* The tab's own bar, top right like the game's: slanted tabs. */
-.subtabs{display:flex;justify-content:flex-end;gap:18px;margin:-8px 0 26px;padding:10px 14px 14px}
-.subtabs a{display:inline-flex;align-items:center;justify-content:center;min-width:190px;height:56px;padding:0 30px;border-radius:8px;transform:skewX(-14deg);font:900 italic 22px/1 var(--zzz-font)}
-.subtabs a>span{display:block;transform:skewX(14deg)}
-@media(max-width:720px){.nav-items{grid-template-columns:repeat(3,1fr)}.subtabs{margin-top:0;padding:6px 8px 12px}.subtabs a{flex:1;min-width:0;padding:0 12px;font-size:18px}}
+/* The main tabs, top right like the game's: slanted tabs in the header. */
+.top-tabs{display:flex;gap:16px;padding:8px 10px}
+.top-tabs a{display:inline-flex;align-items:center;justify-content:center;min-width:150px;height:52px;padding:0 24px;border-radius:8px;transform:skewX(-14deg);font:900 italic 21px/1 var(--zzz-font)}
+.top-tabs a>span{display:block;transform:skewX(14deg)}
+/* A tab with no pages of its own has no side menu, so its page uses the whole width. */
+.shell.no-side{grid-template-columns:minmax(0,1fr)}
+.shell.no-side .shell-nav{display:none}
+@media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;padding:6px 8px 10px}.top-tabs a{flex:1;min-width:0;padding:0 10px;font-size:17px}.shell.no-side{display:block}}
