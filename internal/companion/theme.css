@@ -68,8 +68,14 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .top-tabs a.is-selected,.top-tabs a.is-selected:focus-visible,.top-tabs a.is-selected:active{color:var(--zzz-ink);text-shadow:none;background:transparent;box-shadow:none;
   animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
 .top-tabs a.is-selected::before,.top-tabs a.is-selected::after{content:"";position:absolute;top:0;bottom:0;animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
-.top-tabs a.is-selected::before{left:0;right:16px;border-radius:999px 0 0 999px}
-.top-tabs a.is-selected::after{right:2px;width:40px;border-radius:10px;transform:skewX(-20deg)}
+/* Round only where the tab meets the pill's own round end; slanted wherever it meets another tab.
+   A middle tab is slanted on both sides (one skewed piece). */
+.top-tabs a.is-selected::before{left:6px;right:6px;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a.is-selected::after{content:none}
+.top-tabs a.is-selected:first-child::before{left:0;right:16px;border-radius:999px 0 0 999px;transform:none}
+.top-tabs a.is-selected:first-child::after{content:"";left:auto;right:2px;width:40px;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a.is-selected:last-child::before{left:2px;right:auto;width:40px;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a.is-selected:last-child::after{content:"";left:16px;right:0;width:auto;border-radius:0 999px 999px 0;transform:none}
 /* The pulse: the shape swells and settles back with a small bounce, twice a cycle, like the
    kit's selected border (expand 700 ms, retract 400 ms, rest 500 ms). */
 @keyframes zzz-tab-pulse{
@@ -84,3 +90,5 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .shell.no-side{grid-template-columns:minmax(0,1fr)}
 .shell.no-side .shell-nav{display:none}
 @media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;margin:6px 0 4px;padding:5px 8px}.top-tabs a{flex:1;min-width:0;padding:0 10px;font-size:17px}.shell.no-side{display:block}}
+/* A tab's sections (General, Game) show one at a time, picked in the side menu. */
+[data-section][hidden]{display:none!important}

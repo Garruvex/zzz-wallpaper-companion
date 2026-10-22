@@ -1,11 +1,11 @@
 (() => {
-  // Three tabs along the top right, like the game's. A tab can have pages of its own, listed down
-  // the side (Calendar: custom dates and holidays); each of those is still its own server page.
-  // A tab without pages has no side menu.
+  // Three tabs along the top right, like the game's, and a side menu for the current one. The side
+  // menu lists either the tab's own pages (Calendar: custom dates and holidays, each still its own
+  // server page) or the sections of its one page (General, Game), shown one at a time.
   const groups = [
-    { label: 'General', path: '/settings', paths: ['/settings'] },
+    { label: 'General', path: '/settings', paths: ['/settings'], sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
-    { label: 'Game', path: '/games', paths: ['/games'] },
+    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games']] },
   ];
   const groupOf = path => groups.find(group => group.paths.includes(path));
   const isTab = path => Boolean(groupOf(path));
@@ -39,17 +39,25 @@
     if (path === '/settings') {
       const form=main.querySelector('#settings');
       const groups=[
-        ['Startup & Updates',[['startup','Start with Windows'],['autoUpdate','Automatic Updates']]],
-        ['YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Channel']]],
-        ['Connection',[['port','Companion Port']]]
+        ['startup','Startup & Updates',[['startup','Start with Windows'],['autoUpdate','Automatic Updates']]],
+        ['youtube','YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Channel']]],
+        ['connection','Connection',[['port','Companion Port']]]
       ];
-      for(const [title,fields] of groups){
-        const section=source.createElement('section');section.className='settings-group';
+      for(const [key,title,fields] of groups){
+        const section=source.createElement('section');section.className='settings-group';section.dataset.section=key;
         const heading=source.createElement('h2');heading.className='group-title';heading.textContent=title;section.append(heading);
         for(const [id,label] of fields){const row=main.querySelector('#'+id).closest('label');row.querySelector('span').firstChild.textContent=label;section.append(row);}
         form.insertBefore(section,form.querySelector('button[type=submit]'));
       }
       form.querySelector('.section')?.remove();
+    }
+    if (path === '/games') {
+      // Two sections: the library, and adding games (the drop zone and its notes).
+      const make = key => { const section = main.ownerDocument.createElement('section'); section.dataset.section = key; return section; };
+      const library = make('library'), add = make('add');
+      main.querySelector('#drop').before(library, add);
+      add.append(...[main.querySelector('#drop'), main.querySelector('p.note')].filter(Boolean));
+      library.append(...[main.querySelector('#shelfNote'), main.querySelector('.library-columns'), main.querySelector('#games')].filter(Boolean));
     }
     return main;
   };
@@ -59,28 +67,42 @@
   const shell=document.createElement('div'); shell.className='shell';
   const nav=document.createElement('nav'); nav.className='shell-nav'; nav.setAttribute('aria-label','Companion pages');
   const currentGroup=()=>groupOf(page)||groups[0];
+  const chosen={}; // the section shown on each page
+  const sectionOf=()=>{const list=currentGroup().sections||[];return list.some(([key])=>key===chosen[page])?chosen[page]:list[0]?.[0];};
+  const showSection=()=>{const key=sectionOf();if(key)for(const node of main.querySelectorAll('[data-section]'))node.hidden=node.dataset.section!==key;};
   const arrow=direction=>{
     const button=document.createElement('button'); button.type='button'; button.className=`nav-arrow ${direction<0?'up':'down'}`;
     button.setAttribute('aria-label',direction<0?'Previous page':'Next page');
     button.addEventListener('click',()=>{
-      const pages=currentGroup().tabs||[];
+      const group=currentGroup();
+      if(group.sections){
+        const list=group.sections,at=Math.max(0,list.findIndex(([key])=>key===sectionOf()));
+        chosen[page]=list[(at+direction+list.length)%list.length][0];mark();return;
+      }
+      const pages=group.tabs||[];
       const at=Math.max(0,pages.findIndex(([path])=>path===(target||page)));
       if(pages.length)show(pages[(at+direction+pages.length)%pages.length][0], true);
     });
     return button;
   };
   const items=document.createElement('div');items.className='nav-items';
-  // The side menu lists the current tab's pages, or is left out when it has none.
+  // The side menu lists the current tab's pages or sections; a tab with neither has none.
   const renderSide=()=>{
-    const group=currentGroup();
+    const group=currentGroup(),section=sectionOf();
     items.replaceChildren();
     for(const [path,label] of group.tabs||[]){
       const link=document.createElement('a');link.href=path;link.className=path===page?'zzz-sel is-selected':'zzz-sel';link.textContent=label;
       if(path===page)link.setAttribute('aria-current','page');
       items.append(link);
     }
+    for(const [key,label] of group.sections||[]){
+      const link=document.createElement('a');link.href='#'+key;link.dataset.section=key;link.className=key===section?'zzz-sel is-selected':'zzz-sel';link.textContent=label;
+      if(key===section)link.setAttribute('aria-current','true');
+      items.append(link);
+    }
     selectable([...items.children]);
-    shell.classList.toggle('no-side',!group.tabs);
+    shell.classList.toggle('no-side',!group.tabs&&!group.sections);
+    showSection();
   };
   const mark=()=>{
     const group=currentGroup();
@@ -90,7 +112,7 @@
       if(current)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
     });
     renderSide();
-    const sub=group.tabs?.find(([path])=>path===page)?.[1];
+    const sub=group.tabs?.find(([path])=>path===page)?.[1]||group.sections?.find(([key])=>key===sectionOf())?.[1];
     document.title = `${[group.label,sub].filter(Boolean).join(' · ')} · ZZZ Companion Settings`;
   };
   nav.append(arrow(-1),items,arrow(1));shell.append(nav,main);
@@ -137,6 +159,7 @@
   document.addEventListener('click', event => {
     const link = event.target.closest?.('a[href]');
     if (!link || link.target || event.defaultPrevented || event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (link.dataset.section && link.closest('.nav-items')) { event.preventDefault(); chosen[page] = link.dataset.section; mark(); return; }
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin || !isTab(url.pathname)) return;
     // The top tab you are already on stays put; its side menu changes the page.

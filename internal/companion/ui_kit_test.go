@@ -76,12 +76,12 @@ func TestFormsReportProblemsInTheMessageBar(t *testing.T) {
 	}
 }
 
-// Three tabs along the top right; Calendar lists the custom dates and holidays pages in the side menu,
-// and a tab without pages has no side menu.
+// Three tabs along the top right and a side menu for each: Calendar lists its custom dates and
+// holidays pages, General and Game the sections of their page.
 // The theme keeps to the game's rules: nothing reacts to the mouse resting on it, and the accents
 // are lime and green only.
 func TestShellHasThreeTopTabsAndNoHoverOrYellow(t *testing.T) {
-	for _, want := range []string{"'General'", "'Calendar'", "'Game'", "'Custom Date'", "'Holiday'", "'/dates'", "'/holidays'"} {
+	for _, want := range []string{"'General'", "'Calendar'", "'Game'", "'Custom Date'", "'Holiday'", "'/dates'", "'/holidays'", "'Startup & Updates'", "'Library'", "'Add Games'"} {
 		if !strings.Contains(shellJS, want) {
 			t.Errorf("shell.js lacks %s", want)
 		}
