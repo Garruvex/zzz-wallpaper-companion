@@ -103,3 +103,31 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 @media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;margin:6px 0 4px}.top-tabs a{flex:1;min-width:0;padding:0 14px;font-size:17px}.shell.no-side{display:block}}
 /* A tab's sections (General, Game) show one at a time, picked in the side menu. */
 [data-section][hidden]{display:none!important}
+/* Panels, like the game's: a title card (big name, grey caps subtitle), then item cards, each a
+   black title bar (name, tags on the right) over a body (companionTitleCard / companionCard). */
+.zzz-title-card{display:flex;flex-direction:column;gap:6px;margin:0 0 18px;padding:16px 28px;border-radius:30px;background:#1d1e21;box-shadow:inset 0 0 0 2px #2b2d31}
+.zzz-title-card b{font:900 30px/1.1 var(--zzz-font);color:#fff}
+.zzz-title-card small{margin:0;font:900 15px/1 var(--zzz-font);letter-spacing:.04em;text-transform:uppercase;color:#55585e}
+.zzz-item{display:block;margin:0 0 16px;padding:8px;border:0;border-radius:30px;background:#242528;box-shadow:inset 0 0 0 2px #2d2f33;list-style:none}
+.zzz-item-bar{display:flex;align-items:center;gap:12px;min-height:50px;margin:0;padding:6px 10px 6px 22px;border:0;border-radius:24px;background:#050506;color:#fff;font:900 20px/1.2 var(--zzz-font)}
+.zzz-item-title{flex:1;min-width:0;overflow-wrap:anywhere}
+.zzz-item-body{padding:12px 16px 8px;color:#c9ccd1;font:700 15px/1.5 'Segoe UI',Arial,sans-serif}
+.zzz-item-body:empty{display:none}
+.zzz-item-bar .chip{flex:none;margin:0}
+/* Settings: the row is the bar, with its control at the right. */
+#settings .zzz-item>label.zzz-item-bar{display:flex;min-height:60px;margin:0;padding:6px 8px 6px 22px;border:0;border-radius:24px;background:#050506;font-size:20px}
+#settings .zzz-item-bar>span{flex:1;min-width:0}
+#settings .zzz-item-bar>.zzz-select,#settings .zzz-item-bar>input{flex:none;width:240px}
+/* Form rows inside a card's body. */
+#dateForm,#form{display:block;padding:8px}
+.zzz-item-body>label:not(#drop){display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,45%);align-items:center;gap:14px;margin:0 0 10px;padding:8px 10px 8px 20px;border:0;border-radius:22px;background:#17181b}
+.zzz-item-body>label:not(#drop)[hidden]{display:none}
+/* Lists of cards. */
+#dates,#preview{list-style:none;margin:0;padding:0}
+#dates li.zzz-item,#preview li.zzz-item{margin:0 0 16px;padding:8px;border:0;border-radius:30px;background:#242528}
+.holiday-line{padding:3px 0}
+/* Games: the actions as a row of equal buttons. */
+.game.zzz-item{margin:0 0 16px;padding:8px}
+.game-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.game.is-playing .zzz-item-bar{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+@media(max-width:720px){#settings .zzz-item>label.zzz-item-bar{flex-wrap:wrap;padding:12px 14px}#settings .zzz-item-bar>.zzz-select,#settings .zzz-item-bar>input{width:100%}.zzz-item-body>label:not(#drop){grid-template-columns:1fr}.game-actions{grid-template-columns:1fr 1fr}.zzz-title-card b{font-size:24px}}

@@ -33,7 +33,6 @@
     main.querySelector('.sub')?.remove();
     const heading = main.querySelector('h1');
     if (heading) { heading.className='visually-hidden'; heading.nextElementSibling?.matches('p:not([id]):not([role])') && heading.nextElementSibling.remove(); }
-    main.querySelectorAll('#settings label small').forEach(hint=>{ hint.parentElement.title=hint.textContent; hint.classList.add('visually-hidden'); });
     if(path==='/settings') for(const link of [...main.querySelectorAll('p > a')]) if(isTab(link.getAttribute('href'))) link.parentElement.remove();
     if (path === '/settings') {
       const form=main.querySelector('#settings');
@@ -57,6 +56,38 @@
       main.querySelector('#drop').before(library, add);
       add.append(...[main.querySelector('#drop'), main.querySelector('p.note')].filter(Boolean));
       library.append(...[main.querySelector('#shelfNote'), main.querySelector('.library-columns'), main.querySelector('#games')].filter(Boolean));
+      add.append(companionCard(main.ownerDocument, 'Add game files', { body: [...add.childNodes] }));
+    }
+    // Settings rows become cards: the row itself (name and control) is the black title bar, and its
+    // help text is the body.
+    if (path === '/settings') for (const row of [...main.querySelectorAll('#settings label')]) {
+      const doc = main.ownerDocument, card = doc.createElement('div'), body = doc.createElement('div');
+      card.className = 'zzz-item'; body.className = 'zzz-item-body';
+      const hint = row.querySelector('small');
+      if (hint) { body.textContent = hint.textContent; hint.remove(); }
+      row.replaceWith(card); row.classList.add('zzz-item-bar'); card.append(row, body);
+    }
+    // Forms are cards too: a bar naming the form over its rows.
+    for (const [selector, title] of [['#dateForm', 'Add a date'], ['#form', 'Location']]) {
+      const form = main.querySelector(selector);
+      if (!form) continue;
+      const doc = main.ownerDocument, bar = doc.createElement('div'), name = doc.createElement('span'), body = doc.createElement('div');
+      bar.className = 'zzz-item-bar'; name.className = 'zzz-item-title'; name.textContent = title; bar.append(name);
+      body.className = 'zzz-item-body'; body.append(...form.childNodes);
+      form.classList.add('zzz-item'); form.append(bar, body);
+    }
+    // Every section opens with a title card: its name, and the tab it belongs to.
+    const owner = groupOf(path);
+    const titleCard = label => companionTitleCard(main.ownerDocument, label, owner.label);
+    if (owner?.sections) for (const [key, label] of owner.sections) {
+      const section = main.querySelector(`[data-section="${key}"]`);
+      if (!section) continue;
+      section.querySelector(':scope > h2.group-title')?.remove();
+      section.prepend(titleCard(label));
+    }
+    else if (owner?.tabs) {
+      const label = owner.tabs.find(([tabPath]) => tabPath === path)?.[1];
+      if (label) main.prepend(titleCard(label));
     }
     return main;
   };

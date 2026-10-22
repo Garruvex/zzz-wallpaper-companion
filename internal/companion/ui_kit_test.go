@@ -102,3 +102,28 @@ func TestShellHasThreeTopTabsAndNoHoverOrYellow(t *testing.T) {
 		}
 	}
 }
+
+// Panels are built like the game's: a title card per section and item cards (a black title bar over
+// a body) for settings, forms, saved dates, holiday months and games.
+func TestPanelsUseTitleAndItemCards(t *testing.T) {
+	s := testServer(t)
+	helper := cartRequest(t, s, http.MethodGet, "/ui/api.js", nil).Body.String()
+	for _, want := range []string{"window.companionTitleCard", "window.companionCard"} {
+		if !strings.Contains(helper, want) {
+			t.Errorf("/ui/api.js lacks %s", want)
+		}
+	}
+	for _, want := range []string{"companionTitleCard(", "companionCard(", "zzz-item-bar"} {
+		if !strings.Contains(shellJS, want) {
+			t.Errorf("shell.js lacks %s", want)
+		}
+	}
+	for path, page := range map[string]string{"dates": datesHTML, "holidays": holidaysHTML, "games": gamesHTML} {
+		if !strings.Contains(page, "companionCard(document") {
+			t.Errorf("%s does not render its list as item cards", path)
+		}
+	}
+	if strings.Contains(gamesHTML, "library-columns") {
+		t.Error("the Games page still has the table headings")
+	}
+}
