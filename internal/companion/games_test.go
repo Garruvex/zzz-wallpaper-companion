@@ -244,3 +244,52 @@ func TestShelfGamesKeepTheirTapeNumbers(t *testing.T) {
 		t.Fatal("a game off the shelf kept a tape in cart.json")
 	}
 }
+
+func TestMovingAGameToAnotherTape(t *testing.T) {
+	server := testServer(t)
+	for _, name := range []string{"Castlevania", "Metroid", "Zelda"} {
+		write(t, filepath.Join(server.romDir(), name, "game.gba"), "ROM "+name)
+	}
+	tapes := func() map[string]int {
+		var got struct{ Carts []cart }
+		decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &got)
+		out := map[string]int{}
+		for _, c := range got.Carts {
+			out[c.ID] = c.Tape
+		}
+		return out
+	}
+	move := func(id string, n int, want int) {
+		t.Helper()
+		if r := cartRequest(t, server, http.MethodPost, fmt.Sprintf("/api/v1/carts/%s/do/tape?n=%d", id, n), nil); r.Code != want {
+			t.Fatalf("move %s to %d: %d %s", id, n, r.Code, r.Body)
+		}
+	}
+	expect := func(want map[string]int) {
+		t.Helper()
+		got := tapes()
+		for id, tape := range want {
+			if got[id] != tape {
+				t.Fatalf("tapes %v, want %v", got, want)
+			}
+		}
+	}
+	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// Onto a free tape.
+	move("Zelda", 9, http.StatusNoContent)
+	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 9})
+	// Onto a taken tape: the two swap.
+	move("Castlevania", 9, http.StatusNoContent)
+	expect(map[string]int{"Castlevania": 9, "Metroid": 2, "Zelda": 1})
+	// An off-shelf game takes a tape and bumps its owner off.
+	write(t, filepath.Join(server.romDir(), "Tetris", "game.gb"), "GB")
+	write(t, filepath.Join(server.romDir(), "Tetris", "cart.json"), `{"shelf":false}`)
+	expect(map[string]int{"Tetris": 0})
+	move("Tetris", 2, http.StatusNoContent)
+	expect(map[string]int{"Tetris": 2, "Metroid": 0, "Castlevania": 9, "Zelda": 1})
+	// Bad tapes are refused.
+	move("Zelda", 0, http.StatusBadRequest)
+	move("Zelda", 15, http.StatusBadRequest)
+	move("Nope", 3, http.StatusNotFound)
+}

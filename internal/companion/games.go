@@ -346,6 +346,8 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		s.changedSaves(w, c)
 	case "shelf":
 		s.setShelf(w, r, c)
+	case "tape":
+		s.setTape(w, r, c)
 	case "remove":
 		removed := filepath.Join(s.romDir(), ".removed")
 		if err := os.MkdirAll(removed, 0o755); err != nil {
@@ -413,6 +415,58 @@ func numberTapes(carts []cart) {
 		c.Tape = next
 		taken[next] = true
 	}
+}
+
+// setTape moves a game to tape n (1 to shelfSlots), the number on that tape's tag in the wallpaper,
+// and puts it on the shelf if it was off. If another game has that tape, the two swap tapes; an
+// off-shelf game taking a tape bumps its owner off the shelf instead, since it has no tape to give.
+func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
+	n, err := strconv.Atoi(r.URL.Query().Get("n"))
+	if err != nil || n < 1 || n > shelfSlots {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("n must be a tape from 1 to %d", shelfSlots))
+		return
+	}
+	if pspLocked(c, s.pspUnlocked()) {
+		writeError(w, http.StatusConflict, "PSP games are locked")
+		return
+	}
+	var mover cart
+	var owner *cart
+	carts := s.cartList()
+	for i := range carts {
+		if carts[i].ID == c.ID {
+			mover = carts[i]
+		} else if carts[i].Tape == n {
+			owner = &carts[i]
+		}
+	}
+	if mover.ID == "" {
+		writeError(w, http.StatusNotFound, "no such game")
+		return
+	}
+	write := func(game cart, change func(meta map[string]any)) bool {
+		meta := cartMeta(game.dir)
+		change(meta)
+		return writeCartMeta(game.dir, meta) == nil
+	}
+	ok := true
+	switch {
+	case owner != nil && mover.Tape != 0:
+		// Two games on the shelf trade tapes.
+		ok = write(*owner, func(meta map[string]any) { meta["tape"] = mover.Tape }) &&
+			write(mover, func(meta map[string]any) { meta["tape"] = n })
+	case owner != nil:
+		// An off-shelf game takes the tape; its owner goes off the shelf.
+		ok = write(*owner, func(meta map[string]any) { meta["shelf"] = false; delete(meta, "tape") }) &&
+			write(mover, func(meta map[string]any) { meta["shelf"] = true; meta["tape"] = n })
+	default:
+		ok = write(mover, func(meta map[string]any) { meta["shelf"] = true; meta["tape"] = n })
+	}
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "could not update the shelf")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // setShelf puts a game on the shelf or takes it off.

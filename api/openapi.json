@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ZZZ Wallpaper Companion API",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
   },
   "servers": [
@@ -1935,7 +1935,7 @@
           "Games"
         ],
         "summary": "games.carts.action",
-        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry.",
+        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry. tape moves a game to shelf tape n (1-14), putting it on the shelf if it was off: if another game has that tape the two swap, and an off-shelf game takes the tape by bumping its owner off the shelf (204; 400 for a bad n).",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -2026,7 +2026,8 @@
                 "restore",
                 "import",
                 "remove",
-                "shelf"
+                "shelf",
+                "tape"
               ]
             }
           },
@@ -2049,6 +2050,17 @@
               "type": "string"
             },
             "description": "For shelf: 1=true; all other values=false."
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14
+            },
+            "description": "Required for tape: the shelf tape, 1-14."
           }
         ],
         "requestBody": {
