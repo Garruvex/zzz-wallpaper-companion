@@ -75,6 +75,7 @@ func loadXInput() *syscall.LazyDLL {
 type winSource struct {
 	mu        sync.Mutex
 	connected [maxPads]bool
+	sony      sonyReader
 	tick      int
 }
 
@@ -87,7 +88,7 @@ func (s *winSource) Controller() (uint32, bool) {
 
 func (s *winSource) DetailedController() ControllerState {
 	if procXInputGetState == nil {
-		return ControllerState{}
+		return s.sony.read()
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -109,6 +110,10 @@ func (s *winSource) DetailedController() ControllerState {
 			}
 			resultState.Connected = true
 		}
+	}
+	// A PlayStation pad is not XInput; an Xbox pad wins when both are connected.
+	if !resultState.Connected {
+		return s.sony.read()
 	}
 	return resultState
 }

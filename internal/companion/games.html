@@ -223,17 +223,18 @@ const pspLock = () => api('games.psp.get');
 // The Controller section: the pad as the game station sees it, read every 100 ms while it is showing.
 // Bits are the game station's buttons (face buttons by position: east A, south B, west Y, north X).
 const PAD_BITS = { b: 0, y: 1, select: 2, start: 3, up: 4, down: 5, left: 6, right: 7, a: 8, x: 9, l: 10, r: 11, l2: 12, r2: 13, l3: 14, r3: 15 };
-const padKeys = (names) => names.map(name => { const key = el('span', { className: 'pad-key', textContent: name.toUpperCase() }); key.dataset.key = name; return key; });
-const stick = id => el('div', { className: 'pad-stick', id }, el('i'));
+const padKey = (name, place) => { const key = el('span', { className: 'pad-key', textContent: name.toUpperCase() }); key.dataset.key = name; key.style.gridArea = place; return key; };
+const stick = (id, place) => { const box = el('div', { className: 'pad-stick', id }, el('i')); box.style.gridArea = place; return box; };
+// Laid out like the pad: shoulders on top, D-pad left, face buttons right, menu keys between, sticks below.
 $('pad').append(
   el('p', { id: 'padStatus', className: 'pad-status', role: 'status' }),
-  el('div', { className: 'pad-body' },
-    el('div', { className: 'pad-group' }, el('b', { textContent: 'Shoulders' }), ...padKeys(['l2', 'l', 'r', 'r2'])),
-    el('div', { className: 'pad-group' }, el('b', { textContent: 'D-pad' }), ...padKeys(['up', 'left', 'down', 'right'])),
-    el('div', { className: 'pad-group' }, el('b', { textContent: 'Face buttons' }), ...padKeys(['x', 'y', 'a', 'b'])),
-    el('div', { className: 'pad-group' }, el('b', { textContent: 'Menu' }), ...padKeys(['select', 'start'])),
-    el('div', { className: 'pad-group' }, el('b', { textContent: 'Sticks (press to click)' }), stick('padLeft'), stick('padRight'), ...padKeys(['l3', 'r3']))),
-  el('p', { className: 'pad-note', textContent: 'Buttons light up as you press them. Xbox-style pads and anything Windows shows as an Xbox controller work; Bluetooth pads must be paired first. Games on the shelf take the pad when the wallpaper is in play mode.' }));
+  el('div', { className: 'pad-shape' },
+    padKey('l2', 'l2'), padKey('l', 'l1'), padKey('r', 'r1'), padKey('r2', 'r2'),
+    padKey('up', 'du'), padKey('left', 'dl'), padKey('right', 'dr'), padKey('down', 'dd'),
+    padKey('select', 'sel'), padKey('start', 'sta'),
+    padKey('x', 'fn'), padKey('y', 'fw'), padKey('a', 'fe'), padKey('b', 'fs'),
+    stick('padLeft', 'ls'), stick('padRight', 'rs'), padKey('l3', 'l3'), padKey('r3', 'r3')),
+  el('p', { className: 'pad-note', textContent: 'Buttons light up as you press them. Xbox-style pads and PlayStation 4 / 5 pads work; Bluetooth pads must be paired first. Games on the shelf take the pad when the wallpaper is in play mode.' }));
 let padWas = null;
 async function padTick() {
   const section = $('pad').closest('[data-section]');
