@@ -128,7 +128,11 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 /* Lists of cards. */
 #dates,#preview{list-style:none;margin:0;padding:0}
 #dates li.zzz-item,#preview li.zzz-item{margin:0 0 16px;padding:8px;border:0;border-radius:30px;background:#242528}
-.holiday-line{padding:3px 0}
+/* The holiday list uses the shelf list's lines (see the Game Library below); past days are dimmed. */
+#preview .group-title{margin:20px 0 10px 6px;list-style:none}
+.holiday-row.is-past{background:#1a1b1e;box-shadow:inset 0 0 0 2px #25272a}
+.holiday-row.is-past .tape-num{background:#36383c;color:#8b8f96}
+.holiday-row.is-past .tape-title b{color:#8b8f96}
 /* Games: the actions as a row of equal buttons. */
 .game.zzz-item{margin:0 0 16px;padding:8px}
 .game-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}

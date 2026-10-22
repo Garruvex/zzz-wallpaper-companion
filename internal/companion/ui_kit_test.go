@@ -118,10 +118,14 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 			t.Errorf("shell.js lacks %s", want)
 		}
 	}
-	for path, page := range map[string]string{"dates": datesHTML, "holidays": holidaysHTML} {
+	for path, page := range map[string]string{"dates": datesHTML} {
 		if !strings.Contains(page, "companionCard(document") {
 			t.Errorf("%s does not render its list as item cards", path)
 		}
+	}
+	// The holidays are listed like the shelf: a line per day under month labels.
+	if !strings.Contains(holidaysHTML, "tape-row holiday-row") {
+		t.Error("the holidays are not listed like the shelf")
 	}
 	// The Library is the shelf as a list, 01 to 14, numbered like the tapes.
 	if !strings.Contains(gamesHTML, "tape-num") || !strings.Contains(gamesHTML, "tape <= 14") {
