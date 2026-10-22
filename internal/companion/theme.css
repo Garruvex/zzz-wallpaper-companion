@@ -160,16 +160,17 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .tape-actions{flex:none;display:flex;align-items:center;gap:12px}
 .tape-label{font:900 15px/1 var(--zzz-font);color:#9a9ea4}
 .tape-divider{width:2px;height:26px;border-radius:1px;background:#3a3c40}
-/* The template's switch (10-selectables): a dark pill whose white knob slides right and turns lime
-   when on, with ON / OFF written in it like the game's "Stats" switch. */
-.zzz-switch{position:relative;flex:none;width:84px;height:38px;min-height:0;padding:0;border:0;border-radius:19px;background:#050506;box-shadow:0 0 0 2px #4a4c52;color:#8b8f96;font:900 italic 13px/1 var(--zzz-font);cursor:pointer}
-.zzz-switch::after{content:"";position:absolute;top:4px;left:4px;width:30px;height:30px;border-radius:50%;background:#f4f4ee;transition:transform .15s,background .15s}
-.zzz-switch>span{position:absolute;top:50%;right:13px;transform:translateY(-50%)}
+/* The game's switch (Skill Info's "Stats"): a dark recessed pill, a small grey metal knob, and the
+   state written in grey upright capitals. Off: knob left, OFF on the right. On: the knob slides right
+   and lights lime, ON on the left. */
+.zzz-switch{position:relative;flex:none;width:96px;height:36px;min-height:0;padding:0;border:0;border-radius:18px;background:linear-gradient(#131416,#1e1f22);box-shadow:inset 0 2px 4px rgba(0,0,0,.75),0 0 0 2px #2c2e32;color:#62656b;font:900 15px/1 var(--zzz-font);cursor:pointer}
+.zzz-switch::after{content:"";position:absolute;top:5px;left:5px;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a3a6ab 0,#5d6065 45%,#2e3034 100%);box-shadow:0 0 0 1px #0d0e10,inset 0 -1px 2px rgba(0,0,0,.5);transition:transform .15s,background .15s}
+.zzz-switch>span{position:absolute;top:50%;right:15px;transform:translateY(-50%)}
 .zzz-switch.is-on{color:var(--zzz-lime)}
-.zzz-switch.is-on::after{transform:translateX(46px);background:var(--zzz-lime)}
-.zzz-switch.is-on>span{right:auto;left:13px}
-.zzz-switch:focus-visible{outline:none;box-shadow:0 0 0 2px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
-.zzz-switch:active::after{background:var(--zzz-ink)}
+.zzz-switch.is-on::after{transform:translateX(60px);background:radial-gradient(circle at 35% 30%,#f6ffc4 0,var(--zzz-lime) 45%,#7c9310 100%)}
+.zzz-switch.is-on>span{right:auto;left:15px}
+.zzz-switch:focus-visible{outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.75),0 0 0 2px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.zzz-switch:active::after{filter:brightness(.7)}
 .zzz-switch:disabled{opacity:.4;cursor:default}
 /* A round action button like the fold button: play, or eject (lime ring) while the game is on the TV. */
 .zzz-round-action{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;cursor:pointer}
