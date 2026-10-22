@@ -53,9 +53,9 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
    and pulses, keyboard focus breathes, a press fills lime. Nothing reacts to the mouse resting on it. */
 .shell-nav a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
 .shell-nav a{border-bottom:0}
-/* The current page in the side menu is filled solid like the current top tab (the game's Move List):
-   colour alternating lime <-> green, edge pulsing, black text. */
-.shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite,zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite;box-shadow:none;color:var(--zzz-ink);text-shadow:none;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+/* The current page in the side menu is a steady solid fill with black text, like the game's Move
+   List: no pulse, so only the top tab moves. */
+.shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:none;background:var(--zzz-lime);box-shadow:none;color:var(--zzz-ink);text-shadow:none;filter:none}
 /* The main tabs, top right like the game's: a dark pill split into tabs by slanted cuts. The tabs
    fill the pill edge to edge, so a tab's highlight is exactly its piece of the pill: round where it
    meets the pill's own round end, slanted along the cut wherever it meets another tab (a middle tab
