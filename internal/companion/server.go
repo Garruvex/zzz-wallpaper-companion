@@ -58,6 +58,7 @@ type APIServer struct {
 	dataDir     string
 	gamesMu     sync.Mutex
 	selection   gameSelection
+	pspCode     pspCode
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -69,6 +70,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, dataDir: dataDir, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	s.mapTiles = newMapTileService(dataDir)
 	s.input = gamepad.NewHub(gamepad.NewSource())
+	s.input.SetPSPUnlocked(s.pspUnlocked())
+	s.input.WatchIdle(s.watchPSPCode)
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
 	handlers := map[string]http.HandlerFunc{
@@ -91,7 +94,6 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"games.selection.get":    s.getCurrentGame,
 		"games.selection.save":   s.setCurrentGame,
 		"games.psp.get":          s.getPSPLock,
-		"games.psp.save":         s.savePSPLock,
 		"input.stream":           s.inputStream,
 		"input.playMode.save":    s.setPlayMode,
 		"dates.list":             s.getDates,

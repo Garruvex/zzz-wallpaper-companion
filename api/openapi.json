@@ -2226,76 +2226,6 @@
           "rom-folder-creation",
           "loose-rom-migration"
         ]
-      },
-      "post": {
-        "operationId": "games.psp.save",
-        "tags": [
-          "Games"
-        ],
-        "summary": "games.psp.save",
-        "description": "Lock or unlock PSP games (the Games page secret sequence). The unlock persists as a marker file beside the settings. Locking clears a PSP selection with fresh=true.",
-        "x-protocol-range": {
-          "min": 2,
-          "max": 2
-        },
-        "x-explorer-execution": "explicit",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/games.PspLock"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/common.Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Loopback client/origin policy rejected request",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Local resource failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/common.Error"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/games.PspLockRequest"
-              }
-            }
-          }
-        },
-        "x-body-limit-bytes": 1024,
-        "x-side-effects": [
-          "psp-lock-persistence",
-          "game-selection"
-        ]
       }
     },
     "/api/v1/input": {
@@ -3200,17 +3130,6 @@
           "locked"
         ]
       },
-      "games.PspLockRequest": {
-        "type": "object",
-        "properties": {
-          "unlocked": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "unlocked"
-        ]
-      },
       "games.FileInfo": {
         "type": "object",
         "properties": {
@@ -3346,6 +3265,9 @@
             "type": "integer",
             "description": "2 identifies digitalButtons and analog axes support; old servers omit this field.",
             "minimum": 0
+          },
+          "pspUnlocked": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3353,7 +3275,8 @@
           "playMode",
           "captured",
           "controller",
-          "at"
+          "at",
+          "pspUnlocked"
         ]
       }
     }

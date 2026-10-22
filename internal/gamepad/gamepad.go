@@ -62,6 +62,8 @@ type Snapshot struct {
 	PlayMode     bool     `json:"playMode"`
 	Captured     bool     `json:"captured"`
 	Connected    bool     `json:"controller"`
+	// PSPUnlocked says whether PSP games are unlocked; it changes while the stream is open.
+	PSPUnlocked bool `json:"pspUnlocked"`
 	// At is when this state was read (Unix ms), so the wallpaper can show input lag.
 	At int64 `json:"at"`
 }
@@ -112,9 +114,12 @@ type Hub struct {
 	// focusKnown is false until the first focus check after play mode starts.
 	focusKnown bool
 	last       Snapshot
-	stop       chan struct{}
-	done       chan struct{}
-	wake       chan struct{}
+	// idle gets the controller's buttons on every poll while play mode is off.
+	idle        func(buttons uint32)
+	pspUnlocked bool
+	stop        chan struct{}
+	done        chan struct{}
+	wake        chan struct{}
 }
 
 func NewHub(source Source) *Hub {
@@ -152,7 +157,7 @@ func (h *Hub) Subscribe() (updates <-chan Snapshot, cancel func()) {
 			// Nobody is watching, so the key hook must not stay installed.
 			h.playMode = false
 			close(h.stop)
-			h.last = Snapshot{InputVersion: 2}
+			h.last = Snapshot{InputVersion: 2, PSPUnlocked: h.pspUnlocked}
 		}
 	}
 }
@@ -177,6 +182,25 @@ func (h *Hub) SetPlayMode(enabled bool, mode CaptureMode) Snapshot {
 	next := h.last
 	next.PlayMode = enabled
 	return next
+}
+
+// WatchIdle registers a function that gets the controller's digital buttons
+// on every poll while play mode is off, so no game is using them. The
+// keyboard is not included: its hook only exists in play mode.
+func (h *Hub) WatchIdle(watch func(buttons uint32)) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.idle = watch
+}
+
+// SetPSPUnlocked updates the PSP flag every listener sees.
+func (h *Hub) SetPSPUnlocked(on bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.pspUnlocked = on
+	next := h.last
+	next.PSPUnlocked = on
+	h.publishLocked(next)
 }
 
 func (h *Hub) PlayMode() bool {
@@ -231,6 +255,12 @@ func (h *Hub) step(stop <-chan struct{}, hooked bool) {
 		state.Buttons, state.Connected = h.source.Controller()
 		state.DigitalButtons = state.Buttons
 	}
+	h.mu.Lock()
+	watch, idle := h.idle, !h.playMode
+	h.mu.Unlock()
+	if watch != nil && idle && state.Connected {
+		watch(state.DigitalButtons)
+	}
 	focused := h.source.DesktopFocused()
 	presses := 0
 	if hooked {
@@ -265,7 +295,7 @@ func (h *Hub) step(stop <-chan struct{}, hooked bool) {
 			digital |= keys
 		}
 	}
-	h.publishLocked(Snapshot{Buttons: buttons, DigitalButtons: digital, Axes: axes, InputVersion: 2, PlayMode: h.playMode, Captured: captured, Connected: state.Connected})
+	h.publishLocked(Snapshot{Buttons: buttons, DigitalButtons: digital, Axes: axes, InputVersion: 2, PlayMode: h.playMode, Captured: captured, Connected: state.Connected, PSPUnlocked: h.pspUnlocked})
 }
 
 func (h *Hub) publishLocked(next Snapshot) {

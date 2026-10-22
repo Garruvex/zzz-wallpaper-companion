@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/Garruvex/zzz-wallpaper-companion/internal/gamepad"
 )
 
 func TestPSPStaysLockedUntilTheSecret(t *testing.T) {
@@ -44,7 +47,10 @@ func TestPSPStaysLockedUntilTheSecret(t *testing.T) {
 		t.Fatalf("lock state %+v", state)
 	}
 
-	decode(t, cartRequest(t, server, http.MethodPost, "/api/v1/games/psp", []byte(`{"unlocked":true}`)).Body.Bytes(), &state)
+	if err := server.setPSPUnlocked(true); err != nil {
+		t.Fatal(err)
+	}
+	state = server.pspState()
 	if !state.Unlocked || len(state.Locked) != 0 {
 		t.Fatalf("unlock %+v", state)
 	}
@@ -57,8 +63,64 @@ func TestPSPStaysLockedUntilTheSecret(t *testing.T) {
 	}
 
 	// Locking again takes the PSP game off the TV.
-	decode(t, cartRequest(t, server, http.MethodPost, "/api/v1/games/psp", []byte(`{"unlocked":false}`)).Body.Bytes(), &state)
+	if err := server.setPSPUnlocked(false); err != nil {
+		t.Fatal(err)
+	}
+	state = server.pspState()
 	if state.Unlocked || server.currentGame().ID != "" || !server.currentGame().Fresh {
 		t.Fatalf("relock %+v %+v", state, server.currentGame())
+	}
+}
+
+func TestPSPCodeOnAControllerWithAnEmptyDeck(t *testing.T) {
+	server := testServer(t)
+	clock := time.Unix(1000, 0)
+	server.pspCode.now = func() time.Time { return clock }
+	enter := func(names ...string) {
+		for _, name := range names {
+			bit := -1
+			for _, button := range pspCodeButtons {
+				if button.name == name {
+					bit = button.bit
+				}
+			}
+			if name == "start" {
+				bit = gamepad.ButtonStart
+			}
+			clock = clock.Add(200 * time.Millisecond)
+			server.watchPSPCode(1 << bit)
+			clock = clock.Add(100 * time.Millisecond)
+			server.watchPSPCode(0)
+		}
+	}
+	code := []string{"up", "up", "down", "down", "left", "right", "left", "right", "b", "a"}
+
+	enter(code[:5]...)
+	clock = clock.Add(2 * time.Second) // too long a pause starts over
+	enter(code[5:]...)
+	if server.pspUnlocked() {
+		t.Fatal("unlocked across a pause")
+	}
+	enter(append([]string{"start"}, code...)...) // a stray press first doesn't matter
+	if !server.pspUnlocked() {
+		t.Fatal("the code did not unlock PSP")
+	}
+	updates, cancel := server.input.Subscribe()
+	defer cancel()
+	if snapshot := <-updates; !snapshot.PSPUnlocked {
+		t.Fatalf("the stream does not say PSP is unlocked: %+v", snapshot)
+	}
+
+	// With a tape in the deck the code does nothing.
+	write(t, filepath.Join(server.romDir(), "Sonic", "game.md"), "MD")
+	server.selectGame("Sonic", false)
+	enter(code...)
+	if !server.pspUnlocked() {
+		t.Fatal("locked with a tape in the deck")
+	}
+	server.selectGame("", false)
+	enter(code...)
+	if server.pspUnlocked() {
+		t.Fatal("the code did not lock PSP again")
 	}
 }
