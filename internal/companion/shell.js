@@ -19,7 +19,9 @@
   const top = document.createElement('nav'); top.className = 'top-tabs'; top.setAttribute('aria-label', 'Companion sections');
   for (const group of groups) {
     const link = document.createElement('a'); link.href = group.path;
-    const text = document.createElement('span'); text.textContent = group.label; link.append(text); top.append(link);
+    // The highlight is its own layer behind the text, so it can swell while the text stays still.
+    const shape = document.createElement('i'); shape.className = 'tab-shape'; shape.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span'); text.textContent = group.label; link.append(shape, text); top.append(link);
   }
   header.append(top);
   // Every tab is its own server page, so each works on its own and keeps its

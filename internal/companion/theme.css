@@ -65,29 +65,31 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .top-tabs{display:flex;align-items:stretch;height:52px;margin:8px 10px;padding:0;border-radius:999px;background:repeating-linear-gradient(45deg,#0e0f11 0 2px,#08090a 2px 4px);box-shadow:inset 0 0 0 3px #3b3f45,0 0 0 3px #000}
 .top-tabs a{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:150px;padding:0 30px;background:transparent;color:#fff;text-decoration:none;cursor:pointer;user-select:none;outline:none;font:900 italic 21px/1 var(--zzz-font)}
 .top-tabs a>span{position:relative;z-index:1}
+.top-tabs a>.tab-shape{position:absolute;inset:0;pointer-events:none}
 /* The shape. Every slanted piece is skewed about its own centre, so its edge crosses the tab's
    boundary at mid-height: two neighbours share one cut line. */
-.top-tabs a::before,.top-tabs a::after{content:"";position:absolute;top:0;bottom:0;display:none;border-radius:10px;transform:skewX(-20deg)}
-.top-tabs a::before{left:0;right:0}
-.top-tabs a:not(:first-child):not(:last-child)::after{content:none}
-.top-tabs a:first-child::before{right:20px;border-radius:999px 0 0 999px;transform:none}
-.top-tabs a:first-child::after{right:0;width:40px}
-.top-tabs a:last-child::before{right:auto;width:40px}
-.top-tabs a:last-child::after{left:20px;right:0;border-radius:0 999px 999px 0;transform:none}
-.top-tabs a.is-selected::before,.top-tabs a.is-selected::after,.top-tabs a:active::before,.top-tabs a:active::after,.top-tabs a:focus-visible::before,.top-tabs a:focus-visible::after{display:block}
+.top-tabs a>.tab-shape::before,.top-tabs a>.tab-shape::after{content:"";position:absolute;top:0;bottom:0;display:none;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a>.tab-shape::before{left:0;right:0}
+.top-tabs a:not(:first-child):not(:last-child)>.tab-shape::after{content:none}
+.top-tabs a:first-child>.tab-shape::before{right:20px;border-radius:999px 0 0 999px;transform:none}
+.top-tabs a:first-child>.tab-shape::after{right:0;width:40px}
+.top-tabs a:last-child>.tab-shape::before{right:auto;width:40px}
+.top-tabs a:last-child>.tab-shape::after{left:20px;right:0;border-radius:0 999px 999px 0;transform:none}
+.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after,.top-tabs a:active>.tab-shape::before,.top-tabs a:active>.tab-shape::after,.top-tabs a:focus-visible>.tab-shape::before,.top-tabs a:focus-visible>.tab-shape::after{display:block}
 /* Current tab: filled, black text, lime <-> green, pulsing; the glow follows the outline. */
-.top-tabs a.is-selected{color:var(--zzz-ink);animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
-.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
+.top-tabs a.is-selected>.tab-shape{animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite}
+.top-tabs a.is-selected{color:var(--zzz-ink);filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after{animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
 /* Press: the shape fills lime and the text turns black. */
 .top-tabs a:active{color:var(--zzz-ink)}
-.top-tabs a:active::before,.top-tabs a:active::after{animation:none;background:var(--zzz-lime)}
+.top-tabs a:active>.tab-shape::before,.top-tabs a:active>.tab-shape::after{animation:none;background:var(--zzz-lime)}
 /* Keyboard focus on another tab: its shape shows dark, outlined by a breathing lime <-> green glow. */
 .top-tabs a:not(.is-selected):focus-visible{animation:zzz-tab-breathe var(--zzz-glow-time) ease-in-out infinite}
-.top-tabs a:not(.is-selected):focus-visible:not(:active)::before,.top-tabs a:not(.is-selected):focus-visible:not(:active)::after{background:#22252b}
+.top-tabs a:not(.is-selected):focus-visible:not(:active)>.tab-shape::before,.top-tabs a:not(.is-selected):focus-visible:not(:active)>.tab-shape::after{background:#22252b}
 @keyframes zzz-tab-breathe{
   0%,100%{filter:drop-shadow(0 0 1.5px var(--zzz-lime)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
   50%{filter:drop-shadow(0 0 1.5px var(--zzz-green)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-green-rgb),.55))}}
-/* The pulse: the shape swells and settles back with a small bounce, twice a cycle, like the
+/* The pulse: the highlight (not the text) swells and settles back with a small bounce, twice a cycle, like the
    kit's selected border (expand 700 ms, retract 400 ms, rest 500 ms). */
 @keyframes zzz-tab-pulse{
   0%{transform:scale(1);animation-timing-function:cubic-bezier(.35,0,.25,1)}
@@ -96,7 +98,7 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
   50%{transform:scale(1);animation-timing-function:cubic-bezier(.35,0,.25,1)}
   71.875%{transform:scale(1.07);animation-timing-function:cubic-bezier(.45,0,.2,1.7)}
   84.375%,100%{transform:scale(1)}}
-@media(prefers-reduced-motion:reduce){.top-tabs a,.top-tabs a::before,.top-tabs a::after{animation:none!important}.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{background:var(--zzz-lime)}.top-tabs a:not(.is-selected):focus-visible{filter:drop-shadow(0 0 2px var(--zzz-lime))}}
+@media(prefers-reduced-motion:reduce){.top-tabs a,.top-tabs a>.tab-shape,.top-tabs a>.tab-shape::before,.top-tabs a>.tab-shape::after{animation:none!important}.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after{background:var(--zzz-lime)}.top-tabs a:not(.is-selected):focus-visible{filter:drop-shadow(0 0 2px var(--zzz-lime))}}
 /* A tab with no pages of its own has no side menu, so its page uses the whole width. */
 .shell.no-side{grid-template-columns:minmax(0,1fr)}
 .shell.no-side .shell-nav{display:none}
