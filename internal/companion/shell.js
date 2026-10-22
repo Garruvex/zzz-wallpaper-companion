@@ -1,6 +1,16 @@
 (() => {
-  const labels = [['/settings','General'],['/holidays','Holidays'],['/dates','Important Dates'],['/games','Games']];
-  const isTab = path => labels.some(([tab]) => tab === path);
+  // Three tabs down the side. A tab can have a bar of its own along the top of its page
+  // (Calendar: custom dates and holidays); each of those is still its own server page.
+  const groups = [
+    { label: 'General', path: '/settings', paths: ['/settings'] },
+    { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
+    { label: 'Game', path: '/games', paths: ['/games'] },
+  ];
+  const groupOf = path => groups.find(group => group.paths.includes(path));
+  const isTab = path => Boolean(groupOf(path));
+  // Tabs are styled by the kit's selection states (.zzz-sel); its script adds the release blink.
+  const kit = import('/ui/zzz/zzz_ui.js').catch(() => null);
+  const selectable = nodes => kit.then(module => module && nodes.forEach(node => module.makeSelectable(node)));
   let page = location.pathname;
   const header = document.createElement('header'); header.className = 'shell-header';
   const brand = document.createElement('a'); brand.className = 'brand'; brand.href='/settings'; brand.append('ZZZ – Wallpaper Engine ');
@@ -33,23 +43,43 @@
       }
       form.querySelector('.section')?.remove();
     }
+    // The tab's own bar, top right like the game's: the current one breathes and pulses.
+    const group = groupOf(path);
+    if (group?.tabs) {
+      const bar = main.ownerDocument.createElement('nav'); bar.className = 'subtabs'; bar.setAttribute('aria-label', group.label);
+      for (const [tabPath, label] of group.tabs) {
+        const link = main.ownerDocument.createElement('a'); link.href = tabPath; link.className = tabPath === path ? 'zzz-sel is-selected' : 'zzz-sel';
+        if (tabPath === path) link.setAttribute('aria-current', 'page');
+        const text = main.ownerDocument.createElement('span'); text.textContent = label; link.append(text); bar.append(link);
+      }
+      main.prepend(bar);
+    }
     return main;
   };
+  let target = null; // the tab being opened, so quick arrow presses keep stepping
   let main = content(document, page);
+  selectable([...main.querySelectorAll('.subtabs a')]);
   let styles = [...document.querySelectorAll('style')];
   const shell=document.createElement('div'); shell.className='shell';
   const nav=document.createElement('nav'); nav.className='shell-nav'; nav.setAttribute('aria-label','Companion pages');
   const arrow=direction=>{
     const button=document.createElement('button'); button.type='button'; button.className=`nav-arrow ${direction<0?'up':'down'}`;
     button.setAttribute('aria-label',direction<0?'Previous category':'Next category');
-    button.addEventListener('click',()=>{ const current=Math.max(0,labels.findIndex(([path])=>path===page)); show(labels[(current+direction+labels.length)%labels.length][0], true); });
+    button.addEventListener('click',()=>{ const current=Math.max(0,groups.indexOf(groupOf(target||page))); show(groups[(current+direction+groups.length)%groups.length].path, true); });
     return button;
   };
   const items=document.createElement('div');items.className='nav-items';
-  for(const [path,label] of labels){const link=document.createElement('a');link.href=path;link.textContent=label;items.append(link);}
+  for(const group of groups){const link=document.createElement('a');link.href=group.path;link.className='zzz-sel';link.textContent=group.label;items.append(link);}
+  selectable([...items.children]);
   const mark=()=>{
-    for(const link of items.children){if(link.getAttribute('href')===page)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}
-    document.title = `${labels.find(([path])=>path===page)?.[1] || 'General'} · ZZZ Companion Settings`;
+    const group=groupOf(page)||groups[0];
+    [...items.children].forEach((link,index)=>{
+      const current=groups[index]===group;
+      link.classList.toggle('is-selected',current);
+      if(current)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+    });
+    const sub=group.tabs?.find(([path])=>path===page)?.[1];
+    document.title = `${[group.label,sub].filter(Boolean).join(' · ')} · ZZZ Companion Settings`;
   };
   mark();
   nav.append(arrow(-1),items,arrow(1));shell.append(nav,main);
@@ -60,6 +90,7 @@
   async function show(path, push) {
     if (!isTab(path) || path === page) return;
     const token = ++visit;
+    target = path;
     let source;
     try {
       const response = await fetch(path, { cache: 'no-store' });
@@ -67,6 +98,7 @@
       source = new DOMParser().parseFromString(await response.text(), 'text/html');
     } catch { location.href = path; return; }
     if (token !== visit) return;
+    target = null;
     // The page being left stops its timers and listeners (see zzz:leave in the pages).
     document.dispatchEvent(new Event('zzz:leave'));
     companionControls.teardown(footer);
@@ -79,6 +111,7 @@
     const adopted = document.adoptNode(next);
     main.replaceWith(adopted); main = adopted;
     page = path; mark();
+    selectable([...main.querySelectorAll('.subtabs a')]);
     if (push) history.pushState(null, '', path);
     // Each page's script runs in its own scope, so their top-level names don't collide.
     for (const code of scripts) {
@@ -94,6 +127,8 @@
     if (!link || link.target || event.defaultPrevented || event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin || !isTab(url.pathname)) return;
+    // The side tab you are already on stays put; its own bar changes the page.
+    if (link.closest('.nav-items') && groupOf(url.pathname) === groupOf(page)) { event.preventDefault(); return; }
     event.preventDefault(); show(url.pathname, true);
   });
   addEventListener('popstate', () => show(location.pathname, false));

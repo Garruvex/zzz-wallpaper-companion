@@ -75,3 +75,24 @@ func TestFormsReportProblemsInTheMessageBar(t *testing.T) {
 		}
 	}
 }
+
+// Three tabs down the side; Calendar holds the custom dates and holidays pages under its own bar.
+// The theme keeps to the game's rules: nothing reacts to the mouse resting on it, and the accents
+// are lime and green only.
+func TestShellHasThreeTabsAndNoHoverOrYellow(t *testing.T) {
+	for _, want := range []string{"'General'", "'Calendar'", "'Game'", "'Custom Date'", "'Holiday'", "'/dates'", "'/holidays'"} {
+		if !strings.Contains(shellJS, want) {
+			t.Errorf("shell.js lacks %s", want)
+		}
+	}
+	for _, old := range []string{"'Important Dates'", "'Holidays']"} {
+		if strings.Contains(shellJS, old) {
+			t.Errorf("shell.js still lists the old tab %s", old)
+		}
+	}
+	for _, rule := range []string{":hover", "#ffe500", "#e7f000", "#fff04b", "#f3c942"} {
+		if strings.Contains(themeCSS, rule) || strings.Contains(gamesHTML, rule) {
+			t.Errorf("theme or Games page still has %s", rule)
+		}
+	}
+}
