@@ -112,6 +112,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"GET /ui/shell.js":            http.HandlerFunc(companionShell),
 		"GET /ui/zzz/zzz_ui.js":       http.HandlerFunc(companionKit),
 		"GET /games":                  http.HandlerFunc(s.gamesPage),
+		"GET /controller/state":       http.HandlerFunc(s.controllerState),
 		"GET /dates":                  http.HandlerFunc(s.datesPage),
 		"GET /holidays":               http.HandlerFunc(s.holidaysPage),
 		"GET /licenses/unicode":       http.HandlerFunc(s.unicodeLicensePage),

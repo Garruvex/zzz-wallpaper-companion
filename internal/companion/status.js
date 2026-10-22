@@ -52,3 +52,6 @@ window.companionConfirm = async options => {
   const module = await import('/ui/zzz/zzz_ui.js').catch(() => null);
   return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
 };
+
+// The pad as the game station sees it, for the Controller section: { connected, buttons, axes }.
+window.companionPadState = async signal => (await fetch('/controller/state', { cache: 'no-store', signal })).json();

@@ -5,7 +5,7 @@
   const groups = [
     { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
-    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games']] },
+    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller']] },
   ];
   const groupOf = path => groups.find(group => group.paths.includes(path));
   const isTab = path => Boolean(groupOf(path));
@@ -52,10 +52,12 @@
       form.querySelector('.section')?.remove();
     }
     if (path === '/games') {
-      // Two sections: the library, and adding games (the drop zone and its notes).
+      // Three sections: the library, adding games (the drop zone and its notes), and the controller.
       const make = key => { const section = main.ownerDocument.createElement('section'); section.dataset.section = key; return section; };
-      const library = make('library'), add = make('add');
+      const library = make('library'), add = make('add'), controller = make('controller');
       main.querySelector('#drop').before(library, add);
+      main.querySelector('#pad').before(controller);
+      controller.append(companionCard(main.ownerDocument, 'Controller', { body: [main.querySelector('#pad')] }));
       add.append(...[main.querySelector('#drop'), main.querySelector('p.note')].filter(Boolean));
       library.append(...[main.querySelector('#shelfNote'), main.querySelector('.library-columns'), main.querySelector('#games')].filter(Boolean));
       add.append(companionCard(main.ownerDocument, 'Add game files', { body: [...add.childNodes] }));

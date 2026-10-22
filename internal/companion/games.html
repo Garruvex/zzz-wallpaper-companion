@@ -33,6 +33,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <p id="status" role="status"></p>
 <div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
+<div id="pad" aria-label="Controller"></div>
 <script>
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
@@ -219,6 +220,34 @@ drop.addEventListener('drop', event => { event.preventDefault(); upload([...even
 
 const pspLock = () => api('games.psp.get');
 
+// The Controller section: the pad as the game station sees it, read every 100 ms while it is showing.
+// Bits are the game station's buttons (face buttons by position: east A, south B, west Y, north X).
+const PAD_BITS = { b: 0, y: 1, select: 2, start: 3, up: 4, down: 5, left: 6, right: 7, a: 8, x: 9, l: 10, r: 11, l2: 12, r2: 13, l3: 14, r3: 15 };
+const padKeys = (names) => names.map(name => { const key = el('span', { className: 'pad-key', textContent: name.toUpperCase() }); key.dataset.key = name; return key; });
+const stick = id => el('div', { className: 'pad-stick', id }, el('i'));
+$('pad').append(
+  el('p', { id: 'padStatus', className: 'pad-status', role: 'status' }),
+  el('div', { className: 'pad-body' },
+    el('div', { className: 'pad-group' }, el('b', { textContent: 'Shoulders' }), ...padKeys(['l2', 'l', 'r', 'r2'])),
+    el('div', { className: 'pad-group' }, el('b', { textContent: 'D-pad' }), ...padKeys(['up', 'left', 'down', 'right'])),
+    el('div', { className: 'pad-group' }, el('b', { textContent: 'Face buttons' }), ...padKeys(['x', 'y', 'a', 'b'])),
+    el('div', { className: 'pad-group' }, el('b', { textContent: 'Menu' }), ...padKeys(['select', 'start'])),
+    el('div', { className: 'pad-group' }, el('b', { textContent: 'Sticks (press to click)' }), stick('padLeft'), stick('padRight'), ...padKeys(['l3', 'r3']))),
+  el('p', { className: 'pad-note', textContent: 'Buttons light up as you press them. Xbox-style pads and anything Windows shows as an Xbox controller work; Bluetooth pads must be paired first. Games on the shelf take the pad when the wallpaper is in play mode.' }));
+let padWas = null;
+async function padTick() {
+  const section = $('pad').closest('[data-section]');
+  if (document.hidden || (section && section.hidden)) return;
+  try {
+    const state = await companionPadState(visit.signal);
+    if (padWas !== state.connected) { padWas = state.connected; $('padStatus').classList.toggle('on', state.connected); $('padStatus').textContent = state.connected ? 'Controller connected' : 'No controller found. Connect one and press any button.'; }
+    for (const node of $('pad').querySelectorAll('[data-key]')) node.classList.toggle('down', state.connected && Boolean(state.buttons & (1 << PAD_BITS[node.dataset.key])));
+    for (const [id, x, y] of [['padLeft', state.axes[0], state.axes[1]], ['padRight', state.axes[2], state.axes[3]]]) {
+      const dot = $(id).firstChild; dot.style.left = `${50 + x / 32767 * 40}%`; dot.style.top = `${50 + y / 32767 * 40}%`;
+    }
+  } catch { /* leaving the tab, or the companion is restarting */ }
+}
+
 // Leaving the Games tab stops its timer.
 const visit = new AbortController();
 document.addEventListener('zzz:leave', () => visit.abort(), { once: true });
@@ -226,5 +255,8 @@ document.addEventListener('zzz:leave', () => visit.abort(), { once: true });
 refresh();
 const poll = setInterval(() => { if (!busy && !document.hidden && !$('games').contains(document.activeElement)) refresh(); }, 4000);
 visit.signal.addEventListener('abort', () => clearInterval(poll));
+const padPoll = setInterval(padTick, 100);
+visit.signal.addEventListener('abort', () => clearInterval(padPoll));
+padTick();
 </script>
 </main></body></html>

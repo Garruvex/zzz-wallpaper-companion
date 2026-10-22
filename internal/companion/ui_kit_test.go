@@ -178,3 +178,24 @@ func TestSmallButtonsAndConfirmUseTheKit(t *testing.T) {
 		t.Error("the Games or Dates buttons are not the kit's chip button")
 	}
 }
+
+// The Controller section of the Game tab reads the pad through a page helper, not the public API, and
+// shows only buttons and sticks.
+func TestControllerSectionShowsThePad(t *testing.T) {
+	if !strings.Contains(shellJS, "['controller', 'Controller']") || !strings.Contains(gamesHTML, "companionPadState") {
+		t.Fatal("the Game tab has no Controller section")
+	}
+	s := testServer(t)
+	r := cartRequest(t, s, http.MethodGet, "/controller/state", nil)
+	if r.Code != http.StatusOK {
+		t.Fatalf("controller state: %d", r.Code)
+	}
+	var state struct {
+		Connected bool
+		Buttons   uint32
+		Axes      [4]int16
+	}
+	if err := json.Unmarshal(r.Body.Bytes(), &state); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -314,3 +314,14 @@ func (h *Hub) publishLocked(next Snapshot) {
 		ch <- next
 	}
 }
+
+// Live reads the controller right now, whether or not anyone is playing, for pages that show it.
+func (h *Hub) Live() ControllerState {
+	if source, ok := h.source.(detailedSource); ok {
+		return source.DetailedController()
+	}
+	var state ControllerState
+	state.Buttons, state.Connected = h.source.Controller()
+	state.DigitalButtons = state.Buttons
+	return state
+}
