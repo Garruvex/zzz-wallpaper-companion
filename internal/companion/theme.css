@@ -55,7 +55,7 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .shell-nav a{border-bottom:0}
 /* The current page in the side menu is filled solid like the current top tab (the game's Move List):
    colour alternating lime <-> green, edge pulsing, black text. */
-.shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:zzz-press var(--zzz-pulse-time) ease-in-out infinite;color:var(--zzz-ink);text-shadow:none}
+.shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite,zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite;box-shadow:none;color:var(--zzz-ink);text-shadow:none;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
 /* The main tabs, top right like the game's: a dark pill split into tabs by slanted cuts. The tabs
    fill the pill edge to edge, so a tab's highlight is exactly its piece of the pill: round where it
    meets the pill's own round end, slanted along the cut wherever it meets another tab (a middle tab
@@ -131,3 +131,20 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .game-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .game.is-playing .zzz-item-bar{box-shadow:inset 0 0 0 3px var(--select-yellow)}
 @media(max-width:720px){#settings .zzz-item>label.zzz-item-bar{flex-wrap:wrap;padding:12px 14px}#settings .zzz-item-bar>.zzz-select,#settings .zzz-item-bar>input{width:100%}.zzz-item-body>label:not(#drop){grid-template-columns:1fr}.game-actions{grid-template-columns:1fr 1fr}.zzz-title-card b{font-size:24px}}
+/* Settings rows, like the game's settings screens: one dark pill per setting, name on the left with
+   its help in small grey under it, the control at the right. */
+#settings label.zzz-row{grid-template-columns:minmax(0,1fr) 300px;min-height:66px;margin:0 0 12px;padding:8px 8px 8px 28px;border:0;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33;font:900 21px/1.2 var(--zzz-font)}
+#settings label.zzz-row small{margin-top:3px;font:700 13px/1.4 'Segoe UI',Arial,sans-serif;color:#8b8f96}
+/* Card bodies read like the game's: white, heavy. */
+.zzz-item-body{color:#f4f4f4;font:800 16px/1.5 'Segoe UI',Arial,sans-serif}
+.zzz-item-body small{color:#a9adb3;font-weight:700}
+/* The fold button at the right of a card's bar: a round black button with a down arrow that turns
+   up while the card is open. */
+.zzz-fold{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;cursor:pointer}
+.zzz-fold::before{content:"";width:14px;height:9px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);transition:transform .2s}
+.zzz-fold[aria-expanded=true]::before{transform:rotate(180deg)}
+.zzz-fold:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.zzz-fold:active{background:var(--zzz-lime)}
+.zzz-fold:active::before{background:var(--zzz-ink)}
+.game-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:720px){#settings label.zzz-row{grid-template-columns:1fr;border-radius:28px;padding:14px 16px}.game-actions{grid-template-columns:1fr 1fr}}

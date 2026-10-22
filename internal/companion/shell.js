@@ -3,7 +3,7 @@
   // menu lists either the tab's own pages (Calendar: custom dates and holidays, each still its own
   // server page) or the sections of its one page (General, Game), shown one at a time.
   const groups = [
-    { label: 'General', path: '/settings', paths: ['/settings'], sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
+    { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
     { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games']] },
   ];
@@ -58,15 +58,9 @@
       library.append(...[main.querySelector('#shelfNote'), main.querySelector('.library-columns'), main.querySelector('#games')].filter(Boolean));
       add.append(companionCard(main.ownerDocument, 'Add game files', { body: [...add.childNodes] }));
     }
-    // Settings rows become cards: the row itself (name and control) is the black title bar, and its
-    // help text is the body.
-    if (path === '/settings') for (const row of [...main.querySelectorAll('#settings label')]) {
-      const doc = main.ownerDocument, card = doc.createElement('div'), body = doc.createElement('div');
-      card.className = 'zzz-item'; body.className = 'zzz-item-body';
-      const hint = row.querySelector('small');
-      if (hint) { body.textContent = hint.textContent; hint.remove(); }
-      row.replaceWith(card); row.classList.add('zzz-item-bar'); card.append(row, body);
-    }
+    // Settings are the game's settings rows: one pill per setting, its control at the right and its
+    // help text in small grey under the name.
+    if (path === '/settings') for (const row of main.querySelectorAll('#settings label')) row.classList.add('zzz-row');
     // Forms are cards too: a bar naming the form over its rows.
     for (const [selector, title] of [['#dateForm', 'Add a date'], ['#form', 'Location']]) {
       const form = main.querySelector(selector);
@@ -76,16 +70,17 @@
       body.className = 'zzz-item-body'; body.append(...form.childNodes);
       form.classList.add('zzz-item'); form.append(bar, body);
     }
-    // Every section opens with a title card: its name, and the tab it belongs to.
+    // Every section opens with a title card (its name, and the tab it belongs to), except on a
+    // settings screen, which keeps the game's small grey section labels.
     const owner = groupOf(path);
     const titleCard = label => companionTitleCard(main.ownerDocument, label, owner.label);
-    if (owner?.sections) for (const [key, label] of owner.sections) {
+    if (owner?.sections && !owner.rows) for (const [key, label] of owner.sections) {
       const section = main.querySelector(`[data-section="${key}"]`);
       if (!section) continue;
       section.querySelector(':scope > h2.group-title')?.remove();
       section.prepend(titleCard(label));
     }
-    else if (owner?.tabs) {
+    else if (owner?.tabs && !owner.rows) {
       const label = owner.tabs.find(([tabPath]) => tabPath === path)?.[1];
       if (label) main.prepend(titleCard(label));
     }

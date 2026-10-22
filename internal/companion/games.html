@@ -128,7 +128,6 @@ function render() {
         : onTV ? button('Eject', () => run('Ejected.', () => select(''))) : button('Play on TV', () => run(`${cart.title} is on the TV.`, () => select(cart.id)), 'primary'),
       locked ? lockedButton('On shelf') : button(cart.onShelf ? 'On shelf ✓' : 'On shelf', () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
         () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })), cart.onShelf ? 'shelf on' : 'shelf'),
-      button(shown ? 'Hide saves' : 'Saves', () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); }),
       button('Remove', () => {
         if (confirm(`Remove ${cart.title} and its tape? The game and its saves move to roms/.removed.`))
           run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
@@ -139,7 +138,10 @@ function render() {
       onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '',
       locked ? '' : el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }),
     ];
-    const card = companionCard(document, cart.title, { tools: tags, body: [actions, shown ? savesPanel(cart) : ''] });
+    const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Hide saves' : 'Saves', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
+    fold.setAttribute('aria-expanded', String(shown));
+    fold.setAttribute('aria-label', `${shown ? 'Hide' : 'Show'} saves for ${cart.title}`);
+    const card = companionCard(document, cart.title, { tools: [...tags, fold], body: [actions, shown ? savesPanel(cart) : ''] });
     card.classList.add('game');
     card.classList.toggle('is-playing', onTV);
     card.classList.toggle('locked', locked);
