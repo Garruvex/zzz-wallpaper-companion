@@ -89,8 +89,13 @@ type cart struct {
 	// OnShelf is the outcome once the shelf's size is taken into account.
 	Shelf   *bool `json:"shelf,omitempty"`
 	OnShelf bool  `json:"onShelf"`
-	dir     string
-	save    string
+	// Tape is the shelf tape the game is on, 1 to shelfSlots: the number on that tape's tag in the
+	// wallpaper. Zero (left out) while it is off the shelf. It is kept in cart.json so a game stays
+	// on its tape when others are added.
+	Tape       int `json:"tape,omitempty"`
+	storedTape int
+	dir        string
+	save       string
 }
 
 func (s *APIServer) romDir() string { return filepath.Join(s.dataDir, "roms") }
@@ -134,6 +139,7 @@ func readCart(root, id string) (cart, bool) {
 			Title, Color, SHA1 string
 			Rev                uint64
 			Shelf              *bool
+			Tape               int
 		}
 		if json.Unmarshal(data, &meta) == nil {
 			if t := strings.TrimSpace(meta.Title); t != "" {
@@ -144,6 +150,7 @@ func readCart(root, id string) (cart, bool) {
 			}
 			c.Rev = meta.Rev
 			c.Shelf = meta.Shelf
+			c.storedTape = meta.Tape
 			if len(meta.SHA1) == 40 {
 				c.SHA1 = meta.SHA1
 			}
@@ -226,6 +233,22 @@ func (s *APIServer) cartList() []cart {
 		}
 	}
 	applyShelf(carts)
+	numberTapes(carts)
+	for i := range carts {
+		c := &carts[i]
+		if c.Tape == c.storedTape {
+			continue
+		}
+		meta := cartMeta(c.dir)
+		if c.Tape == 0 {
+			delete(meta, "tape")
+		} else {
+			meta["tape"] = c.Tape
+		}
+		if writeCartMeta(c.dir, meta) == nil {
+			c.storedTape = c.Tape
+		}
+	}
 	return carts
 }
 

@@ -388,6 +388,33 @@ func applyShelf(carts []cart) {
 	}
 }
 
+// numberTapes gives each game on the shelf its tape, numbered 1 to shelfSlots as on the tapes'
+// tags in the wallpaper. A game keeps the tape it had; one new to the shelf takes the lowest free
+// number, in title order. OnShelf must already be decided.
+func numberTapes(carts []cart) {
+	taken := map[int]bool{}
+	for i := range carts {
+		c := &carts[i]
+		c.Tape = 0
+		if c.OnShelf && c.storedTape >= 1 && c.storedTape <= shelfSlots && !taken[c.storedTape] {
+			c.Tape = c.storedTape
+			taken[c.Tape] = true
+		}
+	}
+	next := 1
+	for i := range carts {
+		c := &carts[i]
+		if !c.OnShelf || c.Tape != 0 {
+			continue
+		}
+		for taken[next] {
+			next++
+		}
+		c.Tape = next
+		taken[next] = true
+	}
+}
+
 // setShelf puts a game on the shelf or takes it off.
 func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	on := r.URL.Query().Get("on") == "1"

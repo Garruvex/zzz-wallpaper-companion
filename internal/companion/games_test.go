@@ -201,3 +201,46 @@ func TestShelfChoosesWhichGamesGetATape(t *testing.T) {
 		t.Fatalf("full shelf accepted another: %d", r.Code)
 	}
 }
+
+func TestShelfGamesKeepTheirTapeNumbers(t *testing.T) {
+	server := testServer(t)
+	for _, name := range []string{"Castlevania", "Metroid", "Zelda"} {
+		write(t, filepath.Join(server.romDir(), name, "game.gba"), "ROM "+name)
+	}
+	tapes := func() map[string]int {
+		var got struct{ Carts []cart }
+		decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &got)
+		out := map[string]int{}
+		for _, c := range got.Carts {
+			out[c.ID] = c.Tape
+		}
+		return out
+	}
+	want := func(got map[string]int, expected map[string]int) {
+		t.Helper()
+		for id, tape := range expected {
+			if got[id] != tape {
+				t.Fatalf("tapes %v, want %v", got, expected)
+			}
+		}
+	}
+	want(tapes(), map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// A new game that sorts first takes the next free tape; the others stay where they are.
+	write(t, filepath.Join(server.romDir(), "Adventure", "game.gba"), "ROM Adventure")
+	want(tapes(), map[string]int{"Adventure": 4, "Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// Taking a game off frees its tape, and the next game onto the shelf takes it.
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=0", nil)
+	want(tapes(), map[string]int{"Metroid": 0, "Zelda": 3})
+	write(t, filepath.Join(server.romDir(), "Bomberman", "game.gba"), "ROM Bomberman")
+	want(tapes(), map[string]int{"Bomberman": 2})
+
+	// The numbers live in cart.json, so they survive a restart.
+	if meta := cartMeta(filepath.Join(server.romDir(), "Zelda")); meta["tape"] != float64(3) {
+		t.Fatalf("Zelda's cart.json: %v", meta)
+	}
+	if _, ok := cartMeta(filepath.Join(server.romDir(), "Metroid"))["tape"]; ok {
+		t.Fatal("a game off the shelf kept a tape in cart.json")
+	}
+}

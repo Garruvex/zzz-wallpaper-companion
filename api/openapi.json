@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ZZZ Wallpaper Companion API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
   },
   "servers": [
@@ -3042,6 +3042,12 @@
           },
           "onShelf": {
             "type": "boolean"
+          },
+          "tape": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14,
+            "description": "The shelf tape the game is on, 1-14: the number on that tape's tag in the wallpaper. Absent while the game is off the shelf. A game keeps its tape when others are added."
           }
         },
         "required": [
