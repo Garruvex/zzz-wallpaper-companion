@@ -18,11 +18,10 @@
   const accent = document.createElement('b'); accent.textContent='Companion Settings'; brand.append(accent); header.append(brand);
   const top = document.createElement('nav'); top.className = 'top-tabs'; top.setAttribute('aria-label', 'Companion sections');
   for (const group of groups) {
-    const link = document.createElement('a'); link.href = group.path; link.className = 'zzz-sel';
+    const link = document.createElement('a'); link.href = group.path;
     const text = document.createElement('span'); text.textContent = group.label; link.append(text); top.append(link);
   }
   header.append(top);
-  selectable([...top.children]);
   // Every tab is its own server page, so each works on its own and keeps its
   // own markup. In the window they share one shell: changing tab fetches the
   // next page and swaps its content, styles and script in, so the header and

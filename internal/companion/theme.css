@@ -51,31 +51,42 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 @media(max-width:720px){.settings-dock #status,.settings-dock .status{padding:0 18px}}
 /* Tabs use the kit's selection states (.zzz-sel): the current tab's border breathes lime <-> green
    and pulses, keyboard focus breathes, a press fills lime. Nothing reacts to the mouse resting on it. */
-.shell-nav a,.top-tabs a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
+.shell-nav a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
 .shell-nav a{border-bottom:0}
 /* The current page in the side menu is filled solid like the current top tab (the game's Move List):
    colour alternating lime <-> green, edge pulsing, black text. */
 .shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:zzz-press var(--zzz-pulse-time) ease-in-out infinite;color:var(--zzz-ink);text-shadow:none}
-/* The main tabs, top right like the game's: a dark pill holding slanted tabs. The current tab is
-   filled solid, black text, its colour alternating lime <-> green while its edge pulses (the kit's
-   "pressed" look, kept on); the others are plain white text that breathes on keyboard focus. */
-.top-tabs{display:flex;align-items:center;gap:4px;margin:8px 10px;padding:5px 8px;border-radius:999px;background:repeating-linear-gradient(45deg,#0e0f11 0 2px,#08090a 2px 4px);box-shadow:inset 0 0 0 3px #3b3f45,0 0 0 3px #000}
-.top-tabs a{--zzz-gap:0px;--zzz-rest-bg:transparent;--zzz-rest-image:none;position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:140px;height:48px;padding:0 30px 0 26px;border-radius:999px;background:transparent;font:900 italic 21px/1 var(--zzz-font)}
+/* The main tabs, top right like the game's: a dark pill split into tabs by slanted cuts. The tabs
+   fill the pill edge to edge, so a tab's highlight is exactly its piece of the pill: round where it
+   meets the pill's own round end, slanted along the cut wherever it meets another tab (a middle tab
+   is slanted on both sides), every corner rounded. The same shape shows the current tab (filled,
+   lime <-> green, pulsing), a press (filled lime) and keyboard focus (dark, glow breathing). The tabs
+   are not .zzz-sel: the kit's states draw a box, and these need the cut shape. */
+.top-tabs{display:flex;align-items:stretch;height:52px;margin:8px 10px;padding:0;border-radius:999px;background:repeating-linear-gradient(45deg,#0e0f11 0 2px,#08090a 2px 4px);box-shadow:inset 0 0 0 3px #3b3f45,0 0 0 3px #000}
+.top-tabs a{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:150px;padding:0 30px;background:transparent;color:#fff;text-decoration:none;cursor:pointer;user-select:none;outline:none;font:900 italic 21px/1 var(--zzz-font)}
 .top-tabs a>span{position:relative;z-index:1}
-/* The highlight is the game's shape: a round left end and one slanted right edge, every corner
-   rounded. Two pieces of one colour make it: the body (round on the left) and a slanted end
-   (skewed, with rounded corners). The glow is a drop shadow, so it follows that outline. */
-.top-tabs a.is-selected,.top-tabs a.is-selected:focus-visible,.top-tabs a.is-selected:active{color:var(--zzz-ink);text-shadow:none;background:transparent;box-shadow:none;
-  animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
-.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{content:"";position:absolute;top:0;bottom:0;animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
-/* Round only where the tab meets the pill's own round end; slanted wherever it meets another tab.
-   A middle tab is slanted on both sides (one skewed piece). */
-.top-tabs a.is-selected::before{left:6px;right:6px;border-radius:10px;transform:skewX(-20deg)}
-.top-tabs a.is-selected::after{content:none}
-.top-tabs a.is-selected:first-child::before{left:0;right:16px;border-radius:999px 0 0 999px;transform:none}
-.top-tabs a.is-selected:first-child::after{content:"";left:auto;right:2px;width:40px;border-radius:10px;transform:skewX(-20deg)}
-.top-tabs a.is-selected:last-child::before{left:2px;right:auto;width:40px;border-radius:10px;transform:skewX(-20deg)}
-.top-tabs a.is-selected:last-child::after{content:"";left:16px;right:0;width:auto;border-radius:0 999px 999px 0;transform:none}
+/* The shape. Every slanted piece is skewed about its own centre, so its edge crosses the tab's
+   boundary at mid-height: two neighbours share one cut line. */
+.top-tabs a::before,.top-tabs a::after{content:"";position:absolute;top:0;bottom:0;display:none;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a::before{left:0;right:0}
+.top-tabs a:not(:first-child):not(:last-child)::after{content:none}
+.top-tabs a:first-child::before{right:20px;border-radius:999px 0 0 999px;transform:none}
+.top-tabs a:first-child::after{right:0;width:40px}
+.top-tabs a:last-child::before{right:auto;width:40px}
+.top-tabs a:last-child::after{left:20px;right:0;border-radius:0 999px 999px 0;transform:none}
+.top-tabs a.is-selected::before,.top-tabs a.is-selected::after,.top-tabs a:active::before,.top-tabs a:active::after,.top-tabs a:focus-visible::before,.top-tabs a:focus-visible::after{display:block}
+/* Current tab: filled, black text, lime <-> green, pulsing; the glow follows the outline. */
+.top-tabs a.is-selected{color:var(--zzz-ink);animation:zzz-tab-pulse var(--zzz-pulse-time) ease-in-out infinite;filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
+/* Press: the shape fills lime and the text turns black. */
+.top-tabs a:active{color:var(--zzz-ink)}
+.top-tabs a:active::before,.top-tabs a:active::after{animation:none;background:var(--zzz-lime)}
+/* Keyboard focus on another tab: its shape shows dark, outlined by a breathing lime <-> green glow. */
+.top-tabs a:not(.is-selected):focus-visible{animation:zzz-tab-breathe var(--zzz-glow-time) ease-in-out infinite}
+.top-tabs a:not(.is-selected):focus-visible:not(:active)::before,.top-tabs a:not(.is-selected):focus-visible:not(:active)::after{background:#22252b}
+@keyframes zzz-tab-breathe{
+  0%,100%{filter:drop-shadow(0 0 1.5px var(--zzz-lime)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+  50%{filter:drop-shadow(0 0 1.5px var(--zzz-green)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-green-rgb),.55))}}
 /* The pulse: the shape swells and settles back with a small bounce, twice a cycle, like the
    kit's selected border (expand 700 ms, retract 400 ms, rest 500 ms). */
 @keyframes zzz-tab-pulse{
@@ -85,10 +96,10 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
   50%{transform:scale(1);animation-timing-function:cubic-bezier(.35,0,.25,1)}
   71.875%{transform:scale(1.07);animation-timing-function:cubic-bezier(.45,0,.2,1.7)}
   84.375%,100%{transform:scale(1)}}
-@media(prefers-reduced-motion:reduce){.top-tabs a.is-selected,.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{animation:none}.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{background:var(--zzz-lime)}}
+@media(prefers-reduced-motion:reduce){.top-tabs a,.top-tabs a::before,.top-tabs a::after{animation:none!important}.top-tabs a.is-selected::before,.top-tabs a.is-selected::after{background:var(--zzz-lime)}.top-tabs a:not(.is-selected):focus-visible{filter:drop-shadow(0 0 2px var(--zzz-lime))}}
 /* A tab with no pages of its own has no side menu, so its page uses the whole width. */
 .shell.no-side{grid-template-columns:minmax(0,1fr)}
 .shell.no-side .shell-nav{display:none}
-@media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;margin:6px 0 4px;padding:5px 8px}.top-tabs a{flex:1;min-width:0;padding:0 10px;font-size:17px}.shell.no-side{display:block}}
+@media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;margin:6px 0 4px}.top-tabs a{flex:1;min-width:0;padding:0 14px;font-size:17px}.shell.no-side{display:block}}
 /* A tab's sections (General, Game) show one at a time, picked in the side menu. */
 [data-section][hidden]{display:none!important}
