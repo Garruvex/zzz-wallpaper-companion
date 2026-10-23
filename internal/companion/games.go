@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -391,35 +392,32 @@ func applyShelf(carts []cart) {
 }
 
 // numberTapes gives each game on the shelf its tape, numbered 1 to shelfSlots as on the tapes'
-// tags in the wallpaper. A game keeps the tape it had; one new to the shelf takes the lowest free
-// number, in title order. OnShelf must already be decided.
+// tags in the wallpaper. The shelf is always packed from tape 1 with no gaps: games keep their order,
+// a game new to the shelf goes on the end (in title order), and taking one off closes the gap.
+// OnShelf must already be decided.
 func numberTapes(carts []cart) {
-	taken := map[int]bool{}
+	var shelf []*cart
 	for i := range carts {
-		c := &carts[i]
-		c.Tape = 0
-		if c.OnShelf && c.storedTape >= 1 && c.storedTape <= shelfSlots && !taken[c.storedTape] {
-			c.Tape = c.storedTape
-			taken[c.Tape] = true
+		carts[i].Tape = 0
+		if carts[i].OnShelf {
+			shelf = append(shelf, &carts[i])
 		}
 	}
-	next := 1
-	for i := range carts {
-		c := &carts[i]
-		if !c.OnShelf || c.Tape != 0 {
-			continue
+	rank := func(c *cart) int {
+		if c.storedTape >= 1 && c.storedTape <= shelfSlots {
+			return c.storedTape
 		}
-		for taken[next] {
-			next++
-		}
-		c.Tape = next
-		taken[next] = true
+		return shelfSlots + 1
+	}
+	sort.SliceStable(shelf, func(i, j int) bool { return rank(shelf[i]) < rank(shelf[j]) })
+	for i, c := range shelf {
+		c.Tape = i + 1
 	}
 }
 
-// setTape moves a game to tape n (1 to shelfSlots), the number on that tape's tag in the wallpaper,
-// and puts it on the shelf if it was off. If another game has that tape, the two swap tapes; an
-// off-shelf game taking a tape bumps its owner off the shelf instead, since it has no tape to give.
+// setTape moves a game to tape n (1 to shelfSlots), the number on that tape's tag in the wallpaper.
+// The games from n on move along one to make room, and the gap it left closes; a game that wasn't on
+// the shelf goes on it (409 if the shelf is full). A number past the end puts it last.
 func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 	n, err := strconv.Atoi(r.URL.Query().Get("n"))
 	if err != nil || n < 1 || n > shelfSlots {
@@ -427,40 +425,36 @@ func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 		return
 	}
 	var mover cart
-	var owner *cart
+	var order []cart
 	carts := s.cartList()
-	for i := range carts {
-		if carts[i].ID == c.ID {
-			mover = carts[i]
-		} else if carts[i].Tape == n {
-			owner = &carts[i]
+	sort.SliceStable(carts, func(i, j int) bool { return carts[i].Tape < carts[j].Tape })
+	for _, other := range carts {
+		if other.ID == c.ID {
+			mover = other
+		} else if other.Tape != 0 {
+			order = append(order, other)
 		}
 	}
 	if mover.ID == "" {
 		writeError(w, http.StatusNotFound, "no such game")
 		return
 	}
-	write := func(game cart, change func(meta map[string]any)) bool {
-		meta := cartMeta(game.dir)
-		change(meta)
-		return writeCartMeta(game.dir, meta) == nil
-	}
-	ok := true
-	switch {
-	case owner != nil && mover.Tape != 0:
-		// Two games on the shelf trade tapes.
-		ok = write(*owner, func(meta map[string]any) { meta["tape"] = mover.Tape }) &&
-			write(mover, func(meta map[string]any) { meta["tape"] = n })
-	case owner != nil:
-		// An off-shelf game takes the tape; its owner goes off the shelf.
-		ok = write(*owner, func(meta map[string]any) { meta["shelf"] = false; delete(meta, "tape") }) &&
-			write(mover, func(meta map[string]any) { meta["shelf"] = true; meta["tape"] = n })
-	default:
-		ok = write(mover, func(meta map[string]any) { meta["shelf"] = true; meta["tape"] = n })
-	}
-	if !ok {
-		writeError(w, http.StatusInternalServerError, "could not update the shelf")
+	if len(order) >= shelfSlots {
+		writeError(w, http.StatusConflict, fmt.Sprintf("The shelf is full (%d tapes). Take another game off it first.", shelfSlots))
 		return
+	}
+	at := min(n-1, len(order))
+	order = append(order[:at], append([]cart{mover}, order[at:]...)...)
+	for i, game := range order {
+		if game.Tape == i+1 && game.Shelf != nil && *game.Shelf {
+			continue
+		}
+		meta := cartMeta(game.dir)
+		meta["shelf"], meta["tape"] = true, i+1
+		if writeCartMeta(game.dir, meta) != nil {
+			writeError(w, http.StatusInternalServerError, "could not update the shelf")
+			return
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -482,6 +476,8 @@ func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	}
 	meta := cartMeta(c.dir)
 	meta["shelf"] = on
+	// Put on, it goes on the end of the shelf; taken off, the games after it close up.
+	delete(meta, "tape")
 	if err := writeCartMeta(c.dir, meta); err != nil {
 		writeError(w, http.StatusInternalServerError, "could not update the game")
 		return

@@ -1935,7 +1935,7 @@
           "Games"
         ],
         "summary": "games.carts.action",
-        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry. tape moves a game to shelf tape n (1-14), putting it on the shelf if it was off: if another game has that tape the two swap, and an off-shelf game takes the tape by bumping its owner off the shelf (204; 400 for a bad n).",
+        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry. tape moves a game to shelf tape n (1-14), putting it on the shelf if it was off: the shelf stays packed from tape 1, so the games from n on move along one and a number past the end puts it last (204; 400 for a bad n; 409 if the shelf is full).",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -3063,7 +3063,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 14,
-            "description": "The shelf tape the game is on, 1-14: the number on that tape's tag in the wallpaper. Absent while the game is off the shelf. A game keeps its tape when others are added."
+            "description": "The shelf tape the game is on, 1-14: the number on that tape's tag in the wallpaper. Absent while the game is off the shelf. The shelf is packed from tape 1: games added go on the end and taking one off closes the gap."
           }
         },
         "required": [

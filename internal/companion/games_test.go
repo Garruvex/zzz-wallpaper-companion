@@ -230,16 +230,20 @@ func TestShelfGamesKeepTheirTapeNumbers(t *testing.T) {
 	write(t, filepath.Join(server.romDir(), "Adventure", "game.gba"), "ROM Adventure")
 	want(tapes(), map[string]int{"Adventure": 4, "Castlevania": 1, "Metroid": 2, "Zelda": 3})
 
-	// Taking a game off frees its tape, and the next game onto the shelf takes it.
+	// Taking a game off closes the gap, and the next game onto the shelf goes on the end.
 	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=0", nil)
-	want(tapes(), map[string]int{"Metroid": 0, "Zelda": 3})
+	want(tapes(), map[string]int{"Metroid": 0, "Castlevania": 1, "Zelda": 2, "Adventure": 3})
 	write(t, filepath.Join(server.romDir(), "Bomberman", "game.gba"), "ROM Bomberman")
-	want(tapes(), map[string]int{"Bomberman": 2})
+	want(tapes(), map[string]int{"Bomberman": 4})
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=1", nil)
+	want(tapes(), map[string]int{"Metroid": 5})
 
 	// The numbers live in cart.json, so they survive a restart.
-	if meta := cartMeta(filepath.Join(server.romDir(), "Zelda")); meta["tape"] != float64(3) {
+	if meta := cartMeta(filepath.Join(server.romDir(), "Zelda")); meta["tape"] != float64(2) {
 		t.Fatalf("Zelda's cart.json: %v", meta)
 	}
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=0", nil)
+	tapes()
 	if _, ok := cartMeta(filepath.Join(server.romDir(), "Metroid"))["tape"]; ok {
 		t.Fatal("a game off the shelf kept a tape in cart.json")
 	}
@@ -276,18 +280,20 @@ func TestMovingAGameToAnotherTape(t *testing.T) {
 	}
 	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
 
-	// Onto a free tape.
-	move("Zelda", 9, http.StatusNoContent)
-	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 9})
-	// Onto a taken tape: the two swap.
+	// Past the end: it goes last, with no gap.
 	move("Castlevania", 9, http.StatusNoContent)
-	expect(map[string]int{"Castlevania": 9, "Metroid": 2, "Zelda": 1})
-	// An off-shelf game takes a tape and bumps its owner off.
+	expect(map[string]int{"Metroid": 1, "Zelda": 2, "Castlevania": 3})
+	// Onto a taken tape: it goes in there and the rest move along.
+	move("Castlevania", 1, http.StatusNoContent)
+	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+	move("Castlevania", 2, http.StatusNoContent)
+	expect(map[string]int{"Metroid": 1, "Castlevania": 2, "Zelda": 3})
+	// An off-shelf game goes onto the shelf at that tape; nobody is bumped off.
 	write(t, filepath.Join(server.romDir(), "Tetris", "game.gb"), "GB")
 	write(t, filepath.Join(server.romDir(), "Tetris", "cart.json"), `{"shelf":false}`)
 	expect(map[string]int{"Tetris": 0})
 	move("Tetris", 2, http.StatusNoContent)
-	expect(map[string]int{"Tetris": 2, "Metroid": 0, "Castlevania": 9, "Zelda": 1})
+	expect(map[string]int{"Metroid": 1, "Tetris": 2, "Castlevania": 3, "Zelda": 4})
 	// Bad tapes are refused.
 	move("Zelda", 0, http.StatusBadRequest)
 	move("Zelda", 15, http.StatusBadRequest)

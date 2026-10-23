@@ -173,12 +173,10 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .zzz-fold:active::before{background:var(--zzz-ink)}
 .game-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:720px){#settings label.zzz-row{grid-template-columns:1fr;border-radius:28px;padding:14px 16px}.game-actions{grid-template-columns:1fr 1fr}}
-/* The shelf list (Game, Library): one dark pill per tape, its number in a white tile like the tape's
-   tag in the wallpaper, then the title and tags, the actions, and the fold button for the saves.
-   Empty tapes are dimmed. */
+/* A game's line (Game, Library): a dark pill with the title and tags, the actions, and the fold button
+   for the saves. */
 #games .group-title{margin:20px 0 10px 6px}
 .tape-row{display:flex;align-items:center;gap:14px;min-height:60px;margin:0 0 10px;padding:6px 8px;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33}
-.tape-num{flex:none;display:grid;place-items:center;width:54px;height:44px;border-radius:22px;background:#f4f4ee;color:#0c0d0f;font:900 italic 20px/1 var(--zzz-font)}
 .tape-title{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
 .tape-title b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:900 19px/1.2 var(--zzz-font);color:#fff}
 .tape-title .chip{flex:none;margin:0}
@@ -217,23 +215,33 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .zzz-round-action:active::before{background:var(--zzz-ink)}
 .zzz-round-action:disabled{opacity:.4;cursor:default}
 .tape-row.is-playing{box-shadow:inset 0 0 0 3px var(--select-yellow)}
-.tape-row.is-empty{background:#1a1b1e;box-shadow:inset 0 0 0 2px #25272a}
-.tape-row.is-empty .tape-num{background:#36383c;color:#8b8f96}
-.tape-row.is-empty .tape-title{color:#6c7076;font:800 italic 16px/1 var(--zzz-font)}
 .tape-item{margin:0 0 10px}
 .tape-item>.tape-row{margin:0}
 .tape-item>.saves{margin:8px 24px 0}
 @media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%;justify-content:flex-end}}
 /* A lit tag (ON TV, NEXT): lime fill, dark text, on any page. */
 .chip.on{background:var(--zzz-lime);color:var(--zzz-ink)}
-/* The tape number tile is a button that opens the 01-14 picker; the tiles in the picker are the same
-   white tiles, the current one lit, the ones other games have dimmed. */
-.tape-grab{cursor:grab}
-.tape-grab:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
-.tape-row.is-dragging{opacity:.45}
-.tape-row.is-over,.group-title.is-over,.off-hint.is-over{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
-.off-hint{margin:0 0 10px;padding:14px 22px;border-radius:999px;background:#1a1b1e}
-.tape-item.is-over>.tape-row{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+/* The Library: the shelf, packed from tape 01, and the pile of games not on it. The tape number is a
+   plain heavy italic figure (no tile), lime while the game is on the TV; a dotted grip picks a row up,
+   and a lime line shows where it will go in. */
+.lib-shelf,.lib-pile{margin:0 0 22px}
+.lib-pile{padding:4px 12px 2px;border-radius:30px;background:#141517;box-shadow:inset 0 0 0 2px #232427}
+.lib-pile.is-over{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.lib-head{display:flex;align-items:baseline;justify-content:space-between;margin:14px 10px 10px 6px}
+#games .lib-head .group-title{margin:0}
+.lib-count{font:900 italic 15px/1 var(--zzz-font);color:#9a9ea4}
+.lib-end{margin:0 0 10px;padding:16px 24px;border-radius:999px;border:2px dashed #34363a;color:#7d8187;font:800 italic 14px/1.3 var(--zzz-font)}
+.tape-no{flex:none;width:44px;text-align:center;font:900 italic 27px/1 var(--zzz-font);letter-spacing:-.03em;color:#8b8f96}
+.tape-row.is-playing .tape-no{color:var(--zzz-lime)}
+.tape-grip{flex:none;width:14px;height:26px;margin-left:10px;border-radius:4px;background:radial-gradient(circle,#6c7076 1.6px,transparent 2px) 0 0/7px 7px;cursor:grab}
+.tape-grip:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime)}
+.tape-row.is-dragging{opacity:.4}
+.drop-line{height:4px;margin:-7px 18px 3px;border-radius:2px;background:var(--zzz-lime);box-shadow:0 0 10px rgba(var(--zzz-lime-rgb),.6)}
+.lib-move{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0 0 3px;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;color:#fff;font:900 26px/1 var(--zzz-font);cursor:pointer}
+.lib-move:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.lib-move:active{background:var(--zzz-lime);color:var(--zzz-ink)}
+.lib-move:disabled{opacity:.4;cursor:default}
+.tape-row.locked .tape-title b{color:#8b8f96}
 /* The switch sits at the right end of its row, like the dropdowns did. */
 #settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
 /* Small buttons are the game's ("Resource Details"): a black pill with a fine checker texture inside a

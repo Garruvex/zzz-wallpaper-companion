@@ -128,12 +128,12 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 	if !strings.Contains(holidaysHTML, "date-block") || !strings.Contains(holidaysHTML, "Coming up") || strings.Contains(holidaysHTML, "tape-row") {
 		t.Error("the holidays are not listed as dates")
 	}
-	// The Library is the shelf as a list, 01 to 14, numbered like the tapes.
-	if !strings.Contains(gamesHTML, "tape-num") || !strings.Contains(gamesHTML, "tape <= 14") {
-		t.Error("the Library is not listed by tape")
+	// The Library is the shelf, numbered like the tapes, over the pile of games not on it.
+	if !strings.Contains(gamesHTML, "lib-shelf") || !strings.Contains(gamesHTML, "lib-pile") || !strings.Contains(gamesHTML, "SLOTS = 14") {
+		t.Error("the Library is not the shelf and the pile")
 	}
-	// A game is dragged to another tape (or off the shelf), and a section is not titled again over its cards.
-	if !strings.Contains(gamesHTML, "tapeHandle(") || !strings.Contains(gamesHTML, "dropTarget(") || !strings.Contains(gamesHTML, "action: 'tape'") {
+	// Games are dragged in, out and along the shelf, and a section is not titled again over its cards.
+	if !strings.Contains(gamesHTML, "shelfDrop(") || !strings.Contains(gamesHTML, "pileDrop(") || !strings.Contains(gamesHTML, "action: 'tape'") {
 		t.Error("the tape number cannot be changed")
 	}
 	if strings.Contains(shellJS, "companionTitleCard(") {

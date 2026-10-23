@@ -58,7 +58,7 @@ func TestPSPStaysLockedUntilTheSecret(t *testing.T) {
 	}
 	listed = struct{ Carts []cart }{}
 	decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &listed)
-	if len(listed.Carts) != 3 || listed.Carts[1].ID != "Patapon" || listed.Carts[1].Locked || listed.Carts[1].Tape != 5 {
+	if len(listed.Carts) != 3 || listed.Carts[1].ID != "Patapon" || listed.Carts[1].Locked || listed.Carts[1].Tape != 2 {
 		t.Fatalf("unlocked list %+v", listed.Carts)
 	}
 	if r := cartRequest(t, server, http.MethodPost, "/api/v1/games/current", []byte(`{"id":"Patapon"}`)); r.Code != http.StatusOK {
