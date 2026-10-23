@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	apiregistry "github.com/Garruvex/zzz-wallpaper-companion/internal/api"
@@ -59,6 +60,7 @@ type APIServer struct {
 	gamesMu     sync.Mutex
 	selection   gameSelection
 	pspCode     pspCode
+	pspOn       atomic.Bool // PSP unlocked; only until the companion quits
 	http        *http.Server
 	sessionsMu  sync.Mutex
 	sessions    map[string]*streamSession
@@ -69,6 +71,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	dataDir := filepath.Dir(resolver.path)
 	s := &APIServer{config: config, resolver: resolver, ffmpeg: ffmpeg, dataDir: dataDir, lyrics: lyrics.NewService(dataDir, version), systemStats: systemstats.NewService(), sessions: make(map[string]*streamSession)}
 	s.mapTiles = newMapTileService(dataDir)
+	_ = os.Remove(filepath.Join(dataDir, pspUnlockFile)) // an unlock kept by an older build
 	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.input.SetPSPUnlocked(s.pspUnlocked())
 	s.input.WatchIdle(s.watchPSPCode)

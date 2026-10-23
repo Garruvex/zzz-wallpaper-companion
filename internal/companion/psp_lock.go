@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -14,35 +12,26 @@ import (
 )
 
 // PSP is not stable yet, so it stays locked. While it is locked the companion
-// takes no PSP files and never hands a PSP game to the wallpaper: the
-// cartridge list leaves them out, and they can't be played, put on the shelf
-// or have their ROM read. PSP games already in the library keep their folders
-// and saves, and the Games page shows them greyed out.
+// takes no PSP files and never hands a PSP game to the wallpaper to play: the
+// cartridge list marks them locked (they keep their tape on the shelf), and
+// they can't be played or have their ROM read. They keep their folders and
+// saves, and the Games page shows them greyed out.
 //
 // There is one way to change it, and nothing in the API or the pages offers
 // it: a button sequence on a controller while the game station is on with no
 // tape in the deck. Only its hash is kept here. The same sequence locks it
-// again. The unlock is a marker file next to the settings, so it survives
-// restarts and updates.
+// again. The unlock lasts until the companion quits: reloading the wallpaper
+// keeps it, and every start of the companion begins locked.
 
+// pspUnlockFile is where older builds kept the unlock; a start removes it.
 const pspUnlockFile = "psp-unlocked"
 
-func (s *APIServer) pspUnlocked() bool {
-	_, err := os.Stat(filepath.Join(s.dataDir, pspUnlockFile))
-	return err == nil
-}
+func (s *APIServer) pspUnlocked() bool { return s.pspOn.Load() }
 
 func pspLocked(c cart, unlocked bool) bool { return c.System == "psp" && !unlocked }
 
 func (s *APIServer) setPSPUnlocked(on bool) error {
-	path := filepath.Join(s.dataDir, pspUnlockFile)
-	if on {
-		if err := writeFileAtomic(path, []byte("Delete this file to lock PSP games again.\n")); err != nil {
-			return err
-		}
-	} else if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return err
-	}
+	s.pspOn.Store(on)
 	s.input.SetPSPUnlocked(on)
 	// A PSP game on the TV leaves it as soon as PSP is locked.
 	if current := s.currentGame(); !on && current.ID != "" {

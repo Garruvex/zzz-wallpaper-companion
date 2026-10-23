@@ -127,3 +127,21 @@ func TestPSPCodeOnAControllerWithAnEmptyDeck(t *testing.T) {
 		t.Fatal("the code did not lock PSP again")
 	}
 }
+
+// The unlock lasts until the companion quits; the next start begins locked, even if an older build
+// left its marker file.
+func TestPSPLocksAgainWhenTheCompanionRestarts(t *testing.T) {
+	server := testServer(t)
+	if err := server.setPSPUnlocked(true); err != nil || !server.pspUnlocked() {
+		t.Fatal("not unlocked")
+	}
+	write(t, filepath.Join(server.dataDir, pspUnlockFile), "old marker")
+	restarted := newAPIServer(server.config, server.resolver, server.ffmpeg)
+	t.Cleanup(restarted.systemStats.Close)
+	if restarted.pspUnlocked() {
+		t.Fatal("a restart kept PSP unlocked")
+	}
+	if _, err := os.Stat(filepath.Join(server.dataDir, pspUnlockFile)); !os.IsNotExist(err) {
+		t.Fatal("the old marker file was left behind")
+	}
+}
