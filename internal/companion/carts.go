@@ -87,6 +87,9 @@ type cart struct {
 	// Shelf is the player's choice for the wallpaper's shelf of game tapes:
 	// true puts it on, false keeps it off, unset lets it take a free tape.
 	// OnShelf is the outcome once the shelf's size is taken into account.
+	// Locked is a PSP game while PSP is locked: it keeps its tape on the shelf but cannot be played, and
+	// its game file is not served.
+	Locked  bool  `json:"locked,omitempty"`
 	Shelf   *bool `json:"shelf,omitempty"`
 	OnShelf bool  `json:"onShelf"`
 	// Tape is the shelf tape the game is on, 1 to shelfSlots: the number on that tape's tag in the
@@ -222,15 +225,13 @@ func (s *APIServer) libraryCarts() []cart {
 	return carts
 }
 
-// cartList is the games that can be played: the library without locked PSP
-// games. This is all the wallpaper ever sees.
+// cartList is the library as the wallpaper sees it. A locked PSP game stays in it, marked locked, so
+// its tape keeps its place on the shelf; it just can't be played.
 func (s *APIServer) cartList() []cart {
 	unlocked := s.pspUnlocked()
-	carts := []cart{}
-	for _, c := range s.libraryCarts() {
-		if !pspLocked(c, unlocked) {
-			carts = append(carts, c)
-		}
+	carts := s.libraryCarts()
+	for i := range carts {
+		carts[i].Locked = pspLocked(carts[i], unlocked)
 	}
 	applyShelf(carts)
 	numberTapes(carts)

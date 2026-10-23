@@ -38,8 +38,8 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
-let picking = ''; // the game whose tape picker is open
-// While PSP is locked its games are greyed out and PSP files are not offered.
+let dragId = ''; // the game being dragged to another tape
+// While PSP is locked its games stay on their tapes, greyed out and unplayable, and PSP files are not offered.
 let psp = { unlocked: false, locked: [] };
 const PSP_FILES = ',.iso,.cso,.elf';
 
@@ -123,55 +123,59 @@ function render() {
   if (visit.signal.aborted) return; // a reply that lands after leaving the tab
   $('file').accept = $('file').accept.replace(PSP_FILES, '') + (psp.unlocked ? PSP_FILES : '');
   for (const node of document.querySelectorAll('.psp')) node.hidden = !psp.unlocked;
-  $('shelfNote').textContent = carts.length ? 'The numbers are the tapes on the wallpaper\'s shelf. Turn "On shelf" on for the games you want there; the rest stay playable from this page.' : '';
+  $('shelfNote').textContent = carts.length ? 'The numbers are the tapes on the wallpaper\'s shelf. Drag a game onto another tape to move it, or below the line to take it off; the rest stay playable from this page.' : '';
   const list = $('games');
   list.replaceChildren();
-  const library = [...carts, ...psp.locked].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
+  const library = [...carts];
   if (!library.length) { list.append(el('p', { className: 'empty', textContent: 'No games yet. Add one in Add Games.' })); return; }
   const byTape = new Map(carts.filter(cart => cart.tape).map(cart => [cart.tape, cart]));
   list.append(el('h2', { className: 'group-title', textContent: 'On the shelf' }));
   for (let tape = 1; tape <= 14; tape++) {
     const cart = byTape.get(tape);
-    list.append(cart ? gameRow(cart, tape) : el('div', { className: 'tape-row is-empty' }, tapeNumber(tape), el('span', { className: 'tape-title', textContent: 'Empty tape' })));
+    const row = cart ? gameRow(cart, tape) : el('div', { className: 'tape-row is-empty' }, tapeNumber(tape), el('span', { className: 'tape-title', textContent: 'Empty tape' }));
+    dropTarget(row.classList.contains('tape-row') ? row : row.firstChild, tape);
+    list.append(row);
   }
   const off = library.filter(cart => !cart.tape);
-  if (off.length) {
-    list.append(el('h2', { className: 'group-title', textContent: 'Not on the shelf' }));
-    for (const cart of off) list.append(gameRow(cart));
-  }
+  const offHead = el('h2', { className: 'group-title', textContent: 'Not on the shelf' });
+  list.append(offHead);
+  if (!off.length) list.append(el('p', { className: 'empty off-hint', textContent: 'Drag a game here to take it off the shelf.' }));
+  for (const cart of off) list.append(gameRow(cart));
+  dropTarget(offHead, 0);
+  if (!off.length) dropTarget(list.lastChild, 0);
 }
 
 const tapeNumber = tape => el('span', { className: 'tape-num', textContent: tape ? String(tape).padStart(2, '0') : '--' });
 
-// The number tile is a button: it opens a picker of tapes 01 to 14 under the game's line. Choosing a
-// tape moves the game there (a game on it swaps places; an off-shelf game puts its owner off).
-function tapeButton(cart, tape) {
-  const tile = el('button', { type: 'button', className: 'tape-num tape-pick', disabled: busy || psp.locked.includes(cart),
-    title: tape ? 'Move to another tape' : 'Put on a tape',
-    onclick: () => { picking = picking === cart.id ? '' : cart.id; render(); } }, tape ? String(tape).padStart(2, '0') : '--');
-  tile.setAttribute('aria-expanded', String(picking === cart.id));
-  tile.setAttribute('aria-label', tape ? `${cart.title} is on tape ${tape}. Move it to another tape` : `Put ${cart.title} on a tape`);
-  return tile;
+// Dragging: a game is picked up by its row and dropped on a tape (it moves there; a game on that tape
+// swaps places, or goes off the shelf if the dragged one wasn't on it), or on "Not on the shelf" to take
+// it off. The number tile also takes the arrow keys, for the keyboard.
+function dropTarget(node, tape) {
+  node.addEventListener('dragover', event => { if (dragId) { event.preventDefault(); node.classList.add('is-over'); } });
+  node.addEventListener('dragleave', () => node.classList.remove('is-over'));
+  node.addEventListener('drop', event => {
+    event.preventDefault();
+    node.classList.remove('is-over');
+    const cart = carts.find(item => item.id === dragId);
+    dragId = '';
+    if (!cart || cart.tape === tape || (!tape && !cart.onShelf)) return;
+    if (tape) run(`${cart.title} is on tape ${tape}.`, () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n: tape } }));
+    else run(`${cart.title} is off the shelf.`, () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: 0 } }));
+  });
 }
 
-function tapePicker(cart) {
-  const owners = new Map(carts.filter(other => other.tape).map(other => [other.tape, other]));
-  const cells = [];
-  for (let n = 1; n <= 14; n++) {
-    const owner = owners.get(n);
-    const cell = el('button', { type: 'button', className: `tape-cell${cart.tape === n ? ' is-current' : ''}${owner && owner !== cart ? ' is-taken' : ''}`, disabled: busy || cart.tape === n,
-      title: cart.tape === n ? 'This is its tape' : owner ? (cart.tape ? `Swap with ${owner.title}` : `Takes the tape from ${owner.title}, who goes off the shelf`) : 'Free tape',
-      onclick: () => { picking = ''; run(`${cart.title} is on tape ${n}.`, () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n } })); } },
-      String(n).padStart(2, '0'));
-    cell.setAttribute('aria-label', `Tape ${n}${owner && owner !== cart ? `, has ${owner.title}` : ''}`);
-    cells.push(cell);
-  }
-  return el('div', { className: 'tape-picker' }, el('small', { textContent: cart.tape ? 'Move to tape:' : 'Put on tape:' }), ...cells);
+function tapeHandle(cart, tape) {
+  const move = n => { if (n >= 1 && n <= 14 && !busy) run(`${cart.title} is on tape ${n}.`, () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n } })); };
+  const tile = el('span', { className: 'tape-num tape-grab', textContent: tape ? String(tape).padStart(2, '0') : '--', tabIndex: 0, title: 'Drag to move it to another tape',
+    onkeydown: event => { if (event.key === 'ArrowUp' && tape) { event.preventDefault(); move(tape - 1); } else if (event.key === 'ArrowDown' && tape) { event.preventDefault(); move(tape + 1); } } });
+  tile.setAttribute('role', 'button');
+  tile.setAttribute('aria-label', tape ? `${cart.title} is on tape ${tape}. Drag it, or press up or down, to move it` : `${cart.title} is off the shelf. Drag it onto a tape to put it on`);
+  return tile;
 }
 
 // One line per game: tape number, title and tags, its actions, and a fold button for its saves.
 function gameRow(cart, tape) {
-  const locked = psp.locked.includes(cart);
+  const locked = Boolean(cart.locked);
   const onTV = current.id === cart.id;
   const shown = open.has(cart.id);
   const title = el('span', { className: 'tape-title', title: cart.rom },
@@ -181,7 +185,7 @@ function gameRow(cart, tape) {
     locked ? '' : el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }));
   // Compact controls at the right, like the game's "Stats [OFF] ▼": a Shelf switch, a round play
   // (or eject) button, and the fold button that opens the saves and Remove.
-  const shelf = el('button', { type: 'button', className: `zzz-switch${cart.onShelf ? ' is-on' : ''}`, disabled: busy || locked, title: locked ? 'PSP games are locked' : '',
+  const shelf = el('button', { type: 'button', className: `zzz-switch${cart.onShelf ? ' is-on' : ''}`, disabled: busy,
     onclick: () => run(cart.onShelf ? `${cart.title} is off the shelf.` : `${cart.title} is on the shelf.`,
       () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: cart.onShelf ? 0 : 1 } })) },
     el('span', { textContent: cart.onShelf ? 'ON' : 'OFF' }));
@@ -196,9 +200,11 @@ function gameRow(cart, tape) {
   fold.setAttribute('aria-expanded', String(shown));
   fold.setAttribute('aria-label', `${shown ? 'Close' : 'Open'} saves and Remove for ${cart.title}`);
   const actions = el('span', { className: 'tape-actions' }, el('span', { className: 'tape-label', textContent: 'Shelf' }), shelf, el('span', { className: 'tape-divider' }), play);
-  const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, tapeButton(cart, tape), title, actions, fold);
-  const picker = picking === cart.id && !locked ? tapePicker(cart) : '';
-  return shown || picker ? el('div', { className: 'tape-item' }, row, picker, shown ? savesPanel(cart) : '') : row;
+  const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` }, tapeHandle(cart, tape), title, actions, fold);
+  row.draggable = !busy;
+  row.addEventListener('dragstart', event => { dragId = cart.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', cart.id); row.classList.add('is-dragging'); });
+  row.addEventListener('dragend', () => { dragId = ''; row.classList.remove('is-dragging'); document.querySelectorAll('.is-over').forEach(node => node.classList.remove('is-over')); });
+  return shown ? el('div', { className: 'tape-item' }, row, savesPanel(cart)) : row;
 }
 
 const select = id => api('games.selection.save', { body: { id } }).then(() => '');
@@ -254,7 +260,7 @@ const visit = new AbortController();
 document.addEventListener('zzz:leave', () => visit.abort(), { once: true });
 
 refresh();
-const poll = setInterval(() => { if (!busy && !document.hidden && !$('games').contains(document.activeElement)) refresh(); }, 4000);
+const poll = setInterval(() => { if (!busy && !document.hidden && !dragId && !$('games').contains(document.activeElement)) refresh(); }, 4000);
 visit.signal.addEventListener('abort', () => clearInterval(poll));
 const padPoll = setInterval(padTick, 100);
 visit.signal.addEventListener('abort', () => clearInterval(padPoll));

@@ -132,8 +132,8 @@ func TestPanelsUseTitleAndItemCards(t *testing.T) {
 	if !strings.Contains(gamesHTML, "tape-num") || !strings.Contains(gamesHTML, "tape <= 14") {
 		t.Error("the Library is not listed by tape")
 	}
-	// The number tile moves a game to another tape, and a section is not titled again over its cards.
-	if !strings.Contains(gamesHTML, "tapePicker(") || !strings.Contains(gamesHTML, "action: 'tape'") {
+	// A game is dragged to another tape (or off the shelf), and a section is not titled again over its cards.
+	if !strings.Contains(gamesHTML, "tapeHandle(") || !strings.Contains(gamesHTML, "dropTarget(") || !strings.Contains(gamesHTML, "action: 'tape'") {
 		t.Error("the tape number cannot be changed")
 	}
 	if strings.Contains(shellJS, "companionTitleCard(") {

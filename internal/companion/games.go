@@ -426,10 +426,6 @@ func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("n must be a tape from 1 to %d", shelfSlots))
 		return
 	}
-	if pspLocked(c, s.pspUnlocked()) {
-		writeError(w, http.StatusConflict, "PSP games are locked")
-		return
-	}
 	var mover cart
 	var owner *cart
 	carts := s.cartList()
@@ -472,10 +468,6 @@ func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 // setShelf puts a game on the shelf or takes it off.
 func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	on := r.URL.Query().Get("on") == "1"
-	if on && pspLocked(c, s.pspUnlocked()) {
-		writeError(w, http.StatusConflict, "PSP games are locked")
-		return
-	}
 	if on {
 		taken := 0
 		for _, other := range s.cartList() {

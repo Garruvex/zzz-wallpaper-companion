@@ -228,16 +228,12 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .chip.on{background:var(--zzz-lime);color:var(--zzz-ink)}
 /* The tape number tile is a button that opens the 01-14 picker; the tiles in the picker are the same
    white tiles, the current one lit, the ones other games have dimmed. */
-button.tape-num{border:0;padding:0;cursor:pointer}
-button.tape-num:focus-visible,.tape-cell:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
-button.tape-num:active,.tape-cell:active{background:var(--zzz-lime)}
-button.tape-num:disabled,.tape-cell:disabled{cursor:default}
-.tape-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 8px 0 78px;padding:12px 14px;border-radius:18px;background:#17181b;box-shadow:inset 0 0 0 2px #2d2f33}
-.tape-picker small{flex:none;margin:0 6px 0 0;font:900 13px/1 var(--zzz-font);color:#9a9ea4}
-.tape-cell{width:46px;height:36px;border:0;padding:0;border-radius:18px;background:#f4f4ee;color:#0c0d0f;font:900 italic 16px/1 var(--zzz-font);cursor:pointer}
-.tape-cell.is-taken{background:#3a3c40;color:#b8bcc2}
-.tape-cell.is-current{background:var(--zzz-lime);color:var(--zzz-ink)}
-@media(max-width:900px){.tape-picker{margin-left:0}}
+.tape-grab{cursor:grab}
+.tape-grab:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.tape-row.is-dragging{opacity:.45}
+.tape-row.is-over,.group-title.is-over,.off-hint.is-over{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.off-hint{margin:0 0 10px;padding:14px 22px;border-radius:999px;background:#1a1b1e}
+.tape-item.is-over>.tape-row{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
 /* The switch sits at the right end of its row, like the dropdowns did. */
 #settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
 /* Small buttons are the game's ("Resource Details"): a black pill with a fine checker texture inside a
