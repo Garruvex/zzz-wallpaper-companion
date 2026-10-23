@@ -5,7 +5,7 @@
   const groups = [
     { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
-    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller']] },
+    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller'], ['keyboard', 'Keyboard']] },
   ];
   const groupOf = path => groups.find(group => group.paths.includes(path));
   const isTab = path => Boolean(groupOf(path));
@@ -52,12 +52,14 @@
       form.querySelector('.section')?.remove();
     }
     if (path === '/games') {
-      // Three sections: the library, adding games (the drop zone and its notes), and the controller.
+      // Four sections: the library, adding games (the drop zone and its notes), the controller and the keyboard.
       const make = key => { const section = main.ownerDocument.createElement('section'); section.dataset.section = key; return section; };
-      const library = make('library'), add = make('add'), controller = make('controller');
+      const library = make('library'), add = make('add'), controller = make('controller'), keyboard = make('keyboard');
       main.querySelector('#drop').before(library, add);
       main.querySelector('#pad').before(controller);
       controller.append(companionCard(main.ownerDocument, 'Controller', { body: [main.querySelector('#pad')] }));
+      main.querySelector('#keys').before(keyboard);
+      keyboard.append(companionCard(main.ownerDocument, 'Keyboard', { body: [main.querySelector('#keys')] }));
       add.append(...[main.querySelector('#drop'), main.querySelector('p.note')].filter(Boolean));
       library.append(...[main.querySelector('#shelfNote'), main.querySelector('.library-columns'), main.querySelector('#games')].filter(Boolean));
       add.append(companionCard(main.ownerDocument, 'Add game files', { body: [...add.childNodes] }));

@@ -278,3 +278,22 @@ grid-template-columns:repeat(7,1fr);grid-template-areas:"l2 . . . . . r2" "l1 . 
 .pad-stick{position:relative;width:64px;height:64px;border-radius:50%;border:3px solid #414141;background:#050505}
 .pad-stick>i{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--zzz-lime)}
 .pad-note{margin:14px 0 0;font-size:13px;color:#7d8187}
+/* The Keyboard section, traced from the game's Mouse & Keyboard settings: a dark pill per button, its
+   name at the left, its key at the right in a black well holding a white keycap (a struck-out circle
+   when it has none). The column is headed "Keyboard"; groups get small grey labels. */
+.keys-columns{display:flex;justify-content:flex-end;padding:0 0 8px;margin:0 0 4px;border-bottom:2px solid #2b2c2f}
+.keys-columns span{width:280px;text-align:center;font:900 15px/1 var(--zzz-font);color:#b9bcc1}
+.keys-group{margin:14px 0 8px 4px;font:900 14px/1 var(--zzz-font);color:#9a9ea4}
+.keys-row{display:flex;align-items:center;gap:14px;min-height:52px;margin:0 0 8px;padding:4px 4px 4px 22px;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33}
+.keys-name{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px}
+.keys-name b{font:900 19px/1.2 var(--zzz-font);color:#fff}
+.keys-name small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 12px/1 var(--zzz-font);color:#7d8187}
+.keys-cell{flex:none;display:grid;place-items:center;width:280px;height:44px;min-height:0;padding:0;border:0;border-radius:999px;background:#050506;box-shadow:inset 0 0 0 3px #2b2c2f;cursor:pointer}
+.keys-cell:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.keys-cell.is-waiting{box-shadow:inset 0 0 0 3px var(--zzz-lime);animation:select-beat 2.4s ease-in-out infinite}
+.keys-cap{min-width:30px;padding:6px 9px;border-radius:6px;background:#f4f4ee;box-shadow:inset 0 -3px 0 #b9bbb6;color:#0c0d0f;font:900 17px/1 var(--zzz-font);text-align:center}
+.keys-none{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 2px #4a4c52;background:linear-gradient(135deg,transparent 46%,#4a4c52 46% 54%,transparent 54%)}
+.keys-wait{font:900 italic 15px/1 var(--zzz-font);color:var(--zzz-lime)}
+.keys-foot{display:flex;align-items:center;gap:14px;margin:14px 0 0}
+.keys-foot small{flex:1;color:#7d8187;font-size:13px}
+@media(max-width:720px){.keys-cell,.keys-columns span{width:150px}.keys-name small{display:none}}

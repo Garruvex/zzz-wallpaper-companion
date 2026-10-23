@@ -34,6 +34,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <div id="games" aria-label="Game library"></div>
 <input id="importFile" type="file" hidden>
 <div id="pad" aria-label="Controller"></div>
+<div id="keys" aria-label="Keyboard"></div>
 <script>
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
@@ -292,6 +293,65 @@ document.addEventListener('zzz:leave', () => visit.abort(), { once: true });
 refresh();
 const poll = setInterval(() => { if (!busy && !document.hidden && !dragId && !$('games').contains(document.activeElement)) refresh(); }, 4000);
 visit.signal.addEventListener('abort', () => clearInterval(poll));
+// The Keyboard section, laid out like the game's Mouse & Keyboard settings: a row per button with its
+// key in a keycap at the right. Choosing a row waits for a key; Escape cancels. A key another button
+// has moves here, and that button takes this one's old key. Saved at once.
+const KEY_ROWS = [
+  ['Directions', [['up', 'Up', ''], ['down', 'Down', ''], ['left', 'Left', ''], ['right', 'Right', '']]],
+  ['Buttons', [['a', 'A', 'GBA, SNES A · Mega Drive C · PS1 Circle'], ['b', 'B', 'GBA, SNES B · Mega Drive B · PS1 Cross'], ['y', 'Y', 'SNES Y · Mega Drive A · PS1 Square'], ['x', 'X', 'SNES X · PS1 Triangle'],
+    ['l', 'L', 'GBA, SNES L · PS1 L1'], ['r', 'R', 'GBA, SNES R · PS1 R1']]],
+  ['Menu', [['start', 'Start', ''], ['select', 'Select', '']]],
+];
+const KEY_NAMES = { 0x08: 'Backspace', 0x09: 'Tab', 0x0D: 'Enter', 0x14: 'Caps Lock', 0x20: 'Space', 0x21: 'Page Up', 0x22: 'Page Down', 0x23: 'End', 0x24: 'Home',
+  0x25: '←', 0x26: '↑', 0x27: '→', 0x28: '↓', 0x2D: 'Insert', 0x2E: 'Delete', 0x6A: 'Num *', 0x6B: 'Num +', 0x6D: 'Num -', 0x6E: 'Num .', 0x6F: 'Num /',
+  0xBA: ';', 0xBB: '=', 0xBC: ',', 0xBD: '-', 0xBE: '.', 0xBF: '/', 0xC0: '`', 0xDB: '[', 0xDC: '\\', 0xDD: ']', 0xDE: "'" };
+const RESERVED_KEYS = new Set([0x13, 0x1B, 0x10, 0x11, 0x12, 0x5B, 0x5C]);
+const keyName = vk => KEY_NAMES[vk] || (vk >= 0x41 && vk <= 0x5A || vk >= 0x30 && vk <= 0x39 ? String.fromCharCode(vk)
+  : vk >= 0x60 && vk <= 0x69 ? `Num ${vk - 0x60}` : vk >= 0x70 && vk <= 0x87 ? `F${vk - 0x6F}` : `Key ${vk}`);
+let keys = null, waiting = '';
+
+function renderKeys() {
+  const box = $('keys');
+  box.replaceChildren();
+  if (!keys) { box.append(el('p', { className: 'empty', textContent: 'Loading keys…' })); return; }
+  box.append(el('div', { className: 'keys-columns' }, el('span', { textContent: 'Keyboard' })));
+  for (const [group, rows] of KEY_ROWS) {
+    box.append(el('h3', { className: 'keys-group', textContent: group }));
+    for (const [name, label, hint] of rows) {
+      const vk = keys.keys[name];
+      const cell = el('button', { type: 'button', className: `keys-cell${waiting === name ? ' is-waiting' : ''}`, onclick: () => { waiting = waiting === name ? '' : name; renderKeys(); if (waiting) box.querySelector('.is-waiting')?.focus(); } },
+        waiting === name ? el('span', { className: 'keys-wait', textContent: 'Press a key' }) : vk ? el('kbd', { className: 'keys-cap', textContent: keyName(vk) }) : el('span', { className: 'keys-none' }));
+      cell.setAttribute('aria-label', `${label}: ${waiting === name ? 'press a key, or Escape to cancel' : vk ? keyName(vk) : 'no key'}. Press to change`);
+      box.append(el('div', { className: 'keys-row' }, el('span', { className: 'keys-name' }, el('b', { textContent: label }), el('small', { textContent: hint })), cell));
+    }
+  }
+  const reset = el('button', { type: 'button', className: 'zzz-chipbtn', textContent: 'Reset to defaults', onclick: () => saveKeys(null, 'Keys reset to the defaults.') });
+  box.append(el('div', { className: 'keys-foot' }, el('small', { textContent: 'Pause starts and pauses play. Controllers need no setup: their buttons are taken by position.' }), reset));
+}
+
+async function saveKeys(next, message) {
+  try { keys = await companionSaveKeys(next); say(message); } catch (error) { say(error.message, 'error'); }
+  renderKeys();
+}
+
+document.addEventListener('keydown', event => {
+  if (!waiting) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const name = waiting, vk = event.keyCode;
+  if (vk === 0x1B) { waiting = ''; renderKeys(); return; }
+  if (RESERVED_KEYS.has(vk) || vk < 1 || vk > 254) { say('Pause, Escape, Shift, Ctrl, Alt and the Windows keys can\'t be game keys.', 'error'); return; }
+  waiting = '';
+  const next = { ...keys.keys };
+  const other = Object.keys(next).find(key => key !== name && next[key] === vk);
+  if (other) next[other] = next[name];
+  next[name] = vk;
+  saveKeys(next, other ? `${keyName(vk)} moved to ${name.toUpperCase()}; ${other.toUpperCase()} took its old key.` : `${name.toUpperCase()} is ${keyName(vk)}.`);
+}, { capture: true, signal: visit.signal });
+
+companionKeys().then(state => { keys = state; renderKeys(); }).catch(() => say('Could not read the keys.', 'error'));
+renderKeys();
+
 const padPoll = setInterval(padTick, 100);
 visit.signal.addEventListener('abort', () => clearInterval(padPoll));
 padTick();

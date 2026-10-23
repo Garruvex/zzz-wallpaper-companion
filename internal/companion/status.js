@@ -55,3 +55,13 @@ window.companionConfirm = async options => {
 
 // The pad as the game station sees it, for the Controller section: { connected, buttons, axes }.
 window.companionPadState = async signal => (await fetch('/controller/state', { cache: 'no-store', signal })).json();
+
+// The keyboard controls for the Keyboard section: { keys, defaults }, each button name to a Windows
+// virtual-key code (0 for none). Saving null restores the defaults.
+window.companionKeys = async () => (await fetch('/controller/keys', { cache: 'no-store' })).json();
+window.companionSaveKeys = async keys => {
+  const response = await fetch('/controller/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keys }) });
+  const body = await response.json();
+  if (!response.ok) throw Error(body.error || 'Could not save the keys.');
+  return body;
+};

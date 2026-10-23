@@ -72,6 +72,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 	s.input = gamepad.NewHub(gamepad.NewSource())
 	s.input.SetPSPUnlocked(s.pspUnlocked())
 	s.input.WatchIdle(s.watchPSPCode)
+	s.loadKeys()
 	s.dates = newDateStore(filepath.Join(dataDir, "dates.json"))
 	s.holidays = newHolidayService(dataDir)
 	handlers := map[string]http.HandlerFunc{
@@ -113,6 +114,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"GET /ui/zzz/zzz_ui.js":       http.HandlerFunc(companionKit),
 		"GET /games":                  http.HandlerFunc(s.gamesPage),
 		"GET /controller/state":       http.HandlerFunc(s.controllerState),
+		"GET /controller/keys":        http.HandlerFunc(s.getKeys),
+		"POST /controller/keys":       http.HandlerFunc(s.saveKeys),
 		"GET /dates":                  http.HandlerFunc(s.datesPage),
 		"GET /holidays":               http.HandlerFunc(s.holidaysPage),
 		"GET /licenses/unicode":       http.HandlerFunc(s.unicodeLicensePage),

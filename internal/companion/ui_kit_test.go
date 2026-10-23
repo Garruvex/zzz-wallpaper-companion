@@ -182,6 +182,9 @@ func TestSmallButtonsAndConfirmUseTheKit(t *testing.T) {
 // The Controller section of the Game tab reads the pad through a page helper, not the public API, and
 // shows only buttons and sticks.
 func TestControllerSectionShowsThePad(t *testing.T) {
+	if !strings.Contains(shellJS, "['keyboard', 'Keyboard']") || !strings.Contains(gamesHTML, "companionSaveKeys(") {
+		t.Fatal("the Game tab has no Keyboard section")
+	}
 	if !strings.Contains(shellJS, "['controller', 'Controller']") || !strings.Contains(gamesHTML, "companionPadState") {
 		t.Fatal("the Game tab has no Controller section")
 	}
