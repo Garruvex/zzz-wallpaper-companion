@@ -297,10 +297,9 @@ visit.signal.addEventListener('abort', () => clearInterval(poll));
 // key in a keycap at the right. Choosing a row waits for a key; Escape cancels. A key another button
 // has moves here, and that button takes this one's old key. Saved at once.
 const KEY_ROWS = [
-  ['Directions', [['up', 'Up', ''], ['down', 'Down', ''], ['left', 'Left', ''], ['right', 'Right', '']]],
-  ['Buttons', [['a', 'A', 'GBA, SNES A · Mega Drive C · PS1 Circle'], ['b', 'B', 'GBA, SNES B · Mega Drive B · PS1 Cross'], ['y', 'Y', 'SNES Y · Mega Drive A · PS1 Square'], ['x', 'X', 'SNES X · PS1 Triangle'],
-    ['l', 'L', 'GBA, SNES L · PS1 L1'], ['r', 'R', 'GBA, SNES R · PS1 R1']]],
-  ['Menu', [['start', 'Start', ''], ['select', 'Select', '']]],
+  ['Directions', [['up', 'Up'], ['down', 'Down'], ['left', 'Left'], ['right', 'Right']]],
+  ['Buttons', [['a', 'A'], ['b', 'B'], ['y', 'Y'], ['x', 'X'], ['l', 'L'], ['r', 'R']]],
+  ['Menu', [['start', 'Start'], ['select', 'Select']]],
 ];
 const KEY_NAMES = { 0x08: 'Backspace', 0x09: 'Tab', 0x0D: 'Enter', 0x14: 'Caps Lock', 0x20: 'Space', 0x21: 'Page Up', 0x22: 'Page Down', 0x23: 'End', 0x24: 'Home',
   0x25: '←', 0x26: '↑', 0x27: '→', 0x28: '↓', 0x2D: 'Insert', 0x2E: 'Delete', 0x6A: 'Num *', 0x6B: 'Num +', 0x6D: 'Num -', 0x6E: 'Num .', 0x6F: 'Num /',
@@ -317,12 +316,12 @@ function renderKeys() {
   box.append(el('div', { className: 'keys-columns' }, el('span', { textContent: 'Keyboard' })));
   for (const [group, rows] of KEY_ROWS) {
     box.append(el('h3', { className: 'keys-group', textContent: group }));
-    for (const [name, label, hint] of rows) {
+    for (const [name, label] of rows) {
       const vk = keys.keys[name];
       const cell = el('button', { type: 'button', className: `keys-cell${waiting === name ? ' is-waiting' : ''}`, onclick: () => { waiting = waiting === name ? '' : name; renderKeys(); if (waiting) box.querySelector('.is-waiting')?.focus(); } },
         waiting === name ? el('span', { className: 'keys-wait', textContent: 'Press a key' }) : vk ? el('kbd', { className: 'keys-cap', textContent: keyName(vk) }) : el('span', { className: 'keys-none' }));
       cell.setAttribute('aria-label', `${label}: ${waiting === name ? 'press a key, or Escape to cancel' : vk ? keyName(vk) : 'no key'}. Press to change`);
-      box.append(el('div', { className: 'keys-row' }, el('span', { className: 'keys-name' }, el('b', { textContent: label }), el('small', { textContent: hint })), cell));
+      box.append(el('div', { className: 'keys-row' }, el('b', { className: 'keys-name', textContent: label }), cell));
     }
   }
   const reset = el('button', { type: 'button', className: 'zzz-chipbtn', textContent: 'Reset to defaults', onclick: () => saveKeys(null, 'Keys reset to the defaults.') });
