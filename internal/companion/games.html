@@ -237,7 +237,9 @@ function gameRow(cart, full) {
   row.draggable = !busy;
   row.addEventListener('dragstart', event => { dragId = cart.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', cart.id); row.classList.add('is-dragging'); });
   row.addEventListener('dragend', () => { dragId = ''; row.classList.remove('is-dragging'); clearDrop(); });
-  return shown ? el('div', { className: 'tape-item' }, row, savesPanel(cart)) : row;
+  // Built like the game's skill panel: a grey card holding the black title bar, which grows to hold the
+  // saves underneath when opened.
+  return el('div', { className: `tape-item lib-card${shown ? ' is-open' : ''}` }, row, shown ? savesPanel(cart) : '');
 }
 
 const select = id => api('games.selection.save', { body: { id } }).then(() => '');

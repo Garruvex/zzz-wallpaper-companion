@@ -218,6 +218,13 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .tape-item{margin:0 0 10px}
 .tape-item>.tape-row{margin:0}
 .tape-item>.saves{margin:8px 24px 0}
+/* A Library game is the game's skill panel: a dark grey card with a thin rim, holding a black title bar.
+   Opening it grows the same card to hold the saves under the bar, on the card's grey, not in a box. */
+.lib-card{padding:5px;border-radius:34px;background:#26272b;box-shadow:inset 0 0 0 2px #303237}
+.lib-card>.tape-row{background:#050506;box-shadow:none}
+.lib-card>.tape-row.is-playing{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+.lib-card.is-open{border-radius:30px;padding-bottom:16px}
+.lib-card>.saves{margin:14px 22px 0;padding:0;border:0;border-radius:0;background:none}
 @media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%;justify-content:flex-end}}
 /* Tags (ON TV, a holiday's weekday): a slanted tab pressed into the row, dark grey with grey italic
    capitals, no rim or shadow. A lit tag (ON TV) is a lime fill with dark text, on any page. */
