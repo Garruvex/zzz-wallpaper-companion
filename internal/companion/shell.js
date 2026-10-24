@@ -3,7 +3,7 @@
   // menu lists either the tab's own pages (Calendar: custom dates and holidays, each still its own
   // server page) or the sections of its one page (General, Game), shown one at a time.
   const groups = [
-    { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
+    { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['language', 'Language'], ['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
     { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller'], ['keyboard', 'Keyboard'], ['storage', 'Storage']] },
   ];
@@ -39,15 +39,16 @@
     if (path === '/settings') {
       const form=main.querySelector('#settings');
       const groups=[
+        ['language','Language',[['language','Language']]],
         ['startup','Startup & Updates',[['startup','Start with Windows'],['autoUpdate','Automatic Updates']]],
-        ['youtube','YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Channel']]],
+        ['youtube','YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Update Channel']]],
         ['connection','Connection',[['port','Companion Port']]]
       ];
       for(const [key,title,fields] of groups){
         const section=source.createElement('section');section.className='settings-group';section.dataset.section=key;
         const heading=source.createElement('h2');heading.className='group-title';heading.textContent=title;section.append(heading);
-        for(const [id,label] of fields){const row=main.querySelector('#'+id).closest('label');row.querySelector('span').firstChild.textContent=label;section.append(row);}
-        form.insertBefore(section,form.querySelector('button[type=submit]'));
+        for(const [id,label] of fields){const field=main.querySelector('#'+id);if(!field)continue;const row=field.closest('label');row.querySelector('span').firstChild.textContent=label;section.append(row);}
+        if(section.querySelector('label'))form.insertBefore(section,form.querySelector('button[type=submit]'));
       }
       form.querySelector('.section')?.remove();
     }
@@ -141,7 +142,7 @@
   nav.append(arrow(-1),items,arrow(1));shell.append(nav,main);
   mark();
 
-  const footer=document.createElement('footer');footer.className='shell-footer';footer.textContent=`Version ${companionBuildInfo.version} · Build ${companionBuildInfo.build}`;
+  const footer=document.createElement('footer');footer.className='shell-footer';footer.textContent=t('Version {version} · Build {build}', { version: companionBuildInfo.version, build: companionBuildInfo.build });
   document.body.querySelector('.bar')?.remove();document.body.prepend(header,shell);document.body.append(footer);
 
   let visit = 0;

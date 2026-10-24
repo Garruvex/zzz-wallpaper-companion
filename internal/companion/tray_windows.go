@@ -215,9 +215,9 @@ func windowProc(hwnd uintptr, message uint32, wParam, lParam uintptr) uintptr {
 				if err != nil {
 					fatalDialog("Companion update check failed", err.Error())
 				} else if result.UpdateStaged {
-					infoDialog("Companion update ready", "Version "+result.LatestVersion+" will install when the companion restarts.")
+					infoDialog("Companion update ready", Tf("Version {version} will install when the companion restarts.", "version", result.LatestVersion))
 				} else {
-					infoDialog("Companion is up to date", "Version "+result.CurrentVersion+" is the latest compatible release.")
+					infoDialog("Companion is up to date", Tf("Version {version} is the latest compatible release.", "version", result.CurrentVersion))
 				}
 			}()
 		case cmdStartup:
@@ -256,27 +256,27 @@ func showTrayMenu(hwnd uintptr) {
 		return
 	}
 	defer user32.NewProc("DestroyMenu").Call(menu)
-	appendMenuFlags(menu, 0, "Version "+version+" (build "+buildNumber+")", mfString|mfGrayed|mfDisabled)
+	appendMenuFlags(menu, 0, Tf("Version {version} (build {build})", "version", version, "build", buildNumber), mfString|mfGrayed|mfDisabled)
 	if trayConnectionWarning != "" {
-		appendMenuFlags(menu, 0, "Connection unavailable - open Settings", mfString|mfGrayed|mfDisabled)
+		appendMenuFlags(menu, 0, T("Not connected - open Settings"), mfString|mfGrayed|mfDisabled)
 	}
-	appendMenu(menu, cmdSettings, "Settings")
+	appendMenu(menu, cmdSettings, T("Settings"))
 	flags := uint32(mfString)
 	if trayConfig.Get().LaunchOnStartup {
 		flags |= mfChecked
 	}
-	appendMenuFlags(menu, cmdStartup, "Launch on Windows startup", flags)
+	appendMenuFlags(menu, cmdStartup, T("Start with Windows"), flags)
 	flags = mfString
 	if trayConfig.Get().AutoUpdate {
 		flags |= mfChecked
 	}
-	appendMenuFlags(menu, cmdAutoUpdate, "Automatically download compatible updates", flags)
-	appendMenu(menu, cmdAppUpdate, "Check for companion updates")
-	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
-	appendMenu(menu, cmdGames, "Games…")
-	appendMenu(menu, cmdROMs, "Open game ROM folder")
-	appendMenu(menu, cmdLogs, "Open data folder")
-	appendMenu(menu, cmdQuit, "Quit")
+	appendMenuFlags(menu, cmdAutoUpdate, T("Automatic updates"), flags)
+	appendMenu(menu, cmdAppUpdate, T("Check for updates"))
+	appendMenu(menu, cmdUpdate, T("Update YouTube downloader"))
+	appendMenu(menu, cmdGames, T("Games"))
+	appendMenu(menu, cmdROMs, T("Open games folder"))
+	appendMenu(menu, cmdLogs, T("Open data folder"))
+	appendMenu(menu, cmdQuit, T("Quit"))
 	var cursor point
 	user32.NewProc("GetCursorPos").Call(uintptr(unsafe.Pointer(&cursor)))
 	user32.NewProc("SetForegroundWindow").Call(hwnd)
@@ -338,13 +338,13 @@ func openURL(url string) {
 }
 
 func fatalDialog(title, message string) {
-	t, _ := syscall.UTF16PtrFromString(title)
-	m, _ := syscall.UTF16PtrFromString(message)
+	t, _ := syscall.UTF16PtrFromString(T(title))
+	m, _ := syscall.UTF16PtrFromString(T(message))
 	user32.NewProc("MessageBoxW").Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), 0x10)
 }
 
 func infoDialog(title, message string) {
-	t, _ := syscall.UTF16PtrFromString(title)
-	m, _ := syscall.UTF16PtrFromString(message)
+	t, _ := syscall.UTF16PtrFromString(T(title))
+	m, _ := syscall.UTF16PtrFromString(T(message))
 	user32.NewProc("MessageBoxW").Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), 0x40)
 }

@@ -1,0 +1,1018 @@
+{
+ ", PSP (.iso/.cso/.elf)": {
+  "zh-CN": "、PSP (.iso/.cso/.elf)",
+  "zh-TW": "、PSP (.iso/.cso/.elf)"
+ },
+ "1 removed game": {
+  "zh-CN": "1 个已移除的游戏",
+  "zh-TW": "1 個已移除的遊戲"
+ },
+ "A resume point captures where you stopped, separately from the in-game save.": {
+  "zh-CN": "续玩点记录停止游玩时的状态，与游戏内存档分开保存。",
+  "zh-TW": "續玩點會記錄停止遊玩時的狀態，與遊戲內存檔分開儲存。"
+ },
+ "ADJUSTED WORKDAY": {
+  "zh-CN": "调休上班日",
+  "zh-TW": "補班日"
+ },
+ "Add Games": {
+  "zh-CN": "添加游戏",
+  "zh-TW": "新增遊戲"
+ },
+ "Add a date": {
+  "zh-CN": "添加日期",
+  "zh-TW": "新增日期"
+ },
+ "Add game files": {
+  "zh-CN": "添加游戏文件",
+  "zh-TW": "新增遊戲檔案"
+ },
+ "Add to the end of the shelf": {
+  "zh-CN": "添加到书架末尾",
+  "zh-TW": "加到書架末端"
+ },
+ "Added {file}.": {
+  "zh-CN": "已添加 {file}。",
+  "zh-TW": "已新增 {file}。"
+ },
+ "Added {name}.": {
+  "zh-CN": "已添加 {name}。",
+  "zh-TW": "已新增 {name}。"
+ },
+ "Adding {file}…": {
+  "zh-CN": "正在添加 {file}…",
+  "zh-TW": "正在新增 {file}…"
+ },
+ "Alex’s birthday": {
+  "zh-CN": "小明的生日",
+  "zh-TW": "小明的生日"
+ },
+ "Another companion is running but not answering. If it stays stuck, end it in Task Manager and start the companion again.": {
+  "zh-CN": "另一个配套应用正在运行但没有响应。如果一直卡住，请在任务管理器中结束它，然后重新启动配套应用。",
+  "zh-TW": "另一個配套應用程式正在執行但沒有回應。如果一直卡住，請在工作管理員中結束它，然後重新啟動配套應用程式。"
+ },
+ "Automatic Updates": {
+  "zh-CN": "自动更新",
+  "zh-TW": "自動更新"
+ },
+ "Automatic updates": {
+  "zh-CN": "自动更新",
+  "zh-TW": "自動更新"
+ },
+ "BIRTHDAY": {
+  "zh-CN": "生日",
+  "zh-TW": "生日"
+ },
+ "Birthday": {
+  "zh-CN": "生日",
+  "zh-TW": "生日"
+ },
+ "Buttons": {
+  "zh-CN": "按钮",
+  "zh-TW": "按鈕"
+ },
+ "Calendar": {
+  "zh-CN": "日历",
+  "zh-TW": "行事曆"
+ },
+ "Cancel": {
+  "zh-CN": "取消",
+  "zh-TW": "取消"
+ },
+ "Check for updates": {
+  "zh-CN": "检查更新",
+  "zh-TW": "檢查更新"
+ },
+ "Choose…": {
+  "zh-CN": "请选择…",
+  "zh-TW": "請選擇…"
+ },
+ "Clean up storage": {
+  "zh-CN": "清理存储空间",
+  "zh-TW": "清理儲存空間"
+ },
+ "Clear": {
+  "zh-CN": "清除",
+  "zh-TW": "清除"
+ },
+ "Clear form": {
+  "zh-CN": "清空表单",
+  "zh-TW": "清除表單"
+ },
+ "Close": {
+  "zh-CN": "关闭",
+  "zh-TW": "關閉"
+ },
+ "Close game management for {name}": {
+  "zh-CN": "收起 {name} 的管理选项",
+  "zh-TW": "收合 {name} 的管理選項"
+ },
+ "Coming up": {
+  "zh-CN": "即将到来",
+  "zh-TW": "即將到來"
+ },
+ "Companion Port": {
+  "zh-CN": "配套应用端口",
+  "zh-TW": "配套應用程式連接埠"
+ },
+ "Companion Settings": {
+  "zh-CN": "配套应用设置",
+  "zh-TW": "配套應用程式設定"
+ },
+ "Companion connection unavailable": {
+  "zh-CN": "配套应用连接不可用",
+  "zh-TW": "配套應用程式連線無法使用"
+ },
+ "Companion could not start": {
+  "zh-CN": "配套应用无法启动",
+  "zh-TW": "配套應用程式無法啟動"
+ },
+ "Companion is up to date": {
+  "zh-CN": "配套应用已是最新版本",
+  "zh-TW": "配套應用程式已是最新版本"
+ },
+ "Companion sections": {
+  "zh-CN": "配套应用分区",
+  "zh-TW": "配套應用程式分區"
+ },
+ "Companion settings unavailable": {
+  "zh-CN": "配套应用设置不可用",
+  "zh-TW": "配套應用程式設定無法使用"
+ },
+ "Companion update check failed": {
+  "zh-CN": "配套应用检查更新失败",
+  "zh-TW": "配套應用程式檢查更新失敗"
+ },
+ "Companion update failed": {
+  "zh-CN": "配套应用更新失败",
+  "zh-TW": "配套應用程式更新失敗"
+ },
+ "Companion update ready": {
+  "zh-CN": "配套应用更新已就绪",
+  "zh-TW": "配套應用程式更新已就緒"
+ },
+ "Confirm": {
+  "zh-CN": "确认",
+  "zh-TW": "確認"
+ },
+ "Connection": {
+  "zh-CN": "连接",
+  "zh-TW": "連線"
+ },
+ "Controller": {
+  "zh-CN": "手柄",
+  "zh-TW": "手把"
+ },
+ "Controller connected": {
+  "zh-CN": "手柄已连接",
+  "zh-TW": "手把已連線"
+ },
+ "Could not add the game.": {
+  "zh-CN": "无法添加游戏。",
+  "zh-TW": "無法新增遊戲。"
+ },
+ "Could not back up the current save.": {
+  "zh-CN": "无法备份当前存档。",
+  "zh-TW": "無法備份目前的存檔。"
+ },
+ "Could not clean up storage.": {
+  "zh-CN": "无法清理存储空间。",
+  "zh-TW": "無法清理儲存空間。"
+ },
+ "Could not clear everything. Is one of its files open?": {
+  "zh-CN": "无法全部清除。某个文件是否正被占用？",
+  "zh-TW": "無法全部清除。某個檔案是否正被佔用？"
+ },
+ "Could not go back to that resume point.": {
+  "zh-CN": "无法回到该续玩点。",
+  "zh-TW": "無法回到該續玩點。"
+ },
+ "Could not reach the companion.": {
+  "zh-CN": "无法连接到配套应用。",
+  "zh-TW": "無法連線到配套應用程式。"
+ },
+ "Could not read the keys.": {
+  "zh-CN": "无法读取按键设置。",
+  "zh-TW": "無法讀取按鍵設定。"
+ },
+ "Could not read the storage use.": {
+  "zh-CN": "无法读取存储用量。",
+  "zh-TW": "無法讀取儲存用量。"
+ },
+ "Could not remove the game.": {
+  "zh-CN": "无法移除游戏。",
+  "zh-TW": "無法移除遊戲。"
+ },
+ "Could not remove the game. Is one of its files open?": {
+  "zh-CN": "无法移除游戏。它的某个文件是否正被占用？",
+  "zh-TW": "無法移除遊戲。它的某個檔案是否正被佔用？"
+ },
+ "Could not rename the game.": {
+  "zh-CN": "无法重命名游戏。",
+  "zh-TW": "無法重新命名遊戲。"
+ },
+ "Could not reset the keys.": {
+  "zh-CN": "无法重置按键设置。",
+  "zh-TW": "無法重設按鍵設定。"
+ },
+ "Could not save automatic update setting": {
+  "zh-CN": "无法保存自动更新设置",
+  "zh-TW": "無法儲存自動更新設定"
+ },
+ "Could not save it.": {
+  "zh-CN": "无法保存。",
+  "zh-TW": "無法儲存。"
+ },
+ "Could not save settings": {
+  "zh-CN": "无法保存设置",
+  "zh-TW": "無法儲存設定"
+ },
+ "Could not save the keys.": {
+  "zh-CN": "无法保存按键设置。",
+  "zh-TW": "無法儲存按鍵設定。"
+ },
+ "Could not save the language.": {
+  "zh-CN": "无法保存语言。",
+  "zh-TW": "無法儲存語言。"
+ },
+ "Could not save the name.": {
+  "zh-CN": "无法保存名称。",
+  "zh-TW": "無法儲存名稱。"
+ },
+ "Could not update startup setting": {
+  "zh-CN": "无法更新启动设置",
+  "zh-TW": "無法更新啟動設定"
+ },
+ "Could not update the game.": {
+  "zh-CN": "无法更新游戏。",
+  "zh-TW": "無法更新遊戲。"
+ },
+ "Could not update the shelf.": {
+  "zh-CN": "无法更新书架。",
+  "zh-TW": "無法更新書架。"
+ },
+ "Country": {
+  "zh-CN": "国家/地区",
+  "zh-TW": "國家/地區"
+ },
+ "Custom Date": {
+  "zh-CN": "自定义日期",
+  "zh-TW": "自訂日期"
+ },
+ "Date": {
+  "zh-CN": "日期",
+  "zh-TW": "日期"
+ },
+ "Default 8765. Use the same port in the wallpaper's settings. Takes effect after a restart.": {
+  "zh-CN": "默认 8765。请在壁纸设置中使用相同的端口。重启后生效。",
+  "zh-TW": "預設 8765。請在桌布設定中使用相同的連接埠。重新啟動後生效。"
+ },
+ "Defaults restored. Press Save to apply.": {
+  "zh-CN": "已恢复默认值。点击保存以应用。",
+  "zh-TW": "已還原預設值。按下儲存以套用。"
+ },
+ "Delete": {
+  "zh-CN": "删除",
+  "zh-TW": "刪除"
+ },
+ "Delete permanently": {
+  "zh-CN": "永久删除",
+  "zh-TW": "永久刪除"
+ },
+ "Delete save": {
+  "zh-CN": "删除存档",
+  "zh-TW": "刪除存檔"
+ },
+ "Delete the save?": {
+  "zh-CN": "删除存档？",
+  "zh-TW": "刪除存檔？"
+ },
+ "Directions": {
+  "zh-CN": "方向",
+  "zh-TW": "方向"
+ },
+ "Disable": {
+  "zh-CN": "关闭",
+  "zh-TW": "關閉"
+ },
+ "Down": {
+  "zh-CN": "下",
+  "zh-TW": "下"
+ },
+ "Download": {
+  "zh-CN": "下载",
+  "zh-TW": "下載"
+ },
+ "Drag a game here to put it on tape {tape}.": {
+  "zh-CN": "将游戏拖到这里，放到录像带 {tape}。",
+  "zh-TW": "將遊戲拖到這裡，放到錄影帶 {tape}。"
+ },
+ "Drag onto the shelf": {
+  "zh-CN": "拖到书架上",
+  "zh-TW": "拖到書架上"
+ },
+ "Drag to move. Up and down arrows move it too.": {
+  "zh-CN": "拖动来移动。也可用上下方向键移动。",
+  "zh-TW": "拖曳來移動。也可用上下方向鍵移動。"
+ },
+ "Drop a game here to take it off the shelf, or drop game files to add them.": {
+  "zh-CN": "将游戏拖到这里可从书架取下；也可拖入游戏文件来添加。",
+  "zh-TW": "將遊戲拖到這裡可從書架取下；也可拖入遊戲檔案來新增。"
+ },
+ "Drop game files here or click to choose": {
+  "zh-CN": "将游戏文件拖到这里，或点击选择",
+  "zh-TW": "將遊戲檔案拖到這裡，或按一下選擇"
+ },
+ "EVENT": {
+  "zh-CN": "事件",
+  "zh-TW": "事件"
+ },
+ "Each button needs its own key, and Pause, Escape, Shift, Ctrl, Alt and the Windows keys can't be used.": {
+  "zh-CN": "每个按钮需要各自的按键，且不能使用 Pause、Esc、Shift、Ctrl、Alt 和 Windows 键。",
+  "zh-TW": "每個按鈕需要各自的按鍵，且不能使用 Pause、Esc、Shift、Ctrl、Alt 和 Windows 鍵。"
+ },
+ "Earlier resume point · {when}": {
+  "zh-CN": "更早的续玩点 · {when}",
+  "zh-TW": "更早的續玩點 · {when}"
+ },
+ "Earlier this year": {
+  "zh-CN": "今年早些时候",
+  "zh-TW": "今年稍早"
+ },
+ "Edit": {
+  "zh-CN": "编辑",
+  "zh-TW": "編輯"
+ },
+ "Eject": {
+  "zh-CN": "弹出",
+  "zh-TW": "退出"
+ },
+ "Eject {name}": {
+  "zh-CN": "弹出 {name}",
+  "zh-TW": "退出 {name}"
+ },
+ "Ejected.": {
+  "zh-CN": "已弹出。",
+  "zh-TW": "已退出。"
+ },
+ "Enable": {
+  "zh-CN": "开启",
+  "zh-TW": "開啟"
+ },
+ "Enter a name for the date.": {
+  "zh-CN": "请输入日期的名称。",
+  "zh-TW": "請輸入日期的名稱。"
+ },
+ "Event": {
+  "zh-CN": "事件",
+  "zh-TW": "事件"
+ },
+ "Every year": {
+  "zh-CN": "每年",
+  "zh-TW": "每年"
+ },
+ "From {when}. The current one is kept in the game's backups folder.": {
+  "zh-CN": "来自 {when}。当前的续玩点会保留在游戏的备份文件夹中。",
+  "zh-TW": "來自 {when}。目前的續玩點會保留在遊戲的備份資料夾中。"
+ },
+ "GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd)": {
+  "zh-CN": "GBA、Game Boy、NES、SNES、Mega Drive、Master System、Game Gear · 实验性：PS1 (.bin/.img/.pbp/.chd)",
+  "zh-TW": "GBA、Game Boy、NES、SNES、Mega Drive、Master System、Game Gear · 實驗性：PS1 (.bin/.img/.pbp/.chd)"
+ },
+ "Game": {
+  "zh-CN": "游戏",
+  "zh-TW": "遊戲"
+ },
+ "Game files can be up to {n} MB.": {
+  "zh-CN": "游戏文件最大 {n} MB。",
+  "zh-TW": "遊戲檔案最大 {n} MB。"
+ },
+ "Game save": {
+  "zh-CN": "游戏存档",
+  "zh-TW": "遊戲存檔"
+ },
+ "Games": {
+  "zh-CN": "游戏",
+  "zh-TW": "遊戲"
+ },
+ "General": {
+  "zh-CN": "常规",
+  "zh-TW": "一般"
+ },
+ "Higher uses more bandwidth and GPU memory.": {
+  "zh-CN": "越高越占用带宽和显存。",
+  "zh-TW": "越高越佔用頻寬和顯示記憶體。"
+ },
+ "Higher uses much more CPU. 1080p is experimental.": {
+  "zh-CN": "越高越占用 CPU。1080p 为实验性。",
+  "zh-TW": "越高越佔用 CPU。1080p 為實驗性。"
+ },
+ "Holiday": {
+  "zh-CN": "假日",
+  "zh-TW": "假日"
+ },
+ "Holiday data source": {
+  "zh-CN": "假日数据来源",
+  "zh-TW": "假日資料來源"
+ },
+ "Holiday data unavailable for {year}. The wallpaper uses saved or bundled data when available.": {
+  "zh-CN": "暂时无法获取 {year} 年的假日数据。壁纸会使用已保存或内置的数据（如有）。",
+  "zh-TW": "暫時無法取得 {year} 年的假日資料。桌布會使用已儲存或內建的資料（如有）。"
+ },
+ "Important Dates": {
+  "zh-CN": "重要日期",
+  "zh-TW": "重要日期"
+ },
+ "Import…": {
+  "zh-CN": "导入…",
+  "zh-TW": "匯入…"
+ },
+ "Invalid companion settings": {
+  "zh-CN": "配套应用设置无效",
+  "zh-TW": "配套應用程式設定無效"
+ },
+ "It comes off the shelf. The game and its saves are kept until you choose Clean up storage in Storage.": {
+  "zh-CN": "它会从书架取下。游戏及其存档会保留到你在“存储空间”中选择“清理存储空间”为止。",
+  "zh-TW": "它會從書架取下。遊戲及其存檔會保留到你在「儲存空間」中選擇「清理儲存空間」為止。"
+ },
+ "Kept in the game's backups folder.": {
+  "zh-CN": "保留在游戏的备份文件夹中。",
+  "zh-TW": "保留在遊戲的備份資料夾中。"
+ },
+ "Kept until you choose Clean up storage in Storage.": {
+  "zh-CN": "保留到你在“存储空间”中选择“清理存储空间”为止。",
+  "zh-TW": "保留到你在「儲存空間」中選擇「清理儲存空間」為止。"
+ },
+ "Keyboard": {
+  "zh-CN": "键盘",
+  "zh-TW": "鍵盤"
+ },
+ "Language": {
+  "zh-CN": "语言",
+  "zh-TW": "語言"
+ },
+ "Left": {
+  "zh-CN": "左",
+  "zh-TW": "左"
+ },
+ "Library": {
+  "zh-CN": "游戏库",
+  "zh-TW": "遊戲庫"
+ },
+ "License": {
+  "zh-CN": "许可证",
+  "zh-TW": "授權條款"
+ },
+ "Live Stream Resolution": {
+  "zh-CN": "直播分辨率",
+  "zh-TW": "直播解析度"
+ },
+ "Loading games…": {
+  "zh-CN": "正在加载游戏…",
+  "zh-TW": "正在載入遊戲…"
+ },
+ "Loading keys…": {
+  "zh-CN": "正在加载按键…",
+  "zh-TW": "正在載入按鍵…"
+ },
+ "Location": {
+  "zh-CN": "地区",
+  "zh-TW": "地區"
+ },
+ "Locked": {
+  "zh-CN": "已锁定",
+  "zh-TW": "已鎖定"
+ },
+ "Manage game": {
+  "zh-CN": "管理游戏",
+  "zh-TW": "管理遊戲"
+ },
+ "Menu": {
+  "zh-CN": "菜单",
+  "zh-TW": "選單"
+ },
+ "Move {name} onto the shelf": {
+  "zh-CN": "将 {name} 移到书架上",
+  "zh-TW": "將 {name} 移到書架上"
+ },
+ "Move {name}, on tape {tape}. Press up or down to move it": {
+  "zh-CN": "移动 {name}（录像带 {tape}）。按上下方向键移动",
+  "zh-TW": "移動 {name}（錄影帶 {tape}）。按上下方向鍵移動"
+ },
+ "NEXT": {
+  "zh-CN": "下一个",
+  "zh-TW": "下一個"
+ },
+ "Name": {
+  "zh-CN": "名称",
+  "zh-TW": "名稱"
+ },
+ "Name set back to the file name.": {
+  "zh-CN": "名称已恢复为文件名。",
+  "zh-TW": "名稱已還原為檔案名稱。"
+ },
+ "National holidays only": {
+  "zh-CN": "仅全国性假日",
+  "zh-TW": "僅全國性假日"
+ },
+ "New name for {name}. Enter saves, Escape cancels": {
+  "zh-CN": "{name} 的新名称。按 Enter 保存，按 Esc 取消",
+  "zh-TW": "{name} 的新名稱。按 Enter 儲存，按 Esc 取消"
+ },
+ "New versions install the next time the companion starts.": {
+  "zh-CN": "新版本会在配套应用下次启动时安装。",
+  "zh-TW": "新版本會在配套應用程式下次啟動時安裝。"
+ },
+ "Nightly": {
+  "zh-CN": "Nightly",
+  "zh-TW": "Nightly"
+ },
+ "Nightly gets YouTube fixes first.": {
+  "zh-CN": "Nightly 最先获得 YouTube 修复。",
+  "zh-TW": "Nightly 最先取得 YouTube 修正。"
+ },
+ "No controller found. Connect one and press any button.": {
+  "zh-CN": "没有找到手柄。请连接手柄并按任意键。",
+  "zh-TW": "找不到手把。請連接手把並按任意鍵。"
+ },
+ "No games yet. Add one in Add Games.": {
+  "zh-CN": "还没有游戏。请在“添加游戏”中添加。",
+  "zh-TW": "還沒有遊戲。請在「新增遊戲」中新增。"
+ },
+ "No important dates yet.": {
+  "zh-CN": "还没有重要日期。",
+  "zh-TW": "還沒有重要日期。"
+ },
+ "No public holidays listed.": {
+  "zh-CN": "没有列出公共假日。",
+  "zh-TW": "沒有列出公共假日。"
+ },
+ "Not a supported game file. Use a cartridge game or a single-file PS1 game (.bin .img .pbp .chd).": {
+  "zh-CN": "不支持的游戏文件。请使用卡带游戏或单文件 PS1 游戏 (.bin .img .pbp .chd)。",
+  "zh-TW": "不支援的遊戲檔案。請使用卡帶遊戲或單檔 PS1 遊戲 (.bin .img .pbp .chd)。"
+ },
+ "Not a supported game file. Use a cartridge game, a single-file PS1 game (.bin .img .pbp .chd) or a PSP game (.iso .cso .elf).": {
+  "zh-CN": "不支持的游戏文件。请使用卡带游戏、单文件 PS1 游戏 (.bin .img .pbp .chd) 或 PSP 游戏 (.iso .cso .elf)。",
+  "zh-TW": "不支援的遊戲檔案。請使用卡帶遊戲、單檔 PS1 遊戲 (.bin .img .pbp .chd) 或 PSP 遊戲 (.iso .cso .elf)。"
+ },
+ "Not connected - open Settings": {
+  "zh-CN": "未连接 - 请打开设置",
+  "zh-TW": "未連線 - 請開啟設定"
+ },
+ "Not on the shelf": {
+  "zh-CN": "不在书架上",
+  "zh-TW": "不在書架上"
+ },
+ "Nothing to clear.": {
+  "zh-CN": "没有可清除的内容。",
+  "zh-TW": "沒有可清除的內容。"
+ },
+ "OFF": {
+  "zh-CN": "关",
+  "zh-TW": "關"
+ },
+ "ON": {
+  "zh-CN": "开",
+  "zh-TW": "開"
+ },
+ "ON TV": {
+  "zh-CN": "电视中",
+  "zh-TW": "電視中"
+ },
+ "Off": {
+  "zh-CN": "关闭",
+  "zh-TW": "關閉"
+ },
+ "On the shelf": {
+  "zh-CN": "在书架上",
+  "zh-TW": "在書架上"
+ },
+ "Once": {
+  "zh-CN": "仅一次",
+  "zh-TW": "僅一次"
+ },
+ "Open data folder": {
+  "zh-CN": "打开应用数据文件夹",
+  "zh-TW": "開啟應用程式資料夾"
+ },
+ "Open game management for {name}": {
+  "zh-CN": "展开 {name} 的管理选项",
+  "zh-TW": "展開 {name} 的管理選項"
+ },
+ "Open games folder": {
+  "zh-CN": "打开游戏文件夹",
+  "zh-TW": "開啟遊戲資料夾"
+ },
+ "PS1: single-file games only, no CUE/BIN sets or disc swapping.": {
+  "zh-CN": "PS1：仅支持单文件游戏，不支持 CUE/BIN 组合或换盘。",
+  "zh-TW": "PS1：僅支援單檔遊戲，不支援 CUE/BIN 組合或換碟。"
+ },
+ "PSP games are locked": {
+  "zh-CN": "PSP 游戏已锁定",
+  "zh-TW": "PSP 遊戲已鎖定"
+ },
+ "PSP: some games may hang; saves download as a .zzzpsp file.": {
+  "zh-CN": "PSP：部分游戏可能卡住；存档会下载为 .zzzpsp 文件。",
+  "zh-TW": "PSP：部分遊戲可能會卡住；存檔會下載為 .zzzpsp 檔案。"
+ },
+ "Pause starts and pauses play.": {
+  "zh-CN": "Pause 键用来开始和暂停游戏。",
+  "zh-TW": "Pause 鍵用來開始和暫停遊戲。"
+ },
+ "Pause, Escape, Shift, Ctrl, Alt and the Windows keys can't be game keys.": {
+  "zh-CN": "Pause、Esc、Shift、Ctrl、Alt 和 Windows 键不能用作游戏按键。",
+  "zh-TW": "Pause、Esc、Shift、Ctrl、Alt 和 Windows 鍵不能用作遊戲按鍵。"
+ },
+ "Permanently delete removed games, their saves and cached maps?": {
+  "zh-CN": "永久删除已移除的游戏、其存档和地图缓存？",
+  "zh-TW": "永久刪除已移除的遊戲、其存檔和地圖快取？"
+ },
+ "Pick a date.": {
+  "zh-CN": "请选择日期。",
+  "zh-TW": "請選擇日期。"
+ },
+ "Play on TV": {
+  "zh-CN": "在电视上玩",
+  "zh-TW": "在電視上玩"
+ },
+ "Play {name} on TV": {
+  "zh-CN": "在电视上玩 {name}",
+  "zh-TW": "在電視上玩 {name}"
+ },
+ "Port must be a whole number from 1024 to 65535.": {
+  "zh-CN": "端口必须是 1024 到 65535 之间的整数。",
+  "zh-TW": "連接埠必須是 1024 到 65535 之間的整數。"
+ },
+ "Press a key": {
+  "zh-CN": "请按一个键",
+  "zh-TW": "請按一個鍵"
+ },
+ "Public Holidays": {
+  "zh-CN": "公共假日",
+  "zh-TW": "公共假日"
+ },
+ "Public holidays are off.": {
+  "zh-CN": "公共假日已关闭。",
+  "zh-TW": "公共假日已關閉。"
+ },
+ "Put {name} on the shelf": {
+  "zh-CN": "将 {name} 放到书架上",
+  "zh-TW": "將 {name} 放到書架上"
+ },
+ "Quit": {
+  "zh-CN": "退出",
+  "zh-TW": "結束"
+ },
+ "Region names: Unicode CLDR ·": {
+  "zh-CN": "地区名称：Unicode CLDR ·",
+  "zh-TW": "地區名稱：Unicode CLDR ·"
+ },
+ "Regional data unavailable. You can save national holidays and try again later.": {
+  "zh-CN": "暂时无法获取地区数据。你可以先保存全国性假日，稍后再试。",
+  "zh-TW": "暫時無法取得地區資料。你可以先儲存全國性假日，稍後再試。"
+ },
+ "Reload this page to retry.": {
+  "zh-CN": "请重新加载此页面后重试。",
+  "zh-TW": "請重新載入此頁面後重試。"
+ },
+ "Remove": {
+  "zh-CN": "移除",
+  "zh-TW": "移除"
+ },
+ "Remove game": {
+  "zh-CN": "移除游戏",
+  "zh-TW": "移除遊戲"
+ },
+ "Remove {name}?": {
+  "zh-CN": "移除 {name}？",
+  "zh-TW": "移除 {name}？"
+ },
+ "Rename": {
+  "zh-CN": "重命名",
+  "zh-TW": "重新命名"
+ },
+ "Rename {name}": {
+  "zh-CN": "重命名 {name}",
+  "zh-TW": "重新命名 {name}"
+ },
+ "Renamed to {name}.": {
+  "zh-CN": "已重命名为 {name}。",
+  "zh-TW": "已重新命名為 {name}。"
+ },
+ "Repeat every year": {
+  "zh-CN": "每年重复",
+  "zh-TW": "每年重複"
+ },
+ "Reset": {
+  "zh-CN": "重置",
+  "zh-TW": "重設"
+ },
+ "Reset to defaults": {
+  "zh-CN": "恢复默认",
+  "zh-TW": "還原預設"
+ },
+ "Restore": {
+  "zh-CN": "恢复",
+  "zh-TW": "還原"
+ },
+ "Restore this resume point": {
+  "zh-CN": "恢复此续玩点",
+  "zh-TW": "還原此續玩點"
+ },
+ "Restore this resume point?": {
+  "zh-CN": "恢复此续玩点？",
+  "zh-TW": "還原此續玩點？"
+ },
+ "Restored. If this game is running on the TV, it will reload.": {
+  "zh-CN": "已恢复。如果电视正在运行此游戏，将重新加载。",
+  "zh-TW": "已還原。若電視正在執行此遊戲，將重新載入。"
+ },
+ "Resume point": {
+  "zh-CN": "续玩点",
+  "zh-TW": "續玩點"
+ },
+ "Right": {
+  "zh-CN": "右",
+  "zh-TW": "右"
+ },
+ "Save": {
+  "zh-CN": "保存",
+  "zh-TW": "儲存"
+ },
+ "Save calendar": {
+  "zh-CN": "保存日历",
+  "zh-TW": "儲存行事曆"
+ },
+ "Save changes": {
+  "zh-CN": "保存更改",
+  "zh-TW": "儲存變更"
+ },
+ "Save date": {
+  "zh-CN": "保存日期",
+  "zh-TW": "儲存日期"
+ },
+ "Save deleted.": {
+  "zh-CN": "存档已删除。",
+  "zh-TW": "存檔已刪除。"
+ },
+ "Save files can be up to {n} MB.": {
+  "zh-CN": "存档文件最大 {n} MB。",
+  "zh-TW": "存檔檔案最大 {n} MB。"
+ },
+ "Save imported.": {
+  "zh-CN": "存档已导入。",
+  "zh-TW": "存檔已匯入。"
+ },
+ "Saved.": {
+  "zh-CN": "已保存。",
+  "zh-TW": "已儲存。"
+ },
+ "Saved. Restart the companion.": {
+  "zh-CN": "已保存。请重启配套应用。",
+  "zh-TW": "已儲存。請重新啟動配套應用程式。"
+ },
+ "Saved. The wallpaper updates within 15 seconds.": {
+  "zh-CN": "已保存。壁纸将在 15 秒内更新。",
+  "zh-TW": "已儲存。桌布將在 15 秒內更新。"
+ },
+ "Saved. The wallpaper updates within a minute.": {
+  "zh-CN": "已保存。壁纸将在一分钟内更新。",
+  "zh-TW": "已儲存。桌布將在一分鐘內更新。"
+ },
+ "Saving…": {
+  "zh-CN": "正在保存…",
+  "zh-TW": "正在儲存…"
+ },
+ "Select": {
+  "zh-CN": "选择",
+  "zh-TW": "選擇"
+ },
+ "Settings": {
+  "zh-CN": "设置",
+  "zh-TW": "設定"
+ },
+ "Settings actions": {
+  "zh-CN": "设置操作",
+  "zh-TW": "設定操作"
+ },
+ "Showing the last saved calendar. Updates will retry later.": {
+  "zh-CN": "正在显示上次保存的日历，稍后会重试更新。",
+  "zh-TW": "正在顯示上次儲存的行事曆，稍後會重試更新。"
+ },
+ "Stable": {
+  "zh-CN": "稳定版",
+  "zh-TW": "穩定版"
+ },
+ "Start": {
+  "zh-CN": "开始",
+  "zh-TW": "開始"
+ },
+ "Start with Windows": {
+  "zh-CN": "随 Windows 启动",
+  "zh-TW": "隨 Windows 啟動"
+ },
+ "Starts in the tray when you sign in.": {
+  "zh-CN": "登录后在托盘中启动。",
+  "zh-TW": "登入後在系統匣中啟動。"
+ },
+ "Startup & Updates": {
+  "zh-CN": "启动与更新",
+  "zh-TW": "啟動與更新"
+ },
+ "State / province": {
+  "zh-CN": "州 / 省",
+  "zh-TW": "州 / 省"
+ },
+ "Storage": {
+  "zh-CN": "存储空间",
+  "zh-TW": "儲存空間"
+ },
+ "Storage cleaned up.": {
+  "zh-CN": "存储空间已清理。",
+  "zh-TW": "儲存空間已清理。"
+ },
+ "Take off the shelf": {
+  "zh-CN": "从书架取下",
+  "zh-TW": "從書架取下"
+ },
+ "Take {name} off the shelf": {
+  "zh-CN": "将 {name} 从书架取下",
+  "zh-TW": "將 {name} 從書架取下"
+ },
+ "That game is no longer in the Library.": {
+  "zh-CN": "该游戏已不在游戏库中。",
+  "zh-TW": "該遊戲已不在遊戲庫中。"
+ },
+ "That resume point is gone.": {
+  "zh-CN": "该续玩点已不存在。",
+  "zh-TW": "該續玩點已不存在。"
+ },
+ "The companion is already running. Open Settings from its tray icon.": {
+  "zh-CN": "配套应用已在运行。请从托盘图标打开设置。",
+  "zh-TW": "配套應用程式已在執行。請從系統匣圖示開啟設定。"
+ },
+ "The shelf is full": {
+  "zh-CN": "书架已满",
+  "zh-TW": "書架已滿"
+ },
+ "The shelf is full. Take a game off it first.": {
+  "zh-CN": "书架已满。请先取下一个游戏。",
+  "zh-TW": "書架已滿。請先取下一個遊戲。"
+ },
+ "The shelf is full. Take a game off to make room.": {
+  "zh-CN": "书架已满。请先取下一个游戏。",
+  "zh-TW": "書架已滿。請先取下一個遊戲。"
+ },
+ "This deletes {games} and their saves ({size}), plus the weather map's saved tiles ({mapSize}). It cannot be undone. Games in your Library, their saves and their backups are not touched. The map tiles download again when the weather map needs them.": {
+  "zh-CN": "这会删除{games}及其存档（{size}），以及天气地图的缓存图块（{mapSize}）。此操作无法撤销。游戏库中的游戏、它们的存档和备份不受影响。天气地图需要时会重新下载图块。",
+  "zh-TW": "這會刪除{games}及其存檔（{size}），以及天氣地圖的快取圖磚（{mapSize}）。此操作無法復原。遊戲庫中的遊戲、它們的存檔和備份不受影響。天氣地圖需要時會重新下載圖磚。"
+ },
+ "Type": {
+  "zh-CN": "类型",
+  "zh-TW": "類型"
+ },
+ "Unknown language.": {
+  "zh-CN": "未知的语言。",
+  "zh-TW": "未知的語言。"
+ },
+ "Up": {
+  "zh-CN": "上",
+  "zh-TW": "上"
+ },
+ "Update YouTube downloader": {
+  "zh-CN": "更新 YouTube 下载器",
+  "zh-TW": "更新 YouTube 下載器"
+ },
+ "Updated weekly. China includes adjusted workdays; Taiwan follows the government office calendar.": {
+  "zh-CN": "每周更新。中国包含调休上班日；台湾采用政府行政机关办公日历。",
+  "zh-TW": "每週更新。中國包含補班日；台灣採用政府行政機關辦公日曆。"
+ },
+ "Use it": {
+  "zh-CN": "使用",
+  "zh-TW": "使用"
+ },
+ "Use {file} as the save?": {
+  "zh-CN": "将 {file} 用作存档？",
+  "zh-TW": "將 {file} 用作存檔？"
+ },
+ "Version {version} (build {build})": {
+  "zh-CN": "版本 {version}（构建 {build}）",
+  "zh-TW": "版本 {version}（組建 {build}）"
+ },
+ "Version {version} is the latest compatible release.": {
+  "zh-CN": "版本 {version} 是最新的兼容版本。",
+  "zh-TW": "版本 {version} 是最新的相容版本。"
+ },
+ "Version {version} will install when the companion restarts.": {
+  "zh-CN": "版本 {version} 将在配套应用重启时安装。",
+  "zh-TW": "版本 {version} 將在配套應用程式重新啟動時安裝。"
+ },
+ "Version {version} · Build {build}": {
+  "zh-CN": "版本 {version} · 构建 {build}",
+  "zh-TW": "版本 {version} · 組建 {build}"
+ },
+ "Video Resolution": {
+  "zh-CN": "视频分辨率",
+  "zh-TW": "影片解析度"
+ },
+ "Windows language": {
+  "zh-CN": "跟随 Windows 语言",
+  "zh-TW": "跟隨 Windows 語言"
+ },
+ "Xbox and PlayStation 4 / 5 pads work. Pair Bluetooth pads in Windows first.": {
+  "zh-CN": "支持 Xbox 和 PlayStation 4 / 5 手柄。蓝牙手柄请先在 Windows 中配对。",
+  "zh-TW": "支援 Xbox 和 PlayStation 4 / 5 手把。藍牙手把請先在 Windows 中配對。"
+ },
+ "YouTube Downloader Update Channel": {
+  "zh-CN": "YouTube 下载器更新通道",
+  "zh-TW": "YouTube 下載器更新通道"
+ },
+ "YouTube Playback": {
+  "zh-CN": "YouTube 播放",
+  "zh-TW": "YouTube 播放"
+ },
+ "ZZZ Companion Settings": {
+  "zh-CN": "ZZZ 配套应用设置",
+  "zh-TW": "ZZZ 配套應用程式設定"
+ },
+ "ZZZ Wallpaper Companion": {
+  "zh-CN": "ZZZ 壁纸配套应用",
+  "zh-TW": "ZZZ 桌布配套應用程式"
+ },
+ "clearing the cache must be confirmed": {
+  "zh-CN": "清除缓存需要确认。",
+  "zh-TW": "清除快取需要確認。"
+ },
+ "none yet": {
+  "zh-CN": "暂无",
+  "zh-TW": "尚無"
+ },
+ "where you left off · {when}": {
+  "zh-CN": "上次中断处 · {when}",
+  "zh-TW": "上次中斷處 · {when}"
+ },
+ "{button} is {key}.": {
+  "zh-CN": "{button} 现在是 {key}。",
+  "zh-TW": "{button} 現在是 {key}。"
+ },
+ "{button}: no key. Press to change": {
+  "zh-CN": "{button}：未设置按键。点击以更改",
+  "zh-TW": "{button}：未設定按鍵。按一下以變更"
+ },
+ "{button}: press a key, or Escape to cancel": {
+  "zh-CN": "{button}：请按一个键，或按 Esc 取消",
+  "zh-TW": "{button}：請按一個鍵，或按 Esc 取消"
+ },
+ "{button}: {key}. Press to change": {
+  "zh-CN": "{button}：{key}。点击以更改",
+  "zh-TW": "{button}：{key}。按一下以變更"
+ },
+ "{file} is already in the Library as {name}; its saves are kept.": {
+  "zh-CN": "{file} 已在游戏库中，名称为 {name}；其存档已保留。",
+  "zh-TW": "{file} 已在遊戲庫中，名稱為 {name}；其存檔已保留。"
+ },
+ "{games} and their saves ({size}), plus the weather map's saved tiles ({mapSize}).": {
+  "zh-CN": "{games}及其存档（{size}），以及天气地图的缓存图块（{mapSize}）。",
+  "zh-TW": "{games}及其存檔（{size}），以及天氣地圖的快取圖磚（{mapSize}）。"
+ },
+ "{key} moved to {button}; {other} took its old key.": {
+  "zh-CN": "{key} 已移到 {button}；{other} 使用了它原来的按键。",
+  "zh-TW": "{key} 已移到 {button}；{other} 使用了它原本的按鍵。"
+ },
+ "{name} is off the shelf.": {
+  "zh-CN": "{name} 已从书架取下。",
+  "zh-TW": "{name} 已從書架取下。"
+ },
+ "{name} is on tape {tape}.": {
+  "zh-CN": "{name} 在录像带 {tape}。",
+  "zh-TW": "{name} 在錄影帶 {tape}。"
+ },
+ "{name} is on the TV.": {
+  "zh-CN": "{name} 已在电视上。",
+  "zh-TW": "{name} 已在電視上。"
+ },
+ "{name} is on the shelf.": {
+  "zh-CN": "{name} 已放到书架上。",
+  "zh-TW": "{name} 已放到書架上。"
+ },
+ "{name} removed.": {
+  "zh-CN": "已移除 {name}。",
+  "zh-TW": "已移除 {name}。"
+ },
+ "{name} starts from that save. The current save and resume points move to its backups folder.": {
+  "zh-CN": "{name} 将从该存档开始。当前的存档和续玩点会移到备份文件夹。",
+  "zh-TW": "{name} 將從該存檔開始。目前的存檔和續玩點會移到備份資料夾。"
+ },
+ "{name} starts from the beginning next time. Its save and resume points move to its backups folder.": {
+  "zh-CN": "{name} 下次将从头开始。它的存档和续玩点会移到备份文件夹。",
+  "zh-TW": "{name} 下次將從頭開始。它的存檔和續玩點會移到備份資料夾。"
+ },
+ "{n} removed games": {
+  "zh-CN": "{n} 个已移除的游戏",
+  "zh-TW": "{n} 個已移除的遊戲"
+ },
+ "{year} holidays": {
+  "zh-CN": "{year} 年假日",
+  "zh-TW": "{year} 年假日"
+ }
+}

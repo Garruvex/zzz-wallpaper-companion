@@ -16,6 +16,10 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .title b{display:block;overflow-wrap:anywhere}.title small{color:var(--muted)}
 .saves{margin:12px 0 0;padding:14px;border-radius:6px;background:#181b1d;display:grid;gap:10px}
 .saves .line{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tape-pen{flex:none;display:grid;place-items:center;width:24px;height:24px;margin:0;padding:0;border:0;border-radius:50%;background:none;color:#8b8f96;cursor:pointer}
+.tape-pen svg{width:15px;height:15px}
+.tape-pen:focus-visible,.tape-pen:active{outline:none;color:var(--zzz-lime)}
+.tape-title input.rename-field{flex:1 1 auto;box-sizing:border-box;width:auto;max-width:360px;min-width:0;height:30px!important;min-height:0!important;padding:0 12px!important;border-width:2px!important;font-size:15px!important;line-height:1!important}
 #cache .line{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 4px 10px}
 #cache .line small{flex:1 1 auto;line-height:1.5}
 #cache button.zzz-chipbtn{flex:0 0 auto;padding:4px 14px;font-size:12px;border-width:2px;white-space:nowrap}
@@ -27,9 +31,8 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 </style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main>
 <a href="/settings">← Companion settings</a>
 <h1>Games</h1>
-<p>Add your own game files, then press <b>Play on TV</b> and the wallpaper switches to the game. Each game keeps its saves in its own folder (tray menu › Open game ROM folder), so copying the folder takes your progress with it. No games are included.</p>
 <label id="drop"><input id="file" type="file" accept=".gba,.gbc,.gb,.nes,.sfc,.smc,.md,.gen,.smd,.sms,.gg,.bin,.img,.pbp,.chd" multiple><b>Drop game files here or click to choose</b><span>GBA, Game Boy, NES, SNES, Mega Drive, Master System, Game Gear · Experimental: PS1 (.bin/.img/.pbp/.chd)<span class="psp" hidden>, PSP (.iso/.cso/.elf)</span></span></label>
-<p class="note">PS1: single-image games, BIOS-free compatibility varies. CUE/BIN sets and disc switching are not supported yet. PBP is classified as PS1.<span class="psp" hidden> PSP uses the experimental EmulatorJS 4.3.0 prerelease with GPU rendering. GTA: Vice City Stories may hang during its intro. PSP requires a compatible wallpaper host; in-game saves download as a .zzzpsp bundle.</span></p>
+<p class="note">PS1: single-file games only, no CUE/BIN sets or disc swapping.<span class="psp" hidden> PSP: some games may hang; saves download as a .zzzpsp file.</span></p>
 <p id="shelfNote"></p>
 <p id="status" role="status"></p>
 <div id="games" aria-label="Game library"></div>
@@ -41,13 +44,14 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
+let renaming = ''; // the game whose name is being edited
 let dragId = ''; // the game being dragged to another tape
 // While PSP is locked its games stay on their tapes, greyed out and unplayable, and PSP files are not offered.
 let psp = { unlocked: false, locked: [] };
 const PSP_FILES = ',.iso,.cso,.elf';
 
 const api = (id, parameters) => CompanionAPI.request(id, parameters);
-const when = iso => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const when = iso => iso ? new Date(iso).toLocaleString(companionLang, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 const size = bytes => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`;
 const say = (text, kind) => companionSay(text, kind);
 let loaded = false;
@@ -79,32 +83,33 @@ function savesPanel(cart) {
   const action = (action, query = {}) => api('games.carts.action', { path: { id: cart.id, action }, query });
   const panel = el('div', { className: 'saves' });
   const save = info.save;
+  panel.append(el('small', { textContent: 'A resume point captures where you stopped, separately from the in-game save.' }));
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Game save ' }), el('small', { textContent: save ? `${size(save.size)} · ${when(save.modified)}` : 'none yet' })),
     el('span', { className: 'row' },
       save ? el('a', { className: 'zzz-chipbtn', href: fileUrl('save'), textContent: 'Download' }) : '',
       button('Import…', () => importSave(cart)))));
   panel.append(el('div', { className: 'line' },
-    el('span', {}, el('b', { textContent: 'Resume point ' }), el('small', { textContent: info.state ? `where you left off · ${when(info.state.modified)}` : 'none yet' }))));
+    el('span', {}, el('b', { textContent: 'Resume point ' }), el('small', { textContent: info.state ? t('where you left off · {when}', { when: when(info.state.modified) }) : 'none yet' }))));
   for (const point of info.states) {
     panel.append(el('div', { className: 'line' },
-      el('small', { textContent: `Earlier resume point · ${when(point.modified)}` }),
-      button('Go back to this', async () => {
-        if (await companionConfirm({ title: 'Go back to this resume point?', message: `From ${when(point.modified)}. The current one is kept in the game's backups folder.`, confirmLabel: 'Go back' }))
-          run('Restored. The TV reloads the game if it is playing it.', () => action('restore', { state: point.n }));
+      el('small', { textContent: t('Earlier resume point · {when}', { when: when(point.modified) }) }),
+      button('Restore this resume point', async () => {
+        if (await companionConfirm({ title: 'Restore this resume point?', message: t('From {when}. The current one is kept in the game\'s backups folder.', { when: when(point.modified) }), confirmLabel: 'Restore' }))
+          run('Restored. If this game is running on the TV, it will reload.', () => action('restore', { state: point.n }));
       })));
   }
   panel.append(el('div', { className: 'line' },
-    el('small', { textContent: 'Deleted saves move to the game\'s backups folder, so a mistake can be undone by hand.' }),
+    el('small', { textContent: 'Kept in the game\'s backups folder.' }),
     button('Delete save', async () => {
-      if (await companionConfirm({ title: 'Delete the save?', message: `${cart.title} starts from the beginning next time. Its save and resume points move to its backups folder.`, confirmLabel: 'Delete' }))
+      if (await companionConfirm({ title: 'Delete the save?', message: t('{name} starts from the beginning next time. Its save and resume points move to its backups folder.', { name: cart.title }), confirmLabel: 'Delete' }))
         run('Save deleted.', () => action('reset'));
     }, 'danger')));
   panel.append(el('div', { className: 'line' },
-    el('small', { textContent: 'Remove the game and its tape. The game and its saves move to roms/.removed.' }),
+    el('small', { textContent: 'Kept until you choose Clean up storage in Storage.' }),
     button('Remove game', async () => {
-      if (await companionConfirm({ title: `Remove ${cart.title}?`, message: 'The game and its tape come off the shelf. The game and its saves move to roms/.removed.', confirmLabel: 'Remove' }))
-        run(`${cart.title} removed.`, () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
+      if (await companionConfirm({ title: t('Remove {name}?', { name: cart.title }), message: 'It comes off the shelf. The game and its saves are kept until you choose Clean up storage in Storage.', confirmLabel: 'Remove' }))
+        run(t('{name} removed.', { name: cart.title }), () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
     }, 'danger')));
   return panel;
 }
@@ -114,7 +119,7 @@ function importSave(cart) {
   input.value = '';
   input.onchange = async () => {
     const file = input.files[0];
-    if (!file || !await companionConfirm({ title: `Use ${file.name} as the save?`, message: `${cart.title} starts from that save. The current save and resume points move to its backups folder.`, confirmLabel: 'Use it' })) return;
+    if (!file || !await companionConfirm({ title: t('Use {file} as the save?', { file: file.name }), message: t('{name} starts from that save. The current save and resume points move to its backups folder.', { name: cart.title }), confirmLabel: 'Use it' })) return;
     run('Save imported.', () => api('games.carts.action', { path: { id: cart.id, action: 'import' }, body: file }));
   };
   input.click();
@@ -141,7 +146,7 @@ function render() {
   const head = (title, count) => el('div', { className: 'lib-head' }, el('h2', { className: 'group-title', textContent: title }), el('span', { className: 'lib-count', textContent: count }));
   const shelfBox = el('section', { className: 'lib-shelf' }, head('On the shelf', `${shelf.length} / ${SLOTS}`));
   for (const cart of shelf) shelfBox.append(gameRow(cart, full));
-  shelfBox.append(el('div', { className: 'lib-end', textContent: full ? 'The shelf is full. Take a game off to make room.' : `Drag a game here or press + in the pile. It goes on tape ${tapeText(shelf.length + 1)}.` }));
+  shelfBox.append(el('div', { className: 'lib-end', textContent: full ? 'The shelf is full. Take a game off to make room.' : t('Drag a game here to put it on tape {tape}.', { tape: tapeText(shelf.length + 1) }) }));
   const pileBox = el('section', { className: 'lib-pile' }, head('Not on the shelf', String(pile.length)));
   for (const cart of pile) pileBox.append(gameRow(cart, full));
   pileBox.append(el('div', { className: 'lib-end', textContent: 'Drop a game here to take it off the shelf, or drop game files to add them.' }));
@@ -150,8 +155,8 @@ function render() {
   pileDrop(pileBox);
 }
 
-const moveTo = (cart, tape) => run(`${cart.title} is on tape ${tapeText(tape)}.`, () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n: tape } }));
-const putOnShelf = (cart, on) => run(on ? `${cart.title} is on the shelf.` : `${cart.title} is off the shelf.`, () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: on ? 1 : 0 } }));
+const moveTo = (cart, tape) => run(t('{name} is on tape {tape}.', { name: cart.title, tape: tapeText(tape) }), () => api('games.carts.action', { path: { id: cart.id, action: 'tape' }, query: { n: tape } }));
+const putOnShelf = (cart, on) => run(on ? t('{name} is on the shelf.', { name: cart.title }) : t('{name} is off the shelf.', { name: cart.title }), () => api('games.carts.action', { path: { id: cart.id, action: 'shelf' }, query: { on: on ? 1 : 0 } }));
 const clearDrop = () => document.querySelectorAll('.drop-line,.is-over').forEach(node => node.classList.contains('drop-line') ? node.remove() : node.classList.remove('is-over'));
 
 // Over the shelf, a lime line shows where the game will go in. The tape it lands on comes from the rows
@@ -208,7 +213,7 @@ function gameRow(cart, full) {
   const tape = cart.tape || 0;
   const grip = el('span', { className: 'tape-grip', tabIndex: 0, title: tape ? 'Drag to move. Up and down arrows move it too.' : 'Drag onto the shelf' });
   grip.setAttribute('role', 'button');
-  grip.setAttribute('aria-label', tape ? `Move ${cart.title}, on tape ${tape}. Press up or down to move it` : `Move ${cart.title} onto the shelf`);
+  grip.setAttribute('aria-label', tape ? t('Move {name}, on tape {tape}. Press up or down to move it', { name: cart.title, tape }) : t('Move {name} onto the shelf', { name: cart.title }));
   grip.addEventListener('keydown', event => {
     const up = event.key === 'ArrowUp', down = event.key === 'ArrowDown';
     if (!tape || busy || !(up || down)) return;
@@ -216,8 +221,34 @@ function gameRow(cart, full) {
     const target = tape + (up ? -1 : 1);
     if (target >= 1 && target <= carts.filter(item => item.tape).length) moveTo(cart, target);
   });
+  // The pen renames the game: only its name changes, its saves and tape stay. Enter saves, Escape
+  // cancels, and an empty name goes back to the game file's name.
+  const editing = renaming === cart.id;
+  let nameBox;
+  if (editing) {
+    nameBox = el('input', { type: 'text', className: 'rename-field', value: cart.title, maxLength: 40, placeholder: cart.id });
+    nameBox.setAttribute('aria-label', t('New name for {name}. Enter saves, Escape cancels', { name: cart.title }));
+    const finish = save => {
+      if (renaming !== cart.id) return;
+      renaming = '';
+      const next = nameBox.value.trim();
+      if (!save || next === cart.title || (!next && cart.title === cart.id)) { render(); return; }
+      run(next ? t('Renamed to {name}.', { name: next }) : 'Name set back to the file name.', () => companionRenameGame(cart.id, next));
+    };
+    nameBox.addEventListener('keydown', event => {
+      event.stopPropagation();
+      if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+      if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+    });
+    nameBox.addEventListener('blur', () => finish(true));
+    requestAnimationFrame(() => { nameBox.focus(); nameBox.select(); });
+  }
+  const pen = editing ? '' : el('button', { type: 'button', className: 'tape-pen', title: 'Rename', disabled: busy,
+    innerHTML: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M11.3 1.3a1.5 1.5 0 0 1 2.1 0l1.3 1.3a1.5 1.5 0 0 1 0 2.1L5.5 13.9 1.5 14.5l.6-4z"/></svg>',
+    onclick: () => { renaming = cart.id; render(); } });
+  if (pen) pen.setAttribute('aria-label', t('Rename {name}', { name: cart.title }));
   const title = el('span', { className: 'tape-title', title: cart.rom },
-    el('b', { textContent: cart.title }),
+    editing ? nameBox : el('b', { textContent: cart.title, translate: false }), pen,
     onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '');
   // The system sits at the right like the game's "Lv. 1 | Stats": white heavy text, a thin divider, and
   // "Locked" in grey when it can't be played.
@@ -227,18 +258,18 @@ function gameRow(cart, full) {
     locked ? el('span', { className: 'tape-state', textContent: 'Locked' }) : '');
   const play = el('button', { type: 'button', className: `zzz-round-action${onTV ? ' is-eject' : ''}`, disabled: busy || locked,
     title: locked ? 'PSP games are locked' : onTV ? 'Eject' : 'Play on TV',
-    onclick: onTV ? () => run('Ejected.', () => select('')) : () => run(`${cart.title} is on the TV.`, () => select(cart.id)) });
-  play.setAttribute('aria-label', onTV ? `Eject ${cart.title}` : `Play ${cart.title} on TV`);
+    onclick: onTV ? () => run('Ejected.', () => select('')) : () => run(t('{name} is on the TV.', { name: cart.title }), () => select(cart.id)) });
+  play.setAttribute('aria-label', onTV ? t('Eject {name}', { name: cart.title }) : t('Play {name} on TV', { name: cart.title }));
   const shelfButton = el('button', { type: 'button', className: 'lib-move', textContent: tape ? '−' : '+', disabled: busy || (!tape && full),
     title: tape ? 'Take off the shelf' : full ? 'The shelf is full' : 'Add to the end of the shelf', onclick: () => putOnShelf(cart, !tape) });
-  shelfButton.setAttribute('aria-label', tape ? `Take ${cart.title} off the shelf` : `Put ${cart.title} on the shelf`);
-  const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Close' : 'Saves and Remove', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
+  shelfButton.setAttribute('aria-label', tape ? t('Take {name} off the shelf', { name: cart.title }) : t('Put {name} on the shelf', { name: cart.title }));
+  const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Close' : 'Manage game', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
   fold.setAttribute('aria-expanded', String(shown));
-  fold.setAttribute('aria-label', `${shown ? 'Close' : 'Open'} saves and Remove for ${cart.title}`);
+  fold.setAttribute('aria-label', t(shown ? 'Close game management for {name}' : 'Open game management for {name}', { name: cart.title }));
   const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` },
     grip, tape ? el('span', { className: 'tape-no', textContent: tapeText(tape) }) : '', title, meta,
     el('span', { className: 'tape-actions' }, play, shelfButton), fold);
-  row.draggable = !busy;
+  row.draggable = !busy && !editing;
   row.addEventListener('dragstart', event => { dragId = cart.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', cart.id); row.classList.add('is-dragging'); });
   row.addEventListener('dragend', () => { dragId = ''; row.classList.remove('is-dragging'); clearDrop(); });
   // Built like the game's skill panel: a grey card holding the black title bar, which grows to hold the
@@ -250,10 +281,10 @@ const select = id => api('games.selection.save', { body: { id } }).then(() => ''
 
 async function upload(files) {
   for (const file of files) {
-    await run(`Added ${file.name}.`, async () => {
-      say(`Adding ${file.name}…`);
+    await run(t('Added {file}.', { file: file.name }), async () => {
+      say(t('Adding {file}…', { file: file.name }));
       const result = await CompanionAPI.request('games.carts.add', { query: { name: file.name }, body: file }, { timeout: 300000 });
-      return result.existing ? `${file.name} is already in the library as ${result.cart.title}; its saves are kept.` : `Added ${result.cart.title}.`;
+      return result.existing ? t('{file} is already in the Library as {name}; its saves are kept.', { file: file.name, name: result.cart.title }) : t('Added {name}.', { name: result.cart.title });
     });
   }
 }
@@ -279,7 +310,7 @@ $('pad').append(
     padKey('select', 'sel'), padKey('start', 'sta'),
     padKey('x', 'fn'), padKey('y', 'fw'), padKey('a', 'fe'), padKey('b', 'fs'),
     stick('padLeft', 'ls'), stick('padRight', 'rs'), padKey('l3', 'l3'), padKey('r3', 'r3')),
-  el('p', { className: 'pad-note', textContent: 'Buttons light up as you press them. Xbox-style pads and PlayStation 4 / 5 pads work; Bluetooth pads must be paired first. Games on the shelf take the pad when the wallpaper is in play mode.' }));
+  el('p', { className: 'pad-note', textContent: 'Xbox and PlayStation 4 / 5 pads work. Pair Bluetooth pads in Windows first.' }));
 let padWas = null;
 async function padTick() {
   const section = $('pad').closest('[data-section]');
@@ -327,13 +358,13 @@ function renderKeys() {
     for (const [name, label] of rows) {
       const vk = keys.keys[name];
       const cell = el('button', { type: 'button', className: `keys-cell${waiting === name ? ' is-waiting' : ''}`, onclick: () => { waiting = waiting === name ? '' : name; renderKeys(); if (waiting) box.querySelector('.is-waiting')?.focus(); } },
-        waiting === name ? el('span', { className: 'keys-wait', textContent: 'Press a key' }) : vk ? el('kbd', { className: 'keys-cap', textContent: keyName(vk) }) : el('span', { className: 'keys-none' }));
-      cell.setAttribute('aria-label', `${label}: ${waiting === name ? 'press a key, or Escape to cancel' : vk ? keyName(vk) : 'no key'}. Press to change`);
+        waiting === name ? el('span', { className: 'keys-wait', textContent: 'Press a key' }) : vk ? el('kbd', { className: 'keys-cap', textContent: keyName(vk), translate: false }) : el('span', { className: 'keys-none' }));
+      cell.setAttribute('aria-label', t(waiting === name ? '{button}: press a key, or Escape to cancel' : vk ? '{button}: {key}. Press to change' : '{button}: no key. Press to change', { button: t(label), key: vk ? keyName(vk) : '' }));
       box.append(el('div', { className: 'keys-row' }, el('b', { className: 'keys-name', textContent: label }), cell));
     }
   }
   const reset = el('button', { type: 'button', className: 'zzz-chipbtn', textContent: 'Reset to defaults', onclick: () => saveKeys(null, 'Keys reset to the defaults.') });
-  box.append(el('div', { className: 'keys-foot' }, el('small', { textContent: 'Pause starts and pauses play. Controllers need no setup: their buttons are taken by position.' }), reset));
+  box.append(el('div', { className: 'keys-foot' }, el('small', { textContent: 'Pause starts and pauses play.' }), reset));
 }
 
 async function saveKeys(next, message) {
@@ -353,7 +384,7 @@ document.addEventListener('keydown', event => {
   const other = Object.keys(next).find(key => key !== name && next[key] === vk);
   if (other) next[other] = next[name];
   next[name] = vk;
-  saveKeys(next, other ? `${keyName(vk)} moved to ${name.toUpperCase()}; ${other.toUpperCase()} took its old key.` : `${name.toUpperCase()} is ${keyName(vk)}.`);
+  saveKeys(next, other ? t('{key} moved to {button}; {other} took its old key.', { key: keyName(vk), button: name.toUpperCase(), other: other.toUpperCase() }) : t('{button} is {key}.', { button: name.toUpperCase(), key: keyName(vk) }));
 }, { capture: true, signal: visit.signal });
 
 companionKeys().then(state => { keys = state; renderKeys(); }).catch(() => say('Could not read the keys.', 'error'));
@@ -367,19 +398,19 @@ async function renderCache() {
   const box = $('cache');
   let use;
   try { use = await companionCacheUse(); } catch { box.replaceChildren(el('p', { className: 'empty', textContent: 'Could not read the storage use.' })); return; }
-  const games = n => n === 1 ? '1 removed game' : `${n} removed games`;
+  const games = n => n === 1 ? t('1 removed game') : t('{n} removed games', { n });
   const nothing = !use.removedGames && !use.removedBytes && !use.mapBytes;
-  const clear = el('button', { type: 'button', className: 'zzz-chipbtn danger', textContent: 'Clear cache', disabled: nothing, onclick: async () => {
+  const clear = el('button', { type: 'button', className: 'zzz-chipbtn danger', textContent: 'Clean up storage', disabled: nothing, onclick: async () => {
     const now = await companionCacheUse();
     if (!await companionConfirm({
-      title: 'Clear the cache for good?',
-      message: `This deletes ${games(now.removedGames)} and their saves (${bytes(now.removedBytes)}), plus the weather map's saved tiles (${bytes(now.mapBytes)}). It cannot be undone. Games in your Library, their saves and their backups are not touched. The map tiles download again when the weather map needs them.`,
-      confirmLabel: 'Clear' })) return;
-    try { await companionClearCache(); say('Cache cleared.'); } catch (error) { say(error.message, 'error'); }
+      title: 'Permanently delete removed games, their saves and cached maps?',
+      message: t('This deletes {games} and their saves ({size}), plus the weather map\'s saved tiles ({mapSize}). It cannot be undone. Games in your Library, their saves and their backups are not touched. The map tiles download again when the weather map needs them.', { games: games(now.removedGames), size: bytes(now.removedBytes), mapSize: bytes(now.mapBytes) }),
+      confirmLabel: 'Delete permanently' })) return;
+    try { await companionClearCache(); say('Storage cleaned up.'); } catch (error) { say(error.message, 'error'); }
     renderCache();
   } });
   box.replaceChildren(el('div', { className: 'line' },
-    el('small', { textContent: nothing ? 'Nothing to clear.' : `${games(use.removedGames)} and their saves (${bytes(use.removedBytes)}), plus the weather map's saved tiles (${bytes(use.mapBytes)}).` }),
+    el('small', { textContent: nothing ? 'Nothing to clear.' : t('{games} and their saves ({size}), plus the weather map\'s saved tiles ({mapSize}).', { games: games(use.removedGames), size: bytes(use.removedBytes), mapSize: bytes(use.mapBytes) }) }),
     clear));
 }
 renderCache();

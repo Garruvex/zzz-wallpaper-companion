@@ -59,7 +59,7 @@ func (s *APIServer) clearCache(w http.ResponseWriter, r *http.Request) {
 	before := s.cacheUse()
 	for _, dir := range []string{filepath.Join(s.romDir(), ".removed"), filepath.Join(s.dataDir, "map-tiles")} {
 		if err := os.RemoveAll(dir); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not clear everything (is a file open?)")
+			writeError(w, http.StatusInternalServerError, "Could not clear everything. Is one of its files open?")
 			return
 		}
 	}

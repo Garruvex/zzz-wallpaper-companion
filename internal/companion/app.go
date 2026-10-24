@@ -38,6 +38,7 @@ func Run() {
 		fatalDialog("ZZZ Wallpaper Companion", err.Error())
 		return
 	}
+	loadLanguage(dataDir)
 	releaseInstance, alreadyRunning, err := acquireSingleInstance()
 	if err != nil {
 		fatalDialog("Companion could not start", err.Error())
@@ -46,9 +47,9 @@ func Run() {
 	if alreadyRunning {
 		config, configErr := newConfigStore(filepath.Join(dataDir, "settings.json"))
 		if configErr == nil && companionResponding(config.Get().Port) {
-			infoDialog("ZZZ Wallpaper Companion", "The companion is already running and responding. Open its notification-area icon to access Settings.")
+			infoDialog("ZZZ Wallpaper Companion", "The companion is already running. Open Settings from its tray icon.")
 		} else {
-			infoDialog("ZZZ Wallpaper Companion", "A companion process is already running, but it is not responding on the configured port. It may be starting, using a different port, or unresponsive. Check its notification-area icon. If it is stuck, end only the ZZZ companion process in Task Manager, then restart it. No process has been terminated automatically.")
+			infoDialog("ZZZ Wallpaper Companion", "Another companion is running but not answering. If it stays stuck, end it in Task Manager and start the companion again.")
 		}
 		return
 	}
