@@ -214,9 +214,13 @@ function gameRow(cart, full) {
   });
   const title = el('span', { className: 'tape-title', title: cart.rom },
     el('b', { textContent: cart.title }),
-    onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '',
-    el('span', { className: 'chip', textContent: SYSTEMS[cart.system] || cart.system }),
-    locked ? el('span', { className: 'chip', textContent: 'LOCKED' }) : '');
+    onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '');
+  // The system sits at the right like the game's "Lv. 1 | Stats": white heavy text, a thin divider, and
+  // "Locked" in grey when it can't be played.
+  const meta = el('span', { className: 'tape-meta' },
+    el('b', { className: 'tape-sys', textContent: SYSTEMS[cart.system] || cart.system }),
+    el('i', { className: 'tape-div' }),
+    locked ? el('span', { className: 'tape-state', textContent: 'Locked' }) : '');
   const play = el('button', { type: 'button', className: `zzz-round-action${onTV ? ' is-eject' : ''}`, disabled: busy || locked,
     title: locked ? 'PSP games are locked' : onTV ? 'Eject' : 'Play on TV',
     onclick: onTV ? () => run('Ejected.', () => select('')) : () => run(`${cart.title} is on the TV.`, () => select(cart.id)) });
@@ -228,7 +232,7 @@ function gameRow(cart, full) {
   fold.setAttribute('aria-expanded', String(shown));
   fold.setAttribute('aria-label', `${shown ? 'Close' : 'Open'} saves and Remove for ${cart.title}`);
   const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` },
-    grip, tape ? el('span', { className: 'tape-no', textContent: tapeText(tape) }) : '', title,
+    grip, tape ? el('span', { className: 'tape-no', textContent: tapeText(tape) }) : '', title, meta,
     el('span', { className: 'tape-actions' }, play, shelfButton), fold);
   row.draggable = !busy;
   row.addEventListener('dragstart', event => { dragId = cart.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', cart.id); row.classList.add('is-dragging'); });

@@ -219,11 +219,17 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .tape-item>.tape-row{margin:0}
 .tape-item>.saves{margin:8px 24px 0}
 @media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%;justify-content:flex-end}}
-/* Tags (a game's system, LOCKED, a holiday's weekday) are the status tag template's slanted label
-   (docs/ui-templates/elements/05-status-tag.html in the wallpaper): black, a thin grey rim and grey italic
-   capitals, leaning like the game's. A lit tag (ON TV) is a lime fill with dark text, on any page. */
-.chip{--c:#b9bcc1;display:inline-flex;align-items:center;height:22px;box-sizing:border-box;margin:0 4px 0 0;padding:0 10px;border:2px solid var(--c);border-radius:0;background:var(--zzz-ink);color:var(--c);font:italic 900 11px/1 var(--zzz-font);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;transform:skewX(-12deg);box-shadow:3px 3px 0 #000a}
-.chip.on{--c:var(--zzz-lime);background:var(--zzz-lime);color:var(--zzz-ink)}
+/* Tags (ON TV, a holiday's weekday): a slanted tab pressed into the row, dark grey with grey italic
+   capitals, no rim or shadow. A lit tag (ON TV) is a lime fill with dark text, on any page. */
+.chip{display:inline-flex;align-items:center;height:20px;box-sizing:border-box;margin:0 4px 0 0;padding:0 10px;border:0;border-radius:0;background:#2e3035;color:#c9cbc4;font:italic 900 10.5px/1 var(--zzz-font);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transform:skewX(-12deg)}
+.chip.on{background:var(--zzz-lime);color:var(--zzz-ink)}
+/* A game's system at the right of its row, like the game's skill panel "Lv. 1 | Stats": white heavy text,
+   a thin divider, and "Locked" in grey when it can't be played. */
+.tape-meta{flex:none;display:flex;align-items:center;gap:14px;margin-left:auto}
+.tape-sys{font:900 17px/1 var(--zzz-font);color:#fff;white-space:nowrap}
+.tape-div{width:2px;height:24px;border-radius:1px;background:#4a4c52}
+.tape-state{font:900 17px/1 var(--zzz-font);color:#7d8187}
+.tape-row.locked .tape-sys{color:#8b8f96}
 /* The Library: the shelf, packed from tape 01, and the pile of games not on it. The tape number is a
    plain heavy italic figure (no tile), lime while the game is on the TV; a dotted grip picks a row up,
    and a lime line shows where it will go in. */
