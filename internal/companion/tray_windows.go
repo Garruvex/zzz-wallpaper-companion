@@ -258,23 +258,23 @@ func showTrayMenu(hwnd uintptr) {
 	defer user32.NewProc("DestroyMenu").Call(menu)
 	appendMenuFlags(menu, 0, "Version "+version+" (build "+buildNumber+")", mfString|mfGrayed|mfDisabled)
 	if trayConnectionWarning != "" {
-		appendMenuFlags(menu, 0, "Connection unavailable - open Settings", mfString|mfGrayed|mfDisabled)
+		appendMenuFlags(menu, 0, "Not connected - open Settings", mfString|mfGrayed|mfDisabled)
 	}
 	appendMenu(menu, cmdSettings, "Settings")
 	flags := uint32(mfString)
 	if trayConfig.Get().LaunchOnStartup {
 		flags |= mfChecked
 	}
-	appendMenuFlags(menu, cmdStartup, "Launch on Windows startup", flags)
+	appendMenuFlags(menu, cmdStartup, "Start with Windows", flags)
 	flags = mfString
 	if trayConfig.Get().AutoUpdate {
 		flags |= mfChecked
 	}
-	appendMenuFlags(menu, cmdAutoUpdate, "Automatically download compatible updates", flags)
-	appendMenu(menu, cmdAppUpdate, "Check for companion updates")
-	appendMenu(menu, cmdUpdate, "Check for yt-dlp updates")
-	appendMenu(menu, cmdGames, "Games…")
-	appendMenu(menu, cmdROMs, "Open game ROM folder")
+	appendMenuFlags(menu, cmdAutoUpdate, "Automatic updates", flags)
+	appendMenu(menu, cmdAppUpdate, "Check for updates")
+	appendMenu(menu, cmdUpdate, "Update YouTube downloader")
+	appendMenu(menu, cmdGames, "Games")
+	appendMenu(menu, cmdROMs, "Open games folder")
 	appendMenu(menu, cmdLogs, "Open data folder")
 	appendMenu(menu, cmdQuit, "Quit")
 	var cursor point

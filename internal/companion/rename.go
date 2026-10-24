@@ -42,12 +42,12 @@ func (s *APIServer) renameGame(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid rename")
+		writeError(w, http.StatusBadRequest, "Could not rename the game.")
 		return
 	}
 	c, ok := s.cartByID(body.ID)
 	if !ok {
-		writeError(w, http.StatusNotFound, "no such game")
+		writeError(w, http.StatusNotFound, "That game is no longer in the Library.")
 		return
 	}
 	meta := cartMeta(c.dir)
@@ -57,7 +57,7 @@ func (s *APIServer) renameGame(w http.ResponseWriter, r *http.Request) {
 		delete(meta, "title")
 	}
 	if err := writeCartMeta(c.dir, meta); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not save the name")
+		writeError(w, http.StatusInternalServerError, "Could not save the name.")
 		return
 	}
 	c, _ = s.cartByID(body.ID)

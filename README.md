@@ -36,8 +36,12 @@ Right-click the notification-area icon. Double-click opens settings.
 | Item | What it does |
 | --- | --- |
 | **Settings** | Open the settings page in your browser |
-| **Launch on Windows startup** | Toggle automatic launch after sign-in |
-| **Check for yt-dlp updates** | Update yt-dlp now |
+| **Start with Windows** | Toggle automatic launch after sign-in |
+| **Automatic updates** | Toggle installing new companion versions on the next start |
+| **Check for updates** | Check for a new companion version now |
+| **Update YouTube downloader** | Update yt-dlp now |
+| **Games** | Open the Game tab |
+| **Open games folder** | Open the folder holding your games and saves |
 | **Open data folder** | Open the companion data folder in Explorer |
 | **Quit** | Stop the companion |
 
@@ -47,11 +51,12 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Companion port | `8765` | Must match what the wallpaper expects. Restart after changing. |
-| Maximum resolution | `720` | `360`, `480`, `720`, or `1080` |
-| Live-stream resolution | `360` | `240`, `360`, `480`, or `720`; higher values use substantially more CPU |
-| yt-dlp channel | `nightly` | `nightly` (recommended) or `stable` |
-| Launch on Windows startup | Off | Starts quietly in the notification area after sign-in |
+| Companion Port | `8765` | Must match what the wallpaper expects. Restart after changing. |
+| Video Resolution | `720` | `360`, `480`, `720`, or `1080` |
+| Live Stream Resolution | `360` | `240`, `360`, `480`, or `720`; higher values use substantially more CPU |
+| YouTube Downloader Channel | `nightly` | `nightly` (recommended) or `stable` |
+| Start with Windows | Off | Starts in the tray after sign-in |
+| Automatic Updates | On | New versions install the next time the companion starts |
 
 ## Game controller and play mode (optional)
 
@@ -65,9 +70,9 @@ For wallpapers that embed a game emulator. The companion reads Xbox-style (XInpu
 
 Keys are read with a Windows low-level keyboard hook, which exists only while play mode is on and is removed when the wallpaper stops listening. Each state includes `captured` and a timestamp (`at`) so the wallpaper can show its state and input lag.
 
-**Games page:** tray menu › **Games…** (or `http://127.0.0.1:<port>/games`). Drop game files onto it to add them; a file that is the same game as one already there (same SHA-1) reuses that game and its saves. **Play on TV** tells the wallpaper which game to put in its deck (`GET`/`POST /api/v1/games/current`). Per game you can download or import the save, go back to one of the last three resume points, reset progress, or remove the game. Nothing is deleted on its own: replaced files move to the game's `backups` folder and removed games to `roms/.removed`. The Games tab's **Storage** section has a **Clear cache** button that, after a warning showing the sizes, deletes `roms/.removed` (removed games with their saves) and the weather map's `map-tiles` for good; games in the Library, their saves and their backups are never touched (`GET /games/cache`, `POST /games/cache/clear` with `{"confirm":true}`; page routes, not part of the wallpaper API contract). "On shelf" decides which games get one of the wallpaper's 14 shelf tapes (`shelf` in `cart.json`; games you never asked about fill free tapes in title order, and the list reports the outcome as `onShelf`). A reset or import raises the game's revision (`rev` in `cart.json`); saves the wallpaper sends with an older `X-Cart-Rev` are refused, so a game still running can't write its old progress back.
+**Games page:** tray menu › **Games** (or `http://127.0.0.1:<port>/games`). Drop game files onto it to add them; a file that is the same game as one already there (same SHA-1) reuses that game and its saves. **Play on TV** tells the wallpaper which game to put in its deck (`GET`/`POST /api/v1/games/current`). Per game you can download or import the save, go back to one of the last three resume points, reset progress, or remove the game. Nothing is deleted on its own: replaced files move to the game's `backups` folder and removed games to `roms/.removed`. The Games tab's **Storage** section has a **Clear cache** button that, after a warning showing the sizes, deletes `roms/.removed` (removed games with their saves) and the weather map's `map-tiles` for good; games in the Library, their saves and their backups are never touched (`GET /games/cache`, `POST /games/cache/clear` with `{"confirm":true}`; page routes, not part of the wallpaper API contract). "On shelf" decides which games get one of the wallpaper's 14 shelf tapes (`shelf` in `cart.json`; games you never asked about fill free tapes in title order, and the list reports the outcome as `onShelf`). A reset or import raises the game's revision (`rev` in `cart.json`); saves the wallpaper sends with an older `X-Cart-Rev` are refused, so a game still running can't write its old progress back.
 
-**Game cartridges:** the tray menu has **Open game ROM folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). Each game is a folder there holding `game.<ext>` (`.gba`, `.gbc`, `.gb`, `.nes`, `.sfc`, `.smc`, `.md`, `.gen`, `.smd`, `.sms`, `.gg`), its save (`save.sav`, or `save.srm` for SNES and Sega, previous copy kept as `.bak`), `state.state` (older copies `state-1` to `state-3`, at least 10 minutes apart), and optionally `label.png` and `cart.json` (`{"title", "color"}`). Game files dropped loose into the folder are moved into a cartridge folder of their own, with any `Game.sav`/`Game.state` from earlier versions. `GET /api/v1/carts` lists cartridges; `GET /api/v1/carts/<id>/rom|save|state|label` reads a file and `POST .../save|state` writes one. Nothing outside the cartridge folders can be read or written.
+**Game cartridges:** the tray menu has **Open games folder** (`%LOCALAPPDATA%\ZZZWallpaperCompanion\roms`). Each game is a folder there holding `game.<ext>` (`.gba`, `.gbc`, `.gb`, `.nes`, `.sfc`, `.smc`, `.md`, `.gen`, `.smd`, `.sms`, `.gg`), its save (`save.sav`, or `save.srm` for SNES and Sega, previous copy kept as `.bak`), `state.state` (older copies `state-1` to `state-3`, at least 10 minutes apart), and optionally `label.png` and `cart.json` (`{"title", "color"}`). Game files dropped loose into the folder are moved into a cartridge folder of their own, with any `Game.sav`/`Game.state` from earlier versions. `GET /api/v1/carts` lists cartridges; `GET /api/v1/carts/<id>/rom|save|state|label` reads a file and `POST .../save|state` writes one. Nothing outside the cartridge folders can be read or written.
 
 ## Troubleshooting
 
@@ -80,7 +85,7 @@ Keys are read with a Windows low-level keyboard hook, which exists only while pl
 
 - Wait a minute on first run while yt-dlp downloads.
 - Open **Open data folder** from the tray menu and check `companion.log` for errors.
-- Try **Check for yt-dlp updates** from the tray menu.
+- Try **Update YouTube downloader** from the tray menu.
 
 **Port already in use**
 

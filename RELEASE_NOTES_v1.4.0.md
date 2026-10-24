@@ -1,7 +1,7 @@
 ﻿ZZZ Wallpaper Companion 1.4.0 brings the companion's settings in line with the game and adds the game station for wallpaper 1.6.0.
 
 - **New look:** The companion now matches the game's own menus: top tabs with a side menu, title cards, ON/OFF switches, and message bars instead of browser pop-ups. Notices float at the top right, under the tabs.
-- **Game station:** The Games page is the Library. Add games, play them on the TV, manage saves, and choose which games get one of the 14 shelf tapes. Drag to reorder, or move a game to another tape. Systems supported are NES, SNES, Sega and Game Boy-family carts.
+- **Game station:** The Games page is the Library. Add games, play them on the TV, manage saves, and choose which games get one of the 14 shelf tapes. Drag to reorder, move a game to another tape, or rename it with the pen next to its name. Systems supported are NES, SNES, Sega and Game Boy-family carts.
 - **Controllers:** The Game tab shows your pad live, with Xbox and PlayStation controllers supported.
 - **Keyboard:** Remap the game station's keys in Settings → Game → Keyboard.
 - **Storage:** Settings → Game → Storage has a Clear cache button. After a warning that shows the sizes, it permanently deletes removed games (with their saves) and the weather map's saved tiles. Games in your Library are never touched.

@@ -68,7 +68,7 @@ func (s *APIServer) setCurrentGame(w http.ResponseWriter, r *http.Request) {
 	if body.ID != "" {
 		c, ok := s.cartByID(body.ID)
 		if !ok {
-			writeError(w, http.StatusNotFound, "no such game")
+			writeError(w, http.StatusNotFound, "That game is no longer in the Library.")
 			return
 		}
 		if pspLocked(c, s.pspUnlocked()) {
@@ -148,9 +148,9 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	unlocked := s.pspUnlocked()
 	if !ok || pspLocked(cart{System: sys.ID}, unlocked) {
 		if unlocked {
-			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
+			writeError(w, http.StatusBadRequest, "Not a supported game file. Use a cartridge game, a single-file PS1 game (.bin .img .pbp .chd) or a PSP game (.iso .cso .elf).")
 		} else {
-			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM or PS1 single image (.bin .img .pbp .chd)")
+			writeError(w, http.StatusBadRequest, "Not a supported game file. Use a cartridge game or a single-file PS1 game (.bin .img .pbp .chd).")
 		}
 		return
 	}
@@ -158,7 +158,7 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	// an image-sized buffer in Companion.
 	upload, err := os.CreateTemp(s.ensureROMDir(), ".upload-*")
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "could not stage game upload")
+		writeError(w, http.StatusInternalServerError, "Could not add the game.")
 		return
 	}
 	defer os.Remove(upload.Name())
@@ -167,11 +167,11 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	hasher := sha1.New()
 	n, err := io.Copy(io.MultiWriter(upload, hasher), http.MaxBytesReader(w, r.Body, limit))
 	if err != nil || n == 0 {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("game file must be 1 byte to %d MiB", limit>>20))
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("Game files can be up to %d MB.", limit>>20))
 		return
 	}
 	if err := upload.Close(); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not stage game upload")
+		writeError(w, http.StatusInternalServerError, "Could not add the game.")
 		return
 	}
 	hash := hex.EncodeToString(hasher.Sum(nil))
@@ -197,11 +197,11 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	}
 	dir := filepath.Join(root, id)
 	if err := os.Mkdir(dir, 0o755); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not create the game folder")
+		writeError(w, http.StatusInternalServerError, "Could not add the game.")
 		return
 	}
 	if err := os.Rename(upload.Name(), filepath.Join(dir, "game"+strings.ToLower(filepath.Ext(name)))); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not write the game")
+		writeError(w, http.StatusInternalServerError, "Could not add the game.")
 		return
 	}
 	_ = writeCartMeta(dir, map[string]any{"sha1": hash})
@@ -227,7 +227,7 @@ func fileInfo(dir, name string) *saveFile {
 func (s *APIServer) gameDetails(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.cartByID(r.PathValue("id"))
 	if !ok {
-		writeError(w, http.StatusNotFound, "no such game")
+		writeError(w, http.StatusNotFound, "That game is no longer in the Library.")
 		return
 	}
 	states := []map[string]any{}
@@ -281,7 +281,7 @@ func stateNames() []string {
 func (s *APIServer) changedSaves(w http.ResponseWriter, c cart) {
 	rev, err := bumpRevision(c)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "could not update the game")
+		writeError(w, http.StatusInternalServerError, "Could not update the game.")
 		return
 	}
 	if s.currentGame().ID == c.ID {
@@ -300,13 +300,13 @@ func (s *APIServer) changedSaves(w http.ResponseWriter, c cart) {
 func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.cartByID(r.PathValue("id"))
 	if !ok {
-		writeError(w, http.StatusNotFound, "no such game")
+		writeError(w, http.StatusNotFound, "That game is no longer in the Library.")
 		return
 	}
 	switch r.PathValue("action") {
 	case "reset":
 		if err := shelve(c, append([]string{c.save, c.save + ".bak"}, stateNames()...)...); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not move the saves aside")
+			writeError(w, http.StatusInternalServerError, "Could not back up the current save.")
 			return
 		}
 		s.changedSaves(w, c)
@@ -314,7 +314,7 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		n, err := strconv.Atoi(r.URL.Query().Get("state"))
 		from := fmt.Sprintf("state-%d.state", n)
 		if err != nil || n < 1 || n > stateBackups || fileInfo(c.dir, from) == nil {
-			writeError(w, http.StatusNotFound, "no such resume point")
+			writeError(w, http.StatusNotFound, "That resume point is gone.")
 			return
 		}
 		data, err := os.ReadFile(filepath.Join(c.dir, from))
@@ -325,7 +325,7 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 			err = writeFileAtomic(filepath.Join(c.dir, "state.state"), data)
 		}
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "could not restore it")
+			writeError(w, http.StatusInternalServerError, "Could not go back to that resume point.")
 			return
 		}
 		s.changedSaves(w, c)
@@ -333,15 +333,15 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		limit := cartByteLimit(c, "save")
 		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 		if err != nil || len(data) == 0 {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("save file must be 1 byte to %d MiB", limit>>20))
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("Save files can be up to %d MB.", limit>>20))
 			return
 		}
 		if err := shelve(c, append([]string{c.save}, stateNames()...)...); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not move the old save aside")
+			writeError(w, http.StatusInternalServerError, "Could not back up the current save.")
 			return
 		}
 		if err := writeFileAtomic(filepath.Join(c.dir, c.save), data); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not write the save")
+			writeError(w, http.StatusInternalServerError, "Could not save it.")
 			return
 		}
 		s.changedSaves(w, c)
@@ -352,12 +352,12 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 	case "remove":
 		removed := filepath.Join(s.romDir(), ".removed")
 		if err := os.MkdirAll(removed, 0o755); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not remove it")
+			writeError(w, http.StatusInternalServerError, "Could not remove the game.")
 			return
 		}
 		dest := filepath.Join(removed, c.ID+" "+time.Now().Format("2006-01-02 150405"))
 		if err := os.Rename(c.dir, dest); err != nil {
-			writeError(w, http.StatusInternalServerError, "could not remove it (is a file open?)")
+			writeError(w, http.StatusInternalServerError, "Could not remove the game. Is one of its files open?")
 			return
 		}
 		if s.currentGame().ID == c.ID {
@@ -436,7 +436,7 @@ func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 		}
 	}
 	if mover.ID == "" {
-		writeError(w, http.StatusNotFound, "no such game")
+		writeError(w, http.StatusNotFound, "That game is no longer in the Library.")
 		return
 	}
 	if len(order) >= shelfSlots {
@@ -452,7 +452,7 @@ func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
 		meta := cartMeta(game.dir)
 		meta["shelf"], meta["tape"] = true, i+1
 		if writeCartMeta(game.dir, meta) != nil {
-			writeError(w, http.StatusInternalServerError, "could not update the shelf")
+			writeError(w, http.StatusInternalServerError, "Could not update the shelf.")
 			return
 		}
 	}
@@ -479,7 +479,7 @@ func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	// Put on, it goes on the end of the shelf; taken off, the games after it close up.
 	delete(meta, "tape")
 	if err := writeCartMeta(c.dir, meta); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not update the game")
+		writeError(w, http.StatusInternalServerError, "Could not update the game.")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

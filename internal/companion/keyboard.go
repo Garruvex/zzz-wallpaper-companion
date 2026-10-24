@@ -110,7 +110,7 @@ func (s *APIServer) saveKeys(w http.ResponseWriter, r *http.Request) {
 	path := filepath.Join(s.dataDir, keysFile)
 	if body.Keys == nil {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-			writeError(w, http.StatusInternalServerError, "could not reset the keys")
+			writeError(w, http.StatusInternalServerError, "Could not reset the keys.")
 			return
 		}
 		gamepad.SetKeyBindings(nil)
@@ -124,7 +124,7 @@ func (s *APIServer) saveKeys(w http.ResponseWriter, r *http.Request) {
 	}
 	data, _ := json.MarshalIndent(keysByName(bindings), "", "  ")
 	if err := writeFileAtomic(path, data); err != nil {
-		writeError(w, http.StatusInternalServerError, "could not save the keys")
+		writeError(w, http.StatusInternalServerError, "Could not save the keys.")
 		return
 	}
 	gamepad.SetKeyBindings(bindings)
