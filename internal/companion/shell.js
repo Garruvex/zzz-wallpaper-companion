@@ -5,7 +5,7 @@
   const groups = [
     { label: 'General', path: '/settings', paths: ['/settings'], rows: true, sections: [['startup', 'Startup & Updates'], ['youtube', 'YouTube Playback'], ['connection', 'Connection']] },
     { label: 'Calendar', path: '/dates', paths: ['/dates', '/holidays'], tabs: [['/dates', 'Custom Date'], ['/holidays', 'Holiday']] },
-    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller'], ['keyboard', 'Keyboard']] },
+    { label: 'Game', path: '/games', paths: ['/games'], sections: [['library', 'Library'], ['add', 'Add Games'], ['controller', 'Controller'], ['keyboard', 'Keyboard'], ['storage', 'Storage']] },
   ];
   const groupOf = path => groups.find(group => group.paths.includes(path));
   const isTab = path => Boolean(groupOf(path));
@@ -52,9 +52,11 @@
       form.querySelector('.section')?.remove();
     }
     if (path === '/games') {
-      // Four sections: the library, adding games (the drop zone and its notes), the controller and the keyboard.
+      // Five sections: the library, adding games (the drop zone and its notes), the controller, the keyboard and storage.
       const make = key => { const section = main.ownerDocument.createElement('section'); section.dataset.section = key; return section; };
-      const library = make('library'), add = make('add'), controller = make('controller'), keyboard = make('keyboard');
+      const library = make('library'), add = make('add'), controller = make('controller'), keyboard = make('keyboard'), storage = make('storage');
+      main.querySelector('#cache').before(storage);
+      storage.append(companionCard(main.ownerDocument, 'Storage', { body: [main.querySelector('#cache')] }));
       main.querySelector('#drop').before(library, add);
       main.querySelector('#pad').before(controller);
       controller.append(companionCard(main.ownerDocument, 'Controller', { body: [main.querySelector('#pad')] }));

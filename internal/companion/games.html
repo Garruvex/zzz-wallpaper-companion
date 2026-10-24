@@ -16,6 +16,9 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .title b{display:block;overflow-wrap:anywhere}.title small{color:var(--muted)}
 .saves{margin:12px 0 0;padding:14px;border-radius:6px;background:#181b1d;display:grid;gap:10px}
 .saves .line{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#cache .line{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 4px 10px}
+#cache .line small{flex:1 1 auto;line-height:1.5}
+#cache button.zzz-chipbtn{flex:0 0 auto;padding:4px 14px;font-size:12px;border-width:2px;white-space:nowrap}
 .saves small{color:var(--muted)}
 .empty{color:var(--muted);padding:18px 0}
 button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent)}
@@ -33,6 +36,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 <input id="importFile" type="file" hidden>
 <div id="pad" aria-label="Controller"></div>
 <div id="keys" aria-label="Keyboard"></div>
+<div id="cache" aria-label="Storage"></div>
 <script>
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
@@ -354,6 +358,31 @@ document.addEventListener('keydown', event => {
 
 companionKeys().then(state => { keys = state; renderKeys(); }).catch(() => say('Could not read the keys.', 'error'));
 renderKeys();
+
+// The Storage section: the companion never deletes a game on its own, so removed games (with their
+// saves) pile up in roms/.removed, and the weather map keeps the tiles it has shown. One button
+// empties both, after saying what goes.
+const bytes = n => n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(n < 10485760 ? 1 : 0)} MB`;
+async function renderCache() {
+  const box = $('cache');
+  let use;
+  try { use = await companionCacheUse(); } catch { box.replaceChildren(el('p', { className: 'empty', textContent: 'Could not read the storage use.' })); return; }
+  const games = n => n === 1 ? '1 removed game' : `${n} removed games`;
+  const nothing = !use.removedGames && !use.removedBytes && !use.mapBytes;
+  const clear = el('button', { type: 'button', className: 'zzz-chipbtn danger', textContent: 'Clear cache', disabled: nothing, onclick: async () => {
+    const now = await companionCacheUse();
+    if (!await companionConfirm({
+      title: 'Clear the cache for good?',
+      message: `This deletes ${games(now.removedGames)} and their saves (${bytes(now.removedBytes)}), plus the weather map's saved tiles (${bytes(now.mapBytes)}). It cannot be undone. Games in your Library, their saves and their backups are not touched. The map tiles download again when the weather map needs them.`,
+      confirmLabel: 'Clear' })) return;
+    try { await companionClearCache(); say('Cache cleared.'); } catch (error) { say(error.message, 'error'); }
+    renderCache();
+  } });
+  box.replaceChildren(el('div', { className: 'line' },
+    el('small', { textContent: nothing ? 'Nothing to clear.' : `${games(use.removedGames)} and their saves (${bytes(use.removedBytes)}), plus the weather map's saved tiles (${bytes(use.mapBytes)}).` }),
+    clear));
+}
+renderCache();
 
 const padPoll = setInterval(padTick, 100);
 visit.signal.addEventListener('abort', () => clearInterval(padPoll));

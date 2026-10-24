@@ -53,6 +53,15 @@ window.companionConfirm = async options => {
   return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
 };
 
+// The Storage section: what the cache holds, and emptying it (removed games with their saves, map tiles).
+window.companionCacheUse = async () => (await fetch('/games/cache', { cache: 'no-store' })).json();
+window.companionClearCache = async () => {
+  const response = await fetch('/games/cache/clear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }) });
+  const body = await response.json();
+  if (!response.ok) throw Error(body.error || 'Could not clear the cache.');
+  return body;
+};
+
 // The pad as the game station sees it, for the Controller section: { connected, buttons, axes }.
 window.companionPadState = async signal => (await fetch('/controller/state', { cache: 'no-store', signal })).json();
 
