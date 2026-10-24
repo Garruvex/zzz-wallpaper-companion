@@ -1,8 +1,12 @@
 # Companion API contract
 
+Contract 1.1.0 adds experimental PS1/PSP image imports and input v2 fields without changing protocol 2 or routes. The legacy button mask keeps stick/trigger aliases; `digitalButtons`, `axes` (LX/LY/RX/RY, signed -32767..32767, right/down positive) and `inputVersion: 2` let the wallpaper select analog input without duplicating D-pad presses. PSP `.zzzpsp` saves are opaque bytes; EmulatorJS paths and folder serialization belong to the wallpaper adapter. ROM uploads stream to disk (PS1/PSP up to 2 GiB, existing cartridges 64 MiB). PS1/PSP state writes allow 256 MiB; PSP save bundles allow 64 MiB. The Games page describes supported formats and experimental status.
+
+Opt-in PSP/PS1 integration: set COMPANION_EMULATOR_BROWSER=1, COMPANION_WALLPAPER_PATH, EMULATOR_TEST_SYSTEM and EMULATOR_TEST_ROM (an isolated local copy), plus SMOKE_PLAYWRIGHT/SMOKE_BROWSER as needed; run `go test ./internal/companion -run TestEmulatorBrowserIntegration -count=1 -v`. It starts the real API against temporary data, invokes the wallpaper's browser harness, and checks import, catalog, game loading, snapshots, save/unload/reload and PSP directory persistence. It never touches the real library. Wallpaper Engine host and physical controller checks remain manual.
+
 openapi.json is the canonical OpenAPI 3.0.3 document. api/contract.go embeds it directly; build and serving do not generate or download a second copy. The contract baseline includes games/input from fix/game-station-stability-ui (2bdc079). See ../docs/COMPANION-API-INVENTORY.md for callers and preservation requirements.
 
-The normal Companion listener serves /openapi.json and /docs inside the existing local-only/CORS middleware. Port-conflict recovery serves settings only. Swagger UI uses the current listening origin even if saved settings already contain a different port awaiting restart.
+The API Explorer is for development only: /openapi.json and /docs (Swagger UI) are built in only with `-tags apidocs` (`./build.ps1 -ApiDocs`, or `go test -tags apidocs ./...`). Release builds leave the explorer, its Swagger assets and its General-tab link out. With the tag, the normal Companion listener serves /openapi.json and /docs inside the existing local-only/CORS middleware. Port-conflict recovery serves settings only. Swagger UI uses the current listening origin even if saved settings already contain a different port awaiting restart.
 
 ## Checks
 
@@ -15,7 +19,7 @@ PowerShell:
     $env:COMPANION_DOCS_BROWSER = '1'
     $env:SMOKE_PLAYWRIGHT = '<absolute path to playwright package>'
     $env:SMOKE_BROWSER = '<absolute browser executable path>'
-    go test ./internal/companion -run TestDocsBrowser -count=1 -v
+    go test -tags apidocs ./internal/companion -run TestDocsBrowser -count=1 -v
 
 DOCS_NODE optionally selects Node; DOCS_SCREENSHOT optionally saves a screenshot. The test starts the real handler on a random loopback port with temporary settings/data, renders all 29 operations, runs health, blocks all external browser requests, and exercises the action/media guards. It does not launch the tray app or install media dependencies.
 

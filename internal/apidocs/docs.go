@@ -1,4 +1,7 @@
+//go:build apidocs
+
 // Package apidocs serves bundled documentation without network dependencies.
+// It is only built with -tags apidocs, so release builds leave the explorer out.
 package apidocs
 
 import (
@@ -10,6 +13,9 @@ import (
 
 //go:embed assets/*
 var assets embed.FS
+
+// Enabled reports whether this build serves the explorer.
+const Enabled = true
 
 func Routes() map[string]http.Handler {
 	return map[string]http.Handler{

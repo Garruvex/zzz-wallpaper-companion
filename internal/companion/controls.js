@@ -70,38 +70,72 @@
     const control={sync,close,wrapper,popup,trigger};adapters.push(control);
     new MutationObserver(sync).observe(input,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','selected','checked'],characterData:true});sync();
   }
-  document.querySelectorAll('select,input[type=checkbox]').forEach(dropdown);
+  // A checkbox is the game's ON / OFF switch (the one on the shelf): a button that follows the hidden
+  // checkbox, so the pages keep reading and setting input.checked as before.
+  function toggle(input){
+    const label=input.closest('label');
+    if(label && input.parentElement!==label)label.append(input);
+    const button=document.createElement('button');button.type='button';button.className='zzz-switch';
+    button.setAttribute('role','switch');button.setAttribute('aria-label',rowName(input));
+    const text=document.createElement('span');button.append(text);
+    input.hidden=true;input.after(button);
+    const sync=()=>{button.classList.toggle('is-on',input.checked);button.setAttribute('aria-checked',String(input.checked));text.textContent=input.checked?'ON':'OFF';button.disabled=input.disabled;};
+    button.addEventListener('click',()=>{
+      if(input.disabled)return;
+      input.checked=!input.checked;
+      input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));sync();
+    });
+    input.addEventListener('change',sync);
+    new MutationObserver(sync).observe(input,{attributes:true,attributeFilter:['disabled','checked']});
+    adapters.push({sync,close(){},wrapper:button,popup:button,trigger:button});sync();
+  }
   document.addEventListener('pointerdown',event=>{if(opened&&!opened.wrapper.contains(event.target)&&!opened.popup.contains(event.target))opened.close();});
   document.addEventListener('change',()=>queueMicrotask(syncAll));
   document.addEventListener('reset',()=>queueMicrotask(syncAll));
   document.addEventListener('zzz:sync',syncAll);
   addEventListener('resize',()=>opened?.close());addEventListener('scroll',event=>{if(opened&&event.target!==opened.popup)opened.close();},true);
 
-  // Reuse the approved wallpaper pill component, including its cap geometry.
-  const icons={save:'<svg viewBox="0 0 22 20" aria-hidden="true"><path d="M2.5 10.5L8.5 16.5L22.15 0.35" stroke="#000" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',reset:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9a7 7 0 1 1 1 7M4 3v6h6" stroke="#000" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg>'};
-  function pill(label,kind,action){
-    const node=document.createElement('div');node.className=`zzz-pill ${kind==='save'?'is-confirm':'is-reset'}`;node.setAttribute('role','button');node.tabIndex=0;
-    node.innerHTML=`<span class="zzz-pill-cap"><span class="zzz-pill-disc">${icons[kind]}</span></span><span class="zzz-pill-label"></span>`;
-    node.querySelector('.zzz-pill-label').textContent=label;
-    const invoke=()=>{if(node.getAttribute('aria-disabled')!=='true')action();};node.addEventListener('click',invoke);node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();invoke();}});return node;
+  // The pills come from the shared UI kit (ui/zzz, copied from the wallpaper), loaded once.
+  const kit=import('/ui/zzz/zzz_ui.js');
+  let generation=0;
+  // A pill that does nothing while aria-disabled is "true".
+  function pill(createPill,label,kind,action){
+    const node=createPill(document,kind,label,()=>{if(node.getAttribute('aria-disabled')!=='true')action();});
+    return node;
   }
+  const follow=(node,native)=>{const set=()=>{node.setAttribute('aria-disabled',String(native.disabled));node.classList.toggle('is-disabled',native.disabled);};new MutationObserver(set).observe(native,{attributes:true,attributeFilter:['disabled']});set();};
+  // The shell runs enhance() for each tab it shows and teardown() when it leaves one.
+  async function enhance(){
+  const visit=++generation;
+  document.querySelectorAll('select').forEach(dropdown);
+  document.querySelectorAll('input[type=checkbox]').forEach(toggle);
+  const {createPill}=await kit;
+  if(visit!==generation)return;
   for(const form of document.querySelectorAll('#settings,#form,#dateForm')){
     const native=form.querySelector('button[type=submit],button:not([type])');if(!native)continue;
     const dock=document.createElement('footer');dock.className='settings-dock';dock.setAttribute('aria-label','Settings actions');
     const actions=document.createElement('div');actions.className='settings-actions';dock.append(actions);document.body.append(dock);document.body.classList.add('has-settings-dock');
     const status=document.getElementById('status');
-    const save=pill('Save','save',()=>form.requestSubmit(native));native.hidden=true;actions.append(save);
-    const disabled=()=>save.setAttribute('aria-disabled',String(native.disabled));new MutationObserver(disabled).observe(native,{attributes:true,attributeFilter:['disabled']});disabled();
+    const save=pill(createPill,'Save','confirm',()=>form.requestSubmit(native));native.hidden=true;actions.append(save);follow(save,native);
     if(form.id==='settings'){
       const defaults=companionBuildInfo.defaults;
-      const reset=pill('Reset','reset',()=>{
+      const reset=pill(createPill,'Reset','reset',()=>{
         const mapping={port:'port',height:'maxHeight',transcodeHeight:'transcodeHeight',channel:'updateChannel',startup:'launchOnStartup',autoUpdate:'autoUpdate'};
         for(const [id,key] of Object.entries(mapping)){const input=document.getElementById(id);if(input.type==='checkbox')input.checked=defaults[key];else input.value=defaults[key];}
-        document.dispatchEvent(new Event('zzz:sync'));status.textContent='Defaults restored. Press Save to apply.';
-      });actions.prepend(reset);
-      const busy=()=>reset.setAttribute('aria-disabled',String(native.disabled));new MutationObserver(busy).observe(native,{attributes:true,attributeFilter:['disabled']});busy();
+        document.dispatchEvent(new Event('zzz:sync'));companionSay('Defaults restored. Press Save to apply.');
+      });actions.prepend(reset);follow(reset,native);
     }
     if(status){status.setAttribute('role','status');dock.prepend(status);}
     const version=document.querySelector('.shell-footer');if(version)dock.append(version);
   }
+  }
+  // The version footer goes back to the page before the dock that holds it is removed.
+  function teardown(footer){
+    generation++;opened?.close();adapters.length=0;
+    if(footer)document.body.append(footer);
+    document.querySelectorAll('.zzz-options,.settings-dock').forEach(node=>node.remove());
+    document.body.classList.remove('has-settings-dock');
+  }
+  window.companionControls={enhance,teardown};
+  enhance();
 })();

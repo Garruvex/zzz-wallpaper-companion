@@ -289,3 +289,30 @@ func TestReconnectWaitsForOldKeyboardShutdown(t *testing.T) {
 	close(kb.release)
 	cancelNext()
 }
+
+func TestIdleWatcherOnlySeesTheControllerOutsidePlayMode(t *testing.T) {
+	source := &fakeSource{kb: &fakeKeyboard{keys: 1 << ButtonA}, focused: true, pad: 1 << ButtonUp}
+	hub := NewHub(source)
+	var mu sync.Mutex
+	var seen []uint32
+	hub.WatchIdle(func(buttons uint32) { mu.Lock(); seen = append(seen, buttons); mu.Unlock() })
+	_, cancel := hub.Subscribe()
+	defer cancel()
+	count := func() int { mu.Lock(); defer mu.Unlock(); return len(seen) }
+	deadline := time.Now().Add(time.Second)
+	for count() == 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	mu.Lock()
+	if len(seen) == 0 || seen[0] != 1<<ButtonUp {
+		t.Fatalf("idle watcher saw %v, want the controller only", seen)
+	}
+	mu.Unlock()
+	hub.SetPlayMode(true, CaptureAlways)
+	time.Sleep(30 * time.Millisecond)
+	before := count()
+	time.Sleep(30 * time.Millisecond)
+	if count() != before {
+		t.Fatal("idle watcher kept getting input in play mode")
+	}
+}

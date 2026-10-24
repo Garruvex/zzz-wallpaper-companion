@@ -3,7 +3,9 @@ param(
     [string]$BuildNumber = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss"),
     [ValidateSet("amd64", "arm64")]
     [string[]]$Architecture = @("amd64", "arm64"),
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    # Local builds only: include the API Explorer (/docs, Swagger UI). Releases leave it out.
+    [switch]$ApiDocs
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,7 +40,8 @@ try {
     foreach ($targetArchitecture in $Architecture) {
         $env:GOARCH = $targetArchitecture
         $outputPath = Join-Path $outputDirectory "zzz-wallpaper-companion-$safeVersion-build-$safeBuildNumber-windows-$targetArchitecture.exe"
-        & go build -trimpath -ldflags $linkerFlags -o $outputPath ./cmd/companion
+        $buildTags = if ($ApiDocs) { @("-tags", "apidocs") } else { @() }
+        & go build -trimpath @buildTags -ldflags $linkerFlags -o $outputPath ./cmd/companion
         if ($LASTEXITCODE -ne 0) { throw "Go build failed for $targetArchitecture." }
 
         $artifact = Get-Item -LiteralPath $outputPath

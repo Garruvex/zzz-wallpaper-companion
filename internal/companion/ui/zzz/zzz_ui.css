@@ -1,0 +1,613 @@
+/* Shared ZZZ-style UI: one set of tokens, one pulsing selection glow, and the
+   components built from them (pill button, info card, modal, toast).
+   The pill button is the approved template in docs/ui-templates/
+   confirm-cancel-buttons.html; its values are unchanged, scaled by --zzz-u so
+   the wallpaper's 1080p design size follows the screen height.
+   This file and script/ui/zzz_ui.js are the shared UI kit: tools/export-ui-kit.cjs
+   copies them into the companion app, pinned to a commit. Keep styles that only
+   one part of the wallpaper uses in that part's own stylesheet. */
+:root {
+  --zzz-lime: #d8f51b;
+  --zzz-ink: #0c0d0f;
+  --zzz-white: #f4f4ee;
+  --zzz-green: #a4ff3c; /* the glow's second colour; the first is --zzz-lime */
+  --zzz-lime-rgb: 216, 245, 27;
+  --zzz-green-rgb: 164, 255, 60;
+  --zzz-yes: #00e63a;
+  --zzz-no: #ff1a1a;
+  --zzz-edge: #050506;
+  --zzz-rim: #4a4c52;
+  --zzz-card: #101113;
+  --zzz-card-line: #2a2d33;
+  --zzz-muted: #a3a59c;
+  --zzz-glow-time: 2.4s;
+  /* State timing and border (approved in docs/ui-templates, States page). Expand
+     700ms, retract 400ms and rest 500ms make the 3.2s pulse cycle. */
+  --zzz-pulse-time: 3.2s;
+  --zzz-bounce: 1.7;
+  --zzz-flash-time: 0.08s; /* one blink, on + off */
+  --zzz-flash-count: 3;
+  --zzz-gap: 0px;
+  --zzz-ring: calc(3 * var(--zzz-u));
+  --zzz-blur: calc(16 * var(--zzz-u));
+  --zzz-spread: calc(3 * var(--zzz-u));
+  --zzz-glow-alpha: 0.55;
+  --zzz-grow: calc(4 * var(--zzz-u));
+  --zzz-grow-blur: calc(8 * var(--zzz-u));
+  --zzz-sway: 18deg;
+  --zzz-sway-time: 3.2s;
+  --zzz-u: calc(100vh / 1080);
+  --zzz-font-title: "Amboy Black", "Arial Black", Impact, sans-serif; /* platform titles (the game's lettering is custom; this is the closest bundled face) */
+  --zzz-font: "Arial Black", Impact, "Microsoft JhengHei", "Microsoft YaHei", sans-serif;
+}
+
+/* The selection glow breathes between the two colours. */
+@keyframes zzz-glow-ring {
+  0%, 100% { box-shadow: 0 0 0 calc(2 * var(--zzz-u)) var(--zzz-lime), 0 0 calc(16 * var(--zzz-u)) calc(3 * var(--zzz-u)) rgba(var(--zzz-lime-rgb), 0.65); }
+  50% { box-shadow: 0 0 0 calc(2 * var(--zzz-u)) var(--zzz-green), 0 0 calc(20 * var(--zzz-u)) calc(5 * var(--zzz-u)) rgba(var(--zzz-green-rgb), 0.7); }
+}
+@keyframes zzz-glow-fill {
+  0%, 100% { background-color: var(--zzz-lime); }
+  50% { background-color: var(--zzz-green); }
+}
+@keyframes zzz-glow-text {
+  0%, 100% { color: var(--zzz-lime); text-shadow: 0 0 calc(8 * var(--zzz-u)) rgba(var(--zzz-lime-rgb), 0.8); }
+  50% { color: var(--zzz-green); text-shadow: 0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-green-rgb), 0.85); }
+}
+.zzz-glow-ring { animation: zzz-glow-ring var(--zzz-glow-time) ease-in-out infinite; }
+.zzz-glow-fill { animation: zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite; }
+.zzz-glow-text { animation: zzz-glow-text var(--zzz-glow-time) ease-in-out infinite; }
+
+/* Selection states, for anything with .zzz-sel. Two colours only, and nothing
+   ever moves or scales: only the border and fill change.
+     highlight (keyboard focus) the border breathes lime <-> green. No mouse hover:
+                               the game shows nothing on hover
+     selected  (.is-selected)  the same border, expanding slowly and retracting
+                               with a small bounce; with keyboard focus it only breathes
+     pressed   (:active)       the border shape fills in solid, text and icons turn black
+     release   (.is-flash)     the filled shape blinks on and off (see zzz_ui.js)
+   An element that is not black with white text at rest sets --zzz-rest-bg,
+   --zzz-rest-image, --zzz-rest-color, --zzz-rest-tshadow and --zzz-rest-box so the
+   release blink can return to it. --zzz-gap, --zzz-ring, --zzz-blur and
+   --zzz-spread size the border per element. */
+@keyframes zzz-breathe {
+  0%, 100% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); }
+  50% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-green), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); }
+}
+@keyframes zzz-pulse {
+  0% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1); }
+  21.875% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring) + var(--zzz-grow)) var(--zzz-lime), 0 0 calc(var(--zzz-blur) + var(--zzz-grow-blur)) calc(var(--zzz-spread) + var(--zzz-grow)) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.45, 0, 0.2, var(--zzz-bounce)); }
+  34.375% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: ease-in-out; }
+  50% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-green), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1); }
+  71.875% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring) + var(--zzz-grow)) var(--zzz-green), 0 0 calc(var(--zzz-blur) + var(--zzz-grow-blur)) calc(var(--zzz-spread) + var(--zzz-grow)) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.45, 0, 0.2, var(--zzz-bounce)); }
+  84.375% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-green), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: ease-in-out; }
+  100% { box-shadow: 0 0 0 var(--zzz-gap) var(--zzz-edge), 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); }
+}
+@keyframes zzz-press {
+  0% { background-color: var(--zzz-lime); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1); }
+  21.875% { background-color: var(--zzz-lime); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring) + var(--zzz-grow)) var(--zzz-lime), 0 0 calc(var(--zzz-blur) + var(--zzz-grow-blur)) calc(var(--zzz-spread) + var(--zzz-grow)) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.45, 0, 0.2, var(--zzz-bounce)); }
+  34.375% { background-color: var(--zzz-lime); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); animation-timing-function: ease-in-out; }
+  50% { background-color: var(--zzz-green); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-green), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1); }
+  71.875% { background-color: var(--zzz-green); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring) + var(--zzz-grow)) var(--zzz-green), 0 0 calc(var(--zzz-blur) + var(--zzz-grow-blur)) calc(var(--zzz-spread) + var(--zzz-grow)) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: cubic-bezier(0.45, 0, 0.2, var(--zzz-bounce)); }
+  84.375% { background-color: var(--zzz-green); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-green), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-green-rgb), var(--zzz-glow-alpha)); animation-timing-function: ease-in-out; }
+  100% { background-color: var(--zzz-lime); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); }
+}
+@keyframes zzz-flash {
+  0% { background-color: var(--zzz-lime); background-image: none; color: var(--zzz-ink); text-shadow: none; box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime), 0 0 var(--zzz-blur) var(--zzz-spread) rgba(var(--zzz-lime-rgb), var(--zzz-glow-alpha)); }
+  50%, 100% { background-color: var(--zzz-rest-bg, var(--zzz-card)); background-image: var(--zzz-rest-image, none); color: var(--zzz-rest-color, var(--zzz-white)); text-shadow: var(--zzz-rest-tshadow, none); box-shadow: var(--zzz-rest-box, none); }
+}
+.zzz-sel { cursor: pointer; user-select: none; }
+.zzz-sel:focus-visible { outline: none; animation: zzz-breathe var(--zzz-glow-time) ease-in-out infinite; }
+.zzz-sel.is-selected { animation: zzz-pulse var(--zzz-pulse-time) ease-in-out infinite; }
+.zzz-sel.is-selected:focus-visible { animation: zzz-breathe var(--zzz-glow-time) ease-in-out infinite; }
+.zzz-sel:active, .zzz-sel.is-pressed, .zzz-sel.is-selected:active, .zzz-sel.is-selected.is-pressed { background-image: none; color: var(--zzz-ink); text-shadow: none; animation: zzz-press var(--zzz-pulse-time) ease-in-out infinite; }
+.zzz-sel.is-flash, .zzz-sel.is-selected.is-flash:focus-visible { animation: zzz-flash var(--zzz-flash-time) steps(1, end) var(--zzz-flash-count); }
+.zzz-sel.is-disabled { opacity: 0.4; pointer-events: none; }
+
+/* Pill button (Confirm / Cancel). Not a <button>, so no host style can square it off.
+   Outline, size and colours are the approved template; its check and cross are
+   cut out of the coloured disc. Selection states come from .zzz-sel above. */
+.zzz-pill {
+  --zzz-gap: calc(3 * var(--zzz-u));
+  --zzz-ring: calc(3 * var(--zzz-u));
+  --zzz-blur: calc(20 * var(--zzz-u));
+  --zzz-spread: calc(8 * var(--zzz-u));
+  --zzz-rest-bg: #0b0c0e;
+  --zzz-rest-image: repeating-linear-gradient(45deg, #0e0f11 0 2px, #08090a 2px 4px);
+  --zzz-rest-color: #f6f6f2;
+  --zzz-rest-tshadow: 1px 2px 0 #000;
+  --zzz-rest-box: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge);
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: calc(300 * var(--zzz-u));
+  height: calc(68 * var(--zzz-u));
+  box-sizing: border-box;
+  border-radius: calc(34 * var(--zzz-u));
+  color: #f6f6f2;
+  font-family: var(--zzz-font);
+  font-style: italic;
+  font-weight: 900;
+  font-size: calc(34 * var(--zzz-u));
+  background: repeating-linear-gradient(45deg, #0e0f11 0 2px, #08090a 2px 4px);
+  box-shadow: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge);
+  text-shadow: 1px 2px 0 #000;
+}
+.zzz-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: calc(34 * var(--zzz-u));
+  box-shadow: inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim);
+  pointer-events: none;
+  z-index: 2;
+}
+.zzz-pill-cap {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 calc(68 * var(--zzz-u));
+  width: calc(68 * var(--zzz-u));
+  height: calc(68 * var(--zzz-u));
+  border-radius: 50%;
+  background: var(--zzz-edge);
+  box-shadow: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge), inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.zzz-pill.is-confirm { --zzz-disc: var(--zzz-yes); }
+.zzz-pill.is-cancel, .zzz-pill.is-eject { --zzz-disc: var(--zzz-no); }
+.zzz-pill.is-save { --zzz-disc: #00a8ff; }
+.zzz-pill.is-load { --zzz-disc: #ff6a00; }
+.zzz-pill.is-new { --zzz-disc: #8a5cff; }
+.zzz-pill.is-reset { --zzz-disc: #ff7a00; }
+/* The disc is an svg with the icon cut out of it, so whatever is behind the cap shows through.
+   styles.css gives every svg position: absolute and 100% size; set ours explicitly. */
+.zzz-pill-disc { position: static; display: block; flex: none; width: calc(38 * var(--zzz-u)); height: calc(38 * var(--zzz-u)); overflow: visible; color: var(--zzz-disc); }
+.zzz-pill-label { flex: 1; padding-right: calc(34 * var(--zzz-u)); text-align: center; line-height: 1; }
+/* Pressed: body, border and cap are one filled shape, with the disc black. */
+.zzz-pill:active::before, .zzz-pill.is-pressed::before { box-shadow: none; }
+.zzz-pill:active .zzz-pill-cap, .zzz-pill.is-pressed .zzz-pill-cap { box-shadow: none; background-color: inherit; }
+.zzz-pill:active .zzz-pill-disc, .zzz-pill.is-pressed .zzz-pill-disc { color: var(--zzz-ink); }
+/* Release: the cap, rim and disc blink with the body. */
+.zzz-pill.is-flash .zzz-pill-cap { animation: zzz-pill-flash-cap var(--zzz-flash-time) steps(1, end) var(--zzz-flash-count); }
+.zzz-pill.is-flash::before { animation: zzz-pill-flash-rim var(--zzz-flash-time) steps(1, end) var(--zzz-flash-count); }
+.zzz-pill.is-flash .zzz-pill-disc { animation: zzz-pill-flash-disc var(--zzz-flash-time) steps(1, end) var(--zzz-flash-count); }
+@keyframes zzz-pill-flash-cap {
+  0% { background-color: var(--zzz-lime); box-shadow: none; }
+  50%, 100% { background-color: var(--zzz-edge); box-shadow: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge), inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim); }
+}
+@keyframes zzz-pill-flash-rim {
+  0% { box-shadow: none; }
+  50%, 100% { box-shadow: inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim); }
+}
+@keyframes zzz-pill-flash-disc {
+  0% { color: var(--zzz-ink); }
+  50%, 100% { color: var(--zzz-disc); }
+}
+
+/* Round button: the pill's cap on its own (the in-game help button). Same states as
+   the pill. A white ring and a tilted white mark; pressed, the whole button fills
+   and the drawing turns black. */
+.zzz-round {
+  --zzz-gap: calc(3 * var(--zzz-u));
+  --zzz-ring: calc(3 * var(--zzz-u));
+  --zzz-blur: calc(16 * var(--zzz-u));
+  --zzz-spread: calc(6 * var(--zzz-u));
+  --zzz-rest-bg: #0b0c0e;
+  --zzz-rest-image: repeating-linear-gradient(45deg, #0e0f11 0 2px, #08090a 2px 4px);
+  --zzz-rest-color: var(--zzz-white);
+  --zzz-rest-box: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(64 * var(--zzz-u));
+  height: calc(64 * var(--zzz-u));
+  box-sizing: border-box;
+  border-radius: 50%;
+  color: var(--zzz-white);
+  background: repeating-linear-gradient(45deg, #0e0f11 0 2px, #08090a 2px 4px);
+  box-shadow: 0 0 0 calc(3 * var(--zzz-u)) var(--zzz-edge);
+}
+.zzz-round[hidden] { display: none; }
+.zzz-round::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim);
+  pointer-events: none;
+}
+/* styles.css gives every svg position: absolute and 100% size; set ours explicitly. */
+.zzz-round-disc { position: static; display: block; width: calc(36 * var(--zzz-u)); height: calc(36 * var(--zzz-u)); overflow: visible; color: inherit; }
+.zzz-round-mark { transform-origin: 19px 19px; transform: rotate(calc(-1 * var(--zzz-sway))); animation: zzz-round-sway var(--zzz-sway-time) ease-in-out infinite; }
+/* The mark swings clockwise, then anticlockwise, about the ring's centre. */
+@keyframes zzz-round-sway { 50% { transform: rotate(var(--zzz-sway)); } }
+.zzz-round:active::before, .zzz-round.is-pressed::before { box-shadow: none; }
+.zzz-round.is-flash::before { animation: zzz-round-flash-rim var(--zzz-flash-time) steps(1, end) var(--zzz-flash-count); }
+@keyframes zzz-round-flash-rim { 0% { box-shadow: none; } 50%, 100% { box-shadow: inset 0 0 0 calc(5 * var(--zzz-u)) var(--zzz-rim); } }
+
+/* Info card: a number chip and a black card, like the game's label tags. */
+.zzz-card {
+  background: var(--zzz-card);
+  color: var(--zzz-white);
+  font-family: var(--zzz-font);
+  box-shadow: calc(4 * var(--zzz-u)) calc(4 * var(--zzz-u)) 0 #000a;
+}
+.zzz-card-row { display: flex; align-items: stretch; }
+.zzz-card-chip {
+  display: flex;
+  align-items: center;
+  padding: 0 calc(10 * var(--zzz-u));
+  background: #d8d8d2;
+  color: var(--zzz-ink);
+  font-style: italic;
+  font-size: calc(22 * var(--zzz-u));
+}
+.zzz-card-body { flex: 1; min-width: 0; padding: calc(6 * var(--zzz-u)) calc(14 * var(--zzz-u)) calc(8 * var(--zzz-u)); }
+.zzz-card-title { font-style: italic; font-size: calc(21 * var(--zzz-u)); line-height: 1.1; overflow-wrap: anywhere; }
+.zzz-card-sub { margin-top: calc(2 * var(--zzz-u)); font: calc(12 * var(--zzz-u))/1.2 "Segoe UI", sans-serif; letter-spacing: 0.08em; color: var(--zzz-muted); }
+.zzz-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--zzz-u));
+  padding: calc(8 * var(--zzz-u)) calc(12 * var(--zzz-u)) calc(10 * var(--zzz-u));
+  border-top: 1px solid var(--zzz-card-line);
+}
+.zzz-card-hint { font: calc(12 * var(--zzz-u))/1 "Segoe UI", sans-serif; font-weight: 700; letter-spacing: 0.08em; }
+.zzz-card-head {
+  padding: calc(3 * var(--zzz-u)) calc(12 * var(--zzz-u));
+  background: var(--zzz-lime);
+  color: var(--zzz-ink);
+  font-style: italic;
+  font-size: calc(15 * var(--zzz-u));
+  letter-spacing: 0.14em;
+}
+.zzz-card-actions { display: flex; flex-wrap: wrap; gap: calc(8 * var(--zzz-u)); padding: calc(10 * var(--zzz-u)) calc(12 * var(--zzz-u)) calc(12 * var(--zzz-u)); }
+.zzz-chipbtn {
+  margin: 0;
+  padding: calc(5 * var(--zzz-u)) calc(12 * var(--zzz-u));
+  border: 0;
+  border-radius: 999px;
+  background: var(--zzz-white);
+  color: var(--zzz-ink);
+  font: 700 calc(12 * var(--zzz-u))/1.2 "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.zzz-chipbtn:focus-visible { outline: none; background: var(--zzz-lime); }
+
+/* Modal: a dark hatched band across the screen with the pill buttons below. */
+.zzz-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+.zzz-modal[hidden] { display: none; }
+.zzz-modal-band {
+  width: 100%;
+  box-sizing: border-box;
+  padding: calc(44 * var(--zzz-u)) 5% calc(48 * var(--zzz-u));
+  background: repeating-linear-gradient(135deg, #17181a 0 3px, #131416 3px 6px);
+  border-top: calc(3 * var(--zzz-u)) solid var(--zzz-edge);
+  border-bottom: calc(3 * var(--zzz-u)) solid var(--zzz-edge);
+  color: #f6f6f2;
+  text-align: center;
+  font-family: var(--zzz-font);
+}
+.zzz-modal-title { margin: 0; font-size: calc(40 * var(--zzz-u)); font-weight: 900; letter-spacing: 0.01em; }
+.zzz-modal-text { margin: calc(8 * var(--zzz-u)) auto calc(32 * var(--zzz-u)); max-width: 60%; font-size: calc(24 * var(--zzz-u)); font-weight: 700; color: #cfd1c9; white-space: pre-line; }
+.zzz-modal-actions { display: flex; justify-content: center; gap: calc(52 * var(--zzz-u)); flex-wrap: wrap; }
+
+/* Dialogue box: the game's story dialogue. A black semi-transparent box in a grey frame with a
+   black outline, the speaker's name on a tab sunk into the top edge (the outline runs round box
+   and tab as one line), and a two-chevron advance arrow. Not interactive. Sized by --zzz-dlg-u
+   (one unit of the traced drawing). Markup: .zzz-dialogue > .zzz-dialogue-name + .zzz-dialogue-text. */
+.zzz-dialogue {
+  --zzz-dlg-u: calc(0.7 * var(--zzz-u));
+  --zzz-dlg-frame: #2a2a2a;
+  --zzz-dlg-frame-top: #333;
+  --zzz-dlg-body: rgba(0, 0, 0, 0.84);
+  --zzz-dlg-frame-w: calc(7 * var(--zzz-dlg-u));
+  position: relative;
+  font-family: var(--zzz-font);
+}
+.zzz-dialogue-name {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: calc(176 * var(--zzz-dlg-u));
+  height: calc(34 * var(--zzz-dlg-u));
+  margin: 0 auto calc(-1 * var(--zzz-dlg-frame-w));
+  text-align: center;
+  font: 900 calc(18 * var(--zzz-dlg-u))/calc(27 * var(--zzz-dlg-u)) var(--zzz-font);
+  color: #fff;
+  -webkit-text-stroke: calc(3 * var(--zzz-dlg-u)) #000;
+  paint-order: stroke fill;
+  /* The shoulders land on the box's outer edge and the fill runs down through the frame. */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 176 34' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%233b3b3b'/%3E%3Cstop offset='0.8' stop-color='%23333'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 27C11 27 17 25 22 19C25 15 27 3.5 38 1.7H138C149 3.5 151 15 154 19C159 25 165 27 176 27V34H0Z' fill='url(%23g)'/%3E%3Cpath d='M-2 27H0C11 27 17 25 22 19C25 15 27 3.5 38 1.7H138C149 3.5 151 15 154 19C159 25 165 27 176 27H178' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.zzz-dialogue-text {
+  position: relative;
+  margin: 0;
+  min-height: calc(132 * var(--zzz-dlg-u));
+  box-sizing: border-box;
+  padding: calc(35 * var(--zzz-dlg-u)) calc(60 * var(--zzz-dlg-u)) calc(12 * var(--zzz-dlg-u)) calc(67 * var(--zzz-dlg-u));
+  background: var(--zzz-dlg-body);
+  border: var(--zzz-dlg-frame-w) solid var(--zzz-dlg-frame);
+  border-top-color: var(--zzz-dlg-frame-top);
+  border-radius: calc(18 * var(--zzz-dlg-u));
+  box-shadow: 0 0 0 calc(1.5 * var(--zzz-dlg-u)) #000, 0 calc(6 * var(--zzz-dlg-u)) calc(14 * var(--zzz-dlg-u)) #0008;
+  color: #fff;
+  font: 900 calc(20 * var(--zzz-dlg-u))/1.25 var(--zzz-font);
+  letter-spacing: 0.01em;
+  text-shadow: 0 calc(1 * var(--zzz-dlg-u)) 0 #000;
+}
+/* The advance arrow: two chevrons, the front one brighter. */
+.zzz-dialogue-text::after {
+  content: "";
+  position: absolute;
+  right: calc(15 * var(--zzz-dlg-u));
+  bottom: calc(13 * var(--zzz-dlg-u));
+  width: calc(19 * var(--zzz-dlg-u));
+  height: calc(13 * var(--zzz-dlg-u));
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 19 13'%3E%3Cpath d='M1 1H5.5L9 6.5L5.5 12H1L4.5 6.5Z' fill='%23777' stroke='%23777' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M10 1H14.5L18 6.5L14.5 12H10L13.5 6.5Z' fill='%23e8e8e8' stroke='%23e8e8e8' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* Message bar: the alert pill's message variant (docs/ui-templates/elements/19-alert-pill.html),
+   traced from the game's prompt bar. A crosshatched pill with a grey rim, white heavy italic text
+   (an optional coloured headline first) and a silver-ringed medal at the right end whose disc sets
+   the kind: .is-error red X, .is-caution yellow !, .is-info silver i. Built by createMessage() in
+   script/ui/zzz_ui.js. The detail gives way (…) before the headline, and nothing pushes the medal
+   off. Not selectable. */
+.zzz-message {
+  --zzz-msg-tone: #d9dde3;
+  --zzz-msg-disc: #c3c9d0;
+  --zzz-msg-glyph: #15181d;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(14 * var(--zzz-u));
+  box-sizing: border-box;
+  max-width: min(100%, calc(760 * var(--zzz-u)));
+  height: calc(56 * var(--zzz-u));
+  padding: 0 calc(6 * var(--zzz-u)) 0 calc(26 * var(--zzz-u));
+  border-radius: 999px;
+  background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 4px), #0b0c0e;
+  box-shadow: inset 0 0 0 calc(3 * var(--zzz-u)) #3b3f45, 0 0 0 calc(2 * var(--zzz-u)) #000;
+  color: #fff;
+  font: italic 900 calc(22 * var(--zzz-u))/1 var(--zzz-font);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.zzz-message.is-error { --zzz-msg-tone: #ff4a3d; --zzz-msg-disc: #ff3b2f; --zzz-msg-glyph: #2a0402; }
+.zzz-message.is-caution { --zzz-msg-tone: #ffd21f; --zzz-msg-disc: #ffd21f; --zzz-msg-glyph: #2a2100; }
+/* The right padding holds the italic slant, which would otherwise count as overflow. */
+.zzz-message-head, .zzz-message-text { min-width: 0; padding-right: 0.15em; overflow: hidden; text-overflow: ellipsis; }
+.zzz-message-head { flex: none; max-width: min(60%, 100% - calc(92 * var(--zzz-u))); color: var(--zzz-msg-tone); }
+.zzz-message-text { flex: 0 1 auto; }
+.zzz-message-medal {
+  flex: none;
+  margin-left: auto;
+  width: calc(44 * var(--zzz-u));
+  height: calc(44 * var(--zzz-u));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--zzz-msg-disc);
+  color: var(--zzz-msg-glyph);
+  box-shadow: inset 0 0 0 calc(3 * var(--zzz-u)) #f2f4f6, inset 0 0 0 calc(5 * var(--zzz-u)) #8d949c, 0 0 0 calc(2 * var(--zzz-u)) #000;
+}
+/* styles.css gives every svg position: absolute and 100% size; set ours explicitly. */
+.zzz-message-medal svg { position: static; display: block; width: calc(22 * var(--zzz-u)); height: calc(22 * var(--zzz-u)); }
+
+/* Notification: a short bar with a lime edge (quick save, quick load, and so on). */
+.zzz-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(12 * var(--zzz-u));
+  padding: calc(10 * var(--zzz-u)) calc(20 * var(--zzz-u)) calc(10 * var(--zzz-u)) calc(14 * var(--zzz-u));
+  background: var(--zzz-card);
+  border-left: calc(6 * var(--zzz-u)) solid var(--zzz-lime);
+  color: var(--zzz-white);
+  font: italic 900 calc(20 * var(--zzz-u))/1 var(--zzz-font);
+  letter-spacing: 0.04em;
+  box-shadow: calc(4 * var(--zzz-u)) calc(4 * var(--zzz-u)) 0 #000a;
+}
+.zzz-toast::before {
+  content: "";
+  width: calc(10 * var(--zzz-u));
+  height: calc(10 * var(--zzz-u));
+  border-radius: 50%;
+  background: var(--zzz-lime);
+  animation: zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite;
+}
+.zzz-toast[hidden] { display: none; }
+
+/* Motion (docs/ui-templates/motion-preview.html), run by enter() / leave() / swap() in script/ui/zzz_ui.js.
+   In about 220 ms with a small overshoot (scale up from 96 %, fade, a short slide from where it belongs), out
+   about 140 ms and faster, switches inside a panel 160 ms. It uses the separate scale / translate / opacity
+   properties, so an element's own transform (the note's 3D tilt) is kept. --zzz-from-x / --zzz-from-y /
+   --zzz-from-scale say where it comes from, --zzz-delay staggers it. It wins over an element's own looping
+   animation for those few frames. --zzz-slow is for the preview's slow motion. */
+:root {
+  --zzz-in: calc(220ms * var(--zzz-slow, 1));
+  --zzz-out: calc(140ms * var(--zzz-slow, 1));
+  --zzz-swap: calc(160ms * var(--zzz-slow, 1));
+  --zzz-ease-in: cubic-bezier(0.2, 0.9, 0.25, 1.12);
+  --zzz-ease-out: cubic-bezier(0.5, 0, 0.75, 0.2);
+}
+[data-zzz-motion="in"] { animation: zzz-in var(--zzz-in) var(--zzz-ease-in) var(--zzz-delay, 0ms) both !important; }
+[data-zzz-motion="out"] { animation: zzz-out var(--zzz-out) var(--zzz-ease-out) both !important; }
+@keyframes zzz-in { from { opacity: 0; scale: var(--zzz-from-scale, 0.96); translate: var(--zzz-from-x, 0px) var(--zzz-from-y, 6px); } }
+@keyframes zzz-out { to { opacity: 0; scale: 0.97; translate: calc(var(--zzz-from-x, 0px) / 2) calc(var(--zzz-from-y, 6px) / 2); } }
+.zzz-swap-in { animation: zzz-swap var(--zzz-swap) var(--zzz-ease-in) both; }
+@keyframes zzz-swap { from { opacity: 0; translate: var(--zzz-swap-x, 10px) 0; } }
+/* Where each shared piece comes from: the dialog band grows from its centre line while the dim fades; the toast
+   slides in from the left. */
+.zzz-modal { --zzz-from-scale: 1; --zzz-from-y: 0px; }
+.zzz-modal-band { --zzz-from-scale: 1 0.2; }
+.zzz-toast { --zzz-from-x: calc(-24 * var(--zzz-u)); --zzz-from-y: 0px; --zzz-from-scale: 1; }
+
+/* The game's NEW! mark (docs/ui-templates/elements/25-new-mark.html): yellow italic capitals with a thick black
+   outline and a hard shadow, tipped back a little. It keeps the game's yellow, like the traced red X. Give it
+   markLetters() so it bounces; size it with font-size. */
+.new-mark {
+  display: inline-block;
+  font: italic 900 1em/1 var(--zzz-font);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: #ffe21a;
+  -webkit-text-stroke: 0.24em #0b0b0c;
+  paint-order: stroke fill;
+  transform: rotate(-8deg);
+  transform-origin: 0 100%;
+  filter: drop-shadow(0.07em 0.09em 0 #000b);
+  pointer-events: none;
+  user-select: none;
+}
+.new-mark[hidden] { display: none; }
+
+/* Attention marks (NEW!, NOW, the warning badge), looping with a rest between. .zzz-hop: a push lands on the
+   first letter and is handed down the word. Each letter (one span each, --i = index; markLetters() in
+   script/ui/zzz_ui.js splits it) starts 40 ms after the one before, without waiting for it to finish, and leans
+   towards the next. --k = .7 x 1.3 ^ index is its share of the push: the energy builds down the word like an
+   uppercut, so the last letter thrusts up hardest. .zzz-squash does the same as one piece. */
+.zzz-hop > span { display: inline-block; transform-origin: 50% 100%; animation: zzz-hop calc(var(--zzz-mark-loop, 2.4s) * var(--zzz-slow, 1)) linear infinite;
+  animation-delay: calc((var(--i) * var(--zzz-mark-gap, 40ms) + var(--zzz-hop-delay, 0ms)) * var(--zzz-slow, 1)); }
+/* Like the game's menu marks: they crouch (180 ms), shoot up to the stretch (85 ms), then jiggle like a damped
+   spring (a swing every 80 ms, each keeping 60 % of the last) until still; the bottom edge never leaves the
+   ground. Every 20 ms is a frame whose width follows its height: lower is wider, taller is thinner. The letters
+   (crouch .26, stretch .32, lean 9deg) widen 1.3x when squashed, times --w (2 on the thin "!"), and thin .3x when
+   stretched; the warning (crouch .15, stretch .3) widens .6x and thins .4x, and its "!" squashes .2x more on top
+   with 4x extra width (--k / --wx). Each letter is sped up by the 3 x 40 ms stagger, so the word takes as long as
+   the warning: 985 ms of a 2.4 s loop. Generated and tuned in docs/ui-templates/motion-preview.html (section 7); bake new values from there. */
+@keyframes zzz-hop {
+  0%, 36.042%, 100% { transform: none; }
+  0.732% { transform: scale(calc(1 + 0.006 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.006 * var(--k, 1))); }
+  1.464% { transform: scale(calc(1 + 0.026 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.026 * var(--k, 1))); }
+  2.195% { transform: scale(calc(1 + 0.058 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.058 * var(--k, 1))); }
+  2.927% { transform: scale(calc(1 + 0.103 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.103 * var(--k, 1))); }
+  3.659% { transform: scale(calc(1 + 0.157 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.157 * var(--k, 1))); }
+  4.391% { transform: scale(calc(1 + 0.202 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.202 * var(--k, 1))); }
+  5.123% { transform: scale(calc(1 + 0.234 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.234 * var(--k, 1))); }
+  5.854% { transform: scale(calc(1 + 0.254 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.254 * var(--k, 1))); }
+  6.586% { transform: scale(calc(1 + 0.26 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.26 * var(--k, 1))); }
+  7.318% { transform: scale(calc(1 + -0.018 * var(--k, 1)), calc(1 + 0.061 * var(--k, 1))) rotate(calc(1.705deg * var(--k, 1))); }
+  8.05% { transform: scale(calc(1 + -0.07 * var(--k, 1)), calc(1 + 0.234 * var(--k, 1))) rotate(calc(6.58deg * var(--k, 1))); }
+  8.782% { transform: scale(calc(1 + -0.092 * var(--k, 1)), calc(1 + 0.305 * var(--k, 1))) rotate(calc(8.585deg * var(--k, 1))); }
+  9.514% { transform: scale(calc(1 + -0.096 * var(--k, 1)), calc(1 + 0.32 * var(--k, 1))) rotate(calc(8.997deg * var(--k, 1))); }
+  10.245% { transform: scale(calc(1 + -0.073 * var(--k, 1)), calc(1 + 0.242 * var(--k, 1))) rotate(calc(6.8deg * var(--k, 1))); }
+  10.977% { transform: scale(calc(1 + -0.015 * var(--k, 1)), calc(1 + 0.05 * var(--k, 1))) rotate(calc(1.404deg * var(--k, 1))); }
+  11.709% { transform: scale(calc(1 + 0.125 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.125 * var(--k, 1))) rotate(calc(-3.519deg * var(--k, 1))); }
+  12.441% { transform: scale(calc(1 + 0.194 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.194 * var(--k, 1))) rotate(calc(-5.468deg * var(--k, 1))); }
+  13.173% { transform: scale(calc(1 + 0.145 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.145 * var(--k, 1))) rotate(calc(-4.08deg * var(--k, 1))); }
+  13.904% { transform: scale(calc(1 + 0.03 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.03 * var(--k, 1))) rotate(calc(-0.843deg * var(--k, 1))); }
+  14.636% { transform: scale(calc(1 + -0.023 * var(--k, 1)), calc(1 + 0.075 * var(--k, 1))) rotate(calc(2.112deg * var(--k, 1))); }
+  15.368% { transform: scale(calc(1 + -0.035 * var(--k, 1)), calc(1 + 0.117 * var(--k, 1))) rotate(calc(3.281deg * var(--k, 1))); }
+  16.1% { transform: scale(calc(1 + -0.026 * var(--k, 1)), calc(1 + 0.087 * var(--k, 1))) rotate(calc(2.448deg * var(--k, 1))); }
+  16.832% { transform: scale(calc(1 + -0.005 * var(--k, 1)), calc(1 + 0.018 * var(--k, 1))) rotate(calc(0.506deg * var(--k, 1))); }
+  17.563% { transform: scale(calc(1 + 0.045 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.045 * var(--k, 1))) rotate(calc(-1.267deg * var(--k, 1))); }
+  18.295% { transform: scale(calc(1 + 0.07 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.07 * var(--k, 1))) rotate(calc(-1.969deg * var(--k, 1))); }
+  19.027% { transform: scale(calc(1 + 0.052 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.052 * var(--k, 1))) rotate(calc(-1.469deg * var(--k, 1))); }
+  19.759% { transform: scale(calc(1 + 0.011 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.011 * var(--k, 1))) rotate(calc(-0.303deg * var(--k, 1))); }
+  20.491% { transform: scale(calc(1 + -0.008 * var(--k, 1)), calc(1 + 0.027 * var(--k, 1))) rotate(calc(0.76deg * var(--k, 1))); }
+  21.223% { transform: scale(calc(1 + -0.013 * var(--k, 1)), calc(1 + 0.042 * var(--k, 1))) rotate(calc(1.181deg * var(--k, 1))); }
+  21.954% { transform: scale(calc(1 + -0.009 * var(--k, 1)), calc(1 + 0.031 * var(--k, 1))) rotate(calc(0.881deg * var(--k, 1))); }
+  22.686% { transform: scale(calc(1 + -0.002 * var(--k, 1)), calc(1 + 0.006 * var(--k, 1))) rotate(calc(0.182deg * var(--k, 1))); }
+  23.418% { transform: scale(calc(1 + 0.016 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.016 * var(--k, 1))) rotate(calc(-0.456deg * var(--k, 1))); }
+  24.15% { transform: scale(calc(1 + 0.025 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.025 * var(--k, 1))) rotate(calc(-0.709deg * var(--k, 1))); }
+  24.882% { transform: scale(calc(1 + 0.019 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.019 * var(--k, 1))) rotate(calc(-0.529deg * var(--k, 1))); }
+  25.613% { transform: scale(calc(1 + 0.004 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.004 * var(--k, 1))) rotate(calc(-0.109deg * var(--k, 1))); }
+  26.345% { transform: scale(calc(1 + -0.003 * var(--k, 1)), calc(1 + 0.01 * var(--k, 1))) rotate(calc(0.274deg * var(--k, 1))); }
+  27.077% { transform: scale(calc(1 + -0.005 * var(--k, 1)), calc(1 + 0.015 * var(--k, 1))) rotate(calc(0.425deg * var(--k, 1))); }
+  27.809% { transform: scale(calc(1 + -0.003 * var(--k, 1)), calc(1 + 0.011 * var(--k, 1))) rotate(calc(0.317deg * var(--k, 1))); }
+  28.541% { transform: scale(calc(1 + -0.001 * var(--k, 1)), calc(1 + 0.002 * var(--k, 1))) rotate(calc(0.066deg * var(--k, 1))); }
+  29.272% { transform: scale(calc(1 + 0.006 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.006 * var(--k, 1))) rotate(calc(-0.164deg * var(--k, 1))); }
+  30.004% { transform: scale(calc(1 + 0.009 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.009 * var(--k, 1))) rotate(calc(-0.255deg * var(--k, 1))); }
+  30.736% { transform: scale(calc(1 + 0.007 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.007 * var(--k, 1))) rotate(calc(-0.19deg * var(--k, 1))); }
+  31.468% { transform: scale(calc(1 + 0.001 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.001 * var(--k, 1))) rotate(calc(-0.039deg * var(--k, 1))); }
+  32.2% { transform: scale(calc(1 + -0.001 * var(--k, 1)), calc(1 + 0.004 * var(--k, 1))) rotate(calc(0.099deg * var(--k, 1))); }
+  32.931% { transform: scale(calc(1 + -0.002 * var(--k, 1)), calc(1 + 0.005 * var(--k, 1))) rotate(calc(0.153deg * var(--k, 1))); }
+  33.663% { transform: scale(calc(1 + -0.001 * var(--k, 1)), calc(1 + 0.004 * var(--k, 1))) rotate(calc(0.114deg * var(--k, 1))); }
+  34.395% { transform: scale(calc(1 + 0 * var(--k, 1)), calc(1 + 0.001 * var(--k, 1))) rotate(calc(0.024deg * var(--k, 1))); }
+  35.127% { transform: scale(calc(1 + 0.002 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.002 * var(--k, 1))) rotate(calc(-0.059deg * var(--k, 1))); }
+  35.859% { transform: scale(calc(1 + 0.003 * (1.3 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.003 * var(--k, 1))) rotate(calc(-0.092deg * var(--k, 1))); }
+}
+.zzz-squash { transform-origin: 50% 100%; animation: zzz-squash calc(var(--zzz-mark-loop, 2.4s) * var(--zzz-slow, 1)) linear infinite;
+  animation-delay: calc(var(--zzz-mark-delay, 0ms) * var(--zzz-slow, 1)); }
+/* The mark inside (.zzz-squash-inner, e.g. the warning's "!") squashes again on top of its frame, so it overshoots it:
+   --k is how much extra; --wx adds width in step with how low it goes, on its own. */
+.zzz-squash .zzz-squash-inner { --k: 0.2; --wx: 4; transform-box: fill-box; transform-origin: 50% 100%; animation: inherit; }
+@keyframes zzz-squash {
+  0%, 41.042%, 100% { transform: none; }
+  0.833% { transform: scale(calc(1 + 0.004 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.004 * var(--k, 1))); }
+  1.667% { transform: scale(calc(1 + 0.015 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.015 * var(--k, 1))); }
+  2.5% { transform: scale(calc(1 + 0.033 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.033 * var(--k, 1))); }
+  3.333% { transform: scale(calc(1 + 0.059 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.059 * var(--k, 1))); }
+  4.167% { transform: scale(calc(1 + 0.091 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.091 * var(--k, 1))); }
+  5% { transform: scale(calc(1 + 0.117 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.117 * var(--k, 1))); }
+  5.833% { transform: scale(calc(1 + 0.135 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.135 * var(--k, 1))); }
+  6.667% { transform: scale(calc(1 + 0.146 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.146 * var(--k, 1))); }
+  7.5% { transform: scale(calc(1 + 0.15 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.15 * var(--k, 1))); }
+  8.333% { transform: scale(calc(1 + -0.04 * var(--k, 1)), calc(1 + 0.099 * var(--k, 1))); }
+  9.167% { transform: scale(calc(1 + -0.093 * var(--k, 1)), calc(1 + 0.233 * var(--k, 1))); }
+  10% { transform: scale(calc(1 + -0.115 * var(--k, 1)), calc(1 + 0.289 * var(--k, 1))); }
+  10.833% { transform: scale(calc(1 + -0.12 * var(--k, 1)), calc(1 + 0.3 * var(--k, 1))); }
+  11.667% { transform: scale(calc(1 + -0.091 * var(--k, 1)), calc(1 + 0.227 * var(--k, 1))); }
+  12.5% { transform: scale(calc(1 + -0.019 * var(--k, 1)), calc(1 + 0.047 * var(--k, 1))); }
+  13.333% { transform: scale(calc(1 + 0.117 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.117 * var(--k, 1))); }
+  14.167% { transform: scale(calc(1 + 0.182 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.182 * var(--k, 1))); }
+  15% { transform: scale(calc(1 + 0.136 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.136 * var(--k, 1))); }
+  15.833% { transform: scale(calc(1 + 0.028 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.028 * var(--k, 1))); }
+  16.667% { transform: scale(calc(1 + -0.028 * var(--k, 1)), calc(1 + 0.07 * var(--k, 1))); }
+  17.5% { transform: scale(calc(1 + -0.044 * var(--k, 1)), calc(1 + 0.109 * var(--k, 1))); }
+  18.333% { transform: scale(calc(1 + -0.033 * var(--k, 1)), calc(1 + 0.082 * var(--k, 1))); }
+  19.167% { transform: scale(calc(1 + -0.007 * var(--k, 1)), calc(1 + 0.017 * var(--k, 1))); }
+  20% { transform: scale(calc(1 + 0.042 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.042 * var(--k, 1))); }
+  20.833% { transform: scale(calc(1 + 0.066 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.066 * var(--k, 1))); }
+  21.667% { transform: scale(calc(1 + 0.049 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.049 * var(--k, 1))); }
+  22.5% { transform: scale(calc(1 + 0.01 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.01 * var(--k, 1))); }
+  23.333% { transform: scale(calc(1 + -0.01 * var(--k, 1)), calc(1 + 0.025 * var(--k, 1))); }
+  24.167% { transform: scale(calc(1 + -0.016 * var(--k, 1)), calc(1 + 0.039 * var(--k, 1))); }
+  25% { transform: scale(calc(1 + -0.012 * var(--k, 1)), calc(1 + 0.029 * var(--k, 1))); }
+  25.833% { transform: scale(calc(1 + -0.002 * var(--k, 1)), calc(1 + 0.006 * var(--k, 1))); }
+  26.667% { transform: scale(calc(1 + 0.015 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.015 * var(--k, 1))); }
+  27.5% { transform: scale(calc(1 + 0.024 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.024 * var(--k, 1))); }
+  28.333% { transform: scale(calc(1 + 0.018 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.018 * var(--k, 1))); }
+  29.167% { transform: scale(calc(1 + 0.004 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.004 * var(--k, 1))); }
+  30% { transform: scale(calc(1 + -0.004 * var(--k, 1)), calc(1 + 0.009 * var(--k, 1))); }
+  30.833% { transform: scale(calc(1 + -0.006 * var(--k, 1)), calc(1 + 0.014 * var(--k, 1))); }
+  31.667% { transform: scale(calc(1 + -0.004 * var(--k, 1)), calc(1 + 0.011 * var(--k, 1))); }
+  32.5% { transform: scale(calc(1 + -0.001 * var(--k, 1)), calc(1 + 0.002 * var(--k, 1))); }
+  33.333% { transform: scale(calc(1 + 0.005 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.005 * var(--k, 1))); }
+  34.167% { transform: scale(calc(1 + 0.009 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.009 * var(--k, 1))); }
+  35% { transform: scale(calc(1 + 0.006 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.006 * var(--k, 1))); }
+  35.833% { transform: scale(calc(1 + 0.001 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.001 * var(--k, 1))); }
+  36.667% { transform: scale(calc(1 + -0.001 * var(--k, 1)), calc(1 + 0.003 * var(--k, 1))); }
+  37.5% { transform: scale(calc(1 + -0.002 * var(--k, 1)), calc(1 + 0.005 * var(--k, 1))); }
+  38.333% { transform: scale(calc(1 + -0.002 * var(--k, 1)), calc(1 + 0.004 * var(--k, 1))); }
+  39.167% { transform: scale(calc(1 + 0 * var(--k, 1)), calc(1 + 0.001 * var(--k, 1))); }
+  40% { transform: scale(calc(1 + 0.002 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.002 * var(--k, 1))); }
+  40.833% { transform: scale(calc(1 + 0.003 * (0.6 * var(--k, 1) * var(--w, 1) + var(--wx, 0))), calc(1 + -0.003 * var(--k, 1))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zzz-hop > span, .zzz-squash, .zzz-squash .zzz-squash-inner { animation: none; }
+  @keyframes zzz-in { from { opacity: 0; } }
+  @keyframes zzz-out { to { opacity: 0; } }
+  @keyframes zzz-swap { from { opacity: 0; } }
+  .zzz-glow-ring, .zzz-glow-fill, .zzz-glow-text, .zzz-toast::before { animation: none; }
+  .zzz-sel:focus-visible, .zzz-sel.is-selected { animation: none; box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime); }
+  .zzz-sel:active, .zzz-sel.is-pressed { animation: none; background-color: var(--zzz-lime); box-shadow: 0 0 0 calc(var(--zzz-gap) + var(--zzz-ring)) var(--zzz-lime); }
+  .zzz-sel.is-flash, .zzz-pill.is-flash .zzz-pill-cap, .zzz-pill.is-flash::before, .zzz-pill.is-flash .zzz-pill-disc,
+  .zzz-round.is-flash::before { animation: none; }
+  .zzz-round-mark { animation: none; }
+}

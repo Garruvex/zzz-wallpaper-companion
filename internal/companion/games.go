@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -65,8 +66,13 @@ func (s *APIServer) setCurrentGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.ID != "" {
-		if _, ok := s.cartByID(body.ID); !ok {
+		c, ok := s.cartByID(body.ID)
+		if !ok {
 			writeError(w, http.StatusNotFound, "no such game")
+			return
+		}
+		if pspLocked(c, s.pspUnlocked()) {
+			writeError(w, http.StatusConflict, "PSP games are locked")
 			return
 		}
 	}
@@ -138,17 +144,37 @@ var unsafeNameChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
 // already in the library, that cartridge (and its saves) is returned instead.
 func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Query().Get("name"))
-	if _, ok := romSystem(name); !ok {
-		writeError(w, http.StatusBadRequest, "not a supported game file (.gba .gbc .gb .nes .sfc .smc .md .gen .smd .sms .gg)")
+	sys, ok := romSystem(name)
+	unlocked := s.pspUnlocked()
+	if !ok || pspLocked(cart{System: sys.ID}, unlocked) {
+		if unlocked {
+			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM, PS1 single image (.bin .img .pbp .chd), or PSP (.iso .cso .elf)")
+		} else {
+			writeError(w, http.StatusBadRequest, "unsupported game file; use a cartridge ROM or PS1 single image (.bin .img .pbp .chd)")
+		}
 		return
 	}
-	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxROMBytes))
-	if err != nil || len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "game file must be 1 byte to 64 MB")
+	// Stream large disc uploads to disk while hashing instead of allocating
+	// an image-sized buffer in Companion.
+	upload, err := os.CreateTemp(s.ensureROMDir(), ".upload-*")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not stage game upload")
 		return
 	}
-	sum := sha1.Sum(data)
-	hash := hex.EncodeToString(sum[:])
+	defer os.Remove(upload.Name())
+	defer upload.Close()
+	limit := romByteLimit(sys.ID)
+	hasher := sha1.New()
+	n, err := io.Copy(io.MultiWriter(upload, hasher), http.MaxBytesReader(w, r.Body, limit))
+	if err != nil || n == 0 {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("game file must be 1 byte to %d MiB", limit>>20))
+		return
+	}
+	if err := upload.Close(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not stage game upload")
+		return
+	}
+	hash := hex.EncodeToString(hasher.Sum(nil))
 	for _, c := range s.cartList() {
 		if romHash(c) == hash {
 			c.SHA1 = hash
@@ -174,7 +200,7 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "could not create the game folder")
 		return
 	}
-	if err := writeFileAtomic(filepath.Join(dir, "game"+strings.ToLower(filepath.Ext(name))), data); err != nil {
+	if err := os.Rename(upload.Name(), filepath.Join(dir, "game"+strings.ToLower(filepath.Ext(name)))); err != nil {
 		writeError(w, http.StatusInternalServerError, "could not write the game")
 		return
 	}
@@ -304,9 +330,10 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		}
 		s.changedSaves(w, c)
 	case "import":
-		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCartFileBytes))
+		limit := cartByteLimit(c, "save")
+		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 		if err != nil || len(data) == 0 {
-			writeError(w, http.StatusBadRequest, "save file must be 1 byte to 8 MB")
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("save file must be 1 byte to %d MiB", limit>>20))
 			return
 		}
 		if err := shelve(c, append([]string{c.save}, stateNames()...)...); err != nil {
@@ -320,6 +347,8 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		s.changedSaves(w, c)
 	case "shelf":
 		s.setShelf(w, r, c)
+	case "tape":
+		s.setTape(w, r, c)
 	case "remove":
 		removed := filepath.Join(s.romDir(), ".removed")
 		if err := os.MkdirAll(removed, 0o755); err != nil {
@@ -362,6 +391,74 @@ func applyShelf(carts []cart) {
 	}
 }
 
+// numberTapes gives each game on the shelf its tape, numbered 1 to shelfSlots as on the tapes'
+// tags in the wallpaper. The shelf is always packed from tape 1 with no gaps: games keep their order,
+// a game new to the shelf goes on the end (in title order), and taking one off closes the gap.
+// OnShelf must already be decided.
+func numberTapes(carts []cart) {
+	var shelf []*cart
+	for i := range carts {
+		carts[i].Tape = 0
+		if carts[i].OnShelf {
+			shelf = append(shelf, &carts[i])
+		}
+	}
+	rank := func(c *cart) int {
+		if c.storedTape >= 1 && c.storedTape <= shelfSlots {
+			return c.storedTape
+		}
+		return shelfSlots + 1
+	}
+	sort.SliceStable(shelf, func(i, j int) bool { return rank(shelf[i]) < rank(shelf[j]) })
+	for i, c := range shelf {
+		c.Tape = i + 1
+	}
+}
+
+// setTape moves a game to tape n (1 to shelfSlots), the number on that tape's tag in the wallpaper.
+// The games from n on move along one to make room, and the gap it left closes; a game that wasn't on
+// the shelf goes on it (409 if the shelf is full). A number past the end puts it last.
+func (s *APIServer) setTape(w http.ResponseWriter, r *http.Request, c cart) {
+	n, err := strconv.Atoi(r.URL.Query().Get("n"))
+	if err != nil || n < 1 || n > shelfSlots {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("n must be a tape from 1 to %d", shelfSlots))
+		return
+	}
+	var mover cart
+	var order []cart
+	carts := s.cartList()
+	sort.SliceStable(carts, func(i, j int) bool { return carts[i].Tape < carts[j].Tape })
+	for _, other := range carts {
+		if other.ID == c.ID {
+			mover = other
+		} else if other.Tape != 0 {
+			order = append(order, other)
+		}
+	}
+	if mover.ID == "" {
+		writeError(w, http.StatusNotFound, "no such game")
+		return
+	}
+	if len(order) >= shelfSlots {
+		writeError(w, http.StatusConflict, fmt.Sprintf("The shelf is full (%d tapes). Take another game off it first.", shelfSlots))
+		return
+	}
+	at := min(n-1, len(order))
+	order = append(order[:at], append([]cart{mover}, order[at:]...)...)
+	for i, game := range order {
+		if game.Tape == i+1 && game.Shelf != nil && *game.Shelf {
+			continue
+		}
+		meta := cartMeta(game.dir)
+		meta["shelf"], meta["tape"] = true, i+1
+		if writeCartMeta(game.dir, meta) != nil {
+			writeError(w, http.StatusInternalServerError, "could not update the shelf")
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // setShelf puts a game on the shelf or takes it off.
 func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	on := r.URL.Query().Get("on") == "1"
@@ -379,6 +476,8 @@ func (s *APIServer) setShelf(w http.ResponseWriter, r *http.Request, c cart) {
 	}
 	meta := cartMeta(c.dir)
 	meta["shelf"] = on
+	// Put on, it goes on the end of the shelf; taken off, the games after it close up.
+	delete(meta, "tape")
 	if err := writeCartMeta(c.dir, meta); err != nil {
 		writeError(w, http.StatusInternalServerError, "could not update the game")
 		return

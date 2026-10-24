@@ -1,0 +1,14 @@
+{
+  "sourceRepository": "github.com/Garruvex/zzz-wallpaper-media-integration",
+  "sourceRevision": "1ee5afd717e6e24ac43f65fc01d9b902d40cb7aa",
+  "files": {
+    "zzz_ui.css": {
+      "source": "style/ui/zzz_ui.css",
+      "sha256": "88262ef681afeaf2725e07dbaaf9b5eef4d4b2431ad9d3c2624d5d1f64f78836"
+    },
+    "zzz_ui.js": {
+      "source": "script/ui/zzz_ui.js",
+      "sha256": "e6cc4d8b795582c6e9e7e98295a692df9dabe586d4d9a5b9241b7f307bdd0269"
+    }
+  }
+}

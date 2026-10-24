@@ -30,7 +30,7 @@ Detailed properties, query/path/header parameters, body limits, response content
 | POST /api/v1/heartbeat | heartbeat.renew | shared transport | 200 lease/compatibility; 400 invalid body/session; 426 mismatch; renew/release this session |
 | POST /api/youtube/heartbeat | heartbeat.renewLegacy | YouTube adapter | Identical handler and wire body; deprecated alias remains usable |
 | POST /api/v1/lyrics | lyrics.lookup | music lyrics via shared client | 200 ready/instrumental/not_found; 400 decoding; 502 service/metadata failure; memory/disk caches, prior uncached lookup cancellation |
-| GET /api/v1/system-stats | system.stats | system channel via shared client | 200 latest sample; GPU omitted when unavailable |
+| GET /api/v1/system-stats | system.stats | system channel via shared client | 200 latest sample; GPU and network rates omitted when unavailable |
 | GET /api/v1/dates | dates.list | DateSync; dates page | 200 version/revision/events; 500 corrupt file preserved |
 | POST /api/v1/dates | dates.save | DateSync legacy migration; dates page | 200 incremented revision; 400 validation/trailing JSON; 409 stale revision; 500 persistence/load; full document replacement |
 | GET /api/v1/holiday-settings | holidays.settings.get | holidays page | 200 country/subdivision; 500 unreadable saved file |

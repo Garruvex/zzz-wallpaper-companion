@@ -297,3 +297,5 @@ Taiwan uses its official government office calendar. China uses holiday-cn and i
 Calendars refresh weekly and are cached in `holidays.json` beside the companion settings. Failed updates keep the last good data. The wallpaper keeps its own offline copy and has bundled Taiwan/China calendars. Unpublished years stay unavailable; dates are never repeated into future years.
 
 Nager’s API permits private/non-profit projects; commercial use requires sponsorship: [terms](https://nagerholidays.com/legal/termsofservice). Region names come from Unicode CLDR; its license is included in `internal/companion/UNICODE_LICENSE.txt`.
+
+Experimental PSP imports/playback are locked by default: PSP files are refused, PSP games already in the library are greyed out, and the wallpaper is never given one. Once unlocked they work with the matching EmulatorJS 4.3.0 prerelease wallpaper build. OpenGL rendering is enabled; GTA Vice City Stories has a known intro hang.

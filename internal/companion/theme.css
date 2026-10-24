@@ -1,18 +1,18 @@
-:root{color-scheme:dark;--accent:#ffe500;--line:#373737;--muted:#a6a6a6;font:16px 'Arial', 'Segoe UI', sans-serif;background:#080808;color:#f4f4f4}
+:root{color-scheme:dark;--accent:#d8f51b;--line:#373737;--muted:#a6a6a6;font:16px 'Arial', 'Segoe UI', sans-serif;background:#080808;color:#f4f4f4}
 *{box-sizing:border-box}body{max-width:none;margin:0;padding:0;background:#080808}.bar{display:none}a{color:var(--accent)}
 .shell-header{height:96px;padding:20px 4vw;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:3px solid #303030;background:#050505}.brand{font-size:23px;font-weight:900;font-style:italic;letter-spacing:-1px;color:#fff;text-decoration:none}.brand b{color:var(--accent)}.shell-tag{font-size:11px;letter-spacing:2px;color:#8c8c8c;font-weight:800}
 .shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:26px;padding:30px 4vw;max-width:1600px;margin:auto;background:repeating-linear-gradient(45deg,#171717 0 2px,#0d0d0d 2px 5px)}
-.shell-nav,.shell main{border:3px solid #333;border-radius:30px;background:repeating-linear-gradient(45deg,#0b0b0b 0 2px,#101010 2px 4px);box-shadow:0 0 0 5px #060606,inset 0 0 0 3px #050505}.shell-nav{padding:20px 12px;align-self:start;position:sticky;top:20px;min-height:520px;display:flex;flex-direction:column;gap:8px}.nav-caption{padding:12px 16px;font-size:11px;letter-spacing:2px;color:#777;font-weight:800}.shell-nav a{display:flex;align-items:center;min-height:68px;padding:16px;border-radius:12px;color:#fff;text-decoration:none;font-size:20px;font-weight:900;font-style:italic;border-bottom:2px solid #292929}.shell-nav a[aria-current=page]{background:var(--accent);color:#080808;border-color:#ffe500}.shell-nav a:hover{background:#333}.shell-nav a[aria-current=page]:hover{background:#fff04b}.nav-footer{margin-top:auto;padding:18px 14px;color:#757575;font-size:11px;font-weight:800;letter-spacing:1px}
+.shell-nav,.shell main{border:3px solid #333;border-radius:30px;background:repeating-linear-gradient(45deg,#0b0b0b 0 2px,#101010 2px 4px);box-shadow:0 0 0 5px #060606,inset 0 0 0 3px #050505}.shell-nav{padding:20px 12px;align-self:start;position:sticky;top:20px;min-height:520px;display:flex;flex-direction:column;gap:8px}.nav-caption{padding:12px 16px;font-size:11px;letter-spacing:2px;color:#777;font-weight:800}.shell-nav a{display:flex;align-items:center;min-height:68px;padding:16px;border-radius:12px;color:#fff;text-decoration:none;font-size:20px;font-weight:900;font-style:italic;border-bottom:2px solid #292929}.nav-footer{margin-top:auto;padding:18px 14px;color:#757575;font-size:11px;font-weight:800;letter-spacing:1px}
 .shell main,.shell main.wrap{max-width:none;width:100%;padding:30px 32px;margin:0;min-width:0;min-height:640px}h1{font-size:36px;font-weight:900;font-style:italic;letter-spacing:-1px;margin:0 0 12px}h2{font-weight:900;font-style:italic}p{color:var(--muted);line-height:1.6;max-width:900px}.sub{font-size:12px;color:#888}.section{border:0;padding:18px 0}small{font-size:12px;color:var(--muted);font-weight:400;font-style:normal;line-height:1.5;display:block;margin-top:5px}
 label{background:#232323;border:1px solid #303030;border-radius:28px;padding:16px 22px;margin:0;font-weight:800;gap:14px}#settings label{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:center;margin-bottom:14px}#dateForm,#form{display:grid;gap:14px;padding:20px 0;border:0}#dateForm>label,#form>label{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,45%);align-items:center}
-input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141;border-radius:24px;padding:11px 18px;min-width:0;width:100%}select{font-weight:800;font-style:italic;cursor:pointer}input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent);justify-self:end}button,.button{display:inline-flex;justify-content:center;align-items:center;min-height:42px;border:2px solid #454545;border-radius:24px;padding:9px 18px;background:#111;color:#fff;font:800 italic 14px Arial,sans-serif;text-decoration:none;cursor:pointer}button.primary,button[type=submit]{background:var(--accent);border-color:var(--accent);color:#080808}button.danger{color:#ff7870;border-color:#73332e}button:hover,.button:hover{filter:brightness(1.3)}button:disabled{opacity:.45;cursor:default}:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
-#drop{padding:28px;border:2px dashed #555;border-radius:24px;margin:24px 0;background:#171717;color:#bdbdbd}#drop b{font-size:20px;font-style:italic;color:#fff}#drop.over{border-color:var(--accent);background:#292600}.game{border:1px solid #3c3c3c;border-radius:28px;padding:20px 22px;background:#232323;margin:14px 0}.game:last-child{border-bottom:1px solid #3c3c3c}.title b{font-size:21px;font-weight:900;font-style:italic;margin-bottom:8px}.chip{font-size:10px;padding:4px 9px;letter-spacing:1px}.saves{border-radius:18px;background:#131313;padding:18px}.row,.actions{gap:10px}.saves .line{padding:8px 0}#status,.status{color:var(--accent);min-height:24px}#dates{list-style:none;padding:0}#dates li{background:#232323;border:1px solid #333;border-radius:24px;margin:12px 0;padding:18px 22px}#preview{padding-left:22px}#preview li{padding:8px}.empty{padding:30px;border:1px dashed #444;border-radius:20px}.shell-footer{padding:18px 4vw;font-size:10px;letter-spacing:2px;color:#777;text-align:right}[hidden]{display:none!important}
+input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141;border-radius:24px;padding:11px 18px;min-width:0;width:100%}select{font-weight:800;font-style:italic;cursor:pointer}input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent);justify-self:end}button,.button{display:inline-flex;justify-content:center;align-items:center;min-height:42px;border:2px solid #454545;border-radius:24px;padding:9px 18px;background:#111;color:#fff;font:800 italic 14px Arial,sans-serif;text-decoration:none;cursor:pointer}button.primary,button[type=submit]{background:var(--accent);border-color:var(--accent);color:#080808}button.danger{color:#ff7870;border-color:#73332e}button:disabled{opacity:.45;cursor:default}:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+#drop{padding:28px;border:2px dashed #555;border-radius:24px;margin:24px 0;background:#171717;color:#bdbdbd}#drop b{font-size:20px;font-style:italic;color:#fff}#drop.over{border-color:var(--accent);background:#1b2205}.game{border:1px solid #3c3c3c;border-radius:28px;padding:20px 22px;background:#232323;margin:14px 0}.game:last-child{border-bottom:1px solid #3c3c3c}.title b{font-size:21px;font-weight:900;font-style:italic;margin-bottom:8px}.saves{border-radius:18px;background:#131313;padding:18px}.row,.actions{gap:10px}.saves .line{padding:8px 0}#status,.status{color:var(--accent);min-height:24px}#dates{list-style:none;padding:0}#dates li{background:#232323;border:1px solid #333;border-radius:24px;margin:12px 0;padding:18px 22px}#preview{padding-left:22px}#preview li{padding:8px}.empty{padding:30px;border:1px dashed #444;border-radius:20px}.shell-footer{padding:18px 4vw;font-size:10px;letter-spacing:2px;color:#777;text-align:right}[hidden]{display:none!important}
 @media(max-width:1000px){.shell{grid-template-columns:185px minmax(0,1fr);gap:18px;padding:22px}.shell-nav a{font-size:17px}.shell main,.shell main.wrap{padding:24px}#settings label{grid-template-columns:1fr 180px}.game .row .title{flex-basis:100%}}
 @media(max-width:720px){.shell-header{height:76px;padding:18px}.shell-tag{display:none}.shell{display:block;padding:18px}.shell-nav{position:static;min-height:0;flex-direction:row;flex-wrap:wrap;padding:10px;margin-bottom:20px;border-radius:22px;gap:6px}.shell-nav a{flex:1 1 40%;min-height:46px;font-size:15px;padding:12px}.nav-caption,.nav-footer{display:none}.shell main,.shell main.wrap{padding:24px 18px;border-radius:24px;min-height:450px}h1{font-size:30px}#settings label,#dateForm>label,#form>label{grid-template-columns:1fr;border-radius:20px;padding:16px}input,select{width:100%}.saves .line{align-items:flex-start}.shell-footer{text-align:center}}
 
 /* Game settings reference: quiet content, bracketed category controls. */
 .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
-.shell-nav{padding:12px;gap:16px;min-height:540px}.nav-items{display:flex;flex-direction:column;gap:6px;min-height:0;overflow-y:auto;flex:1}.shell-nav a{justify-content:center;text-align:center;min-height:78px}.nav-arrow{display:flex;width:100%;height:36px;min-height:36px;flex:none;background:#343434;border:0;border-radius:24px;padding:0}.nav-arrow::before{content:'';width:38px;height:12px;background:#050505;clip-path:polygon(0 0,100% 0,50% 100%)}.nav-arrow.up::before{transform:rotate(180deg)}.nav-arrow:hover{background:#4b4b4b;filter:none}.nav-arrow.down{margin-top:auto}
+.shell-nav{padding:12px;gap:16px;min-height:540px}.nav-items{display:flex;flex-direction:column;gap:6px;min-height:0;overflow-y:auto;flex:1}.shell-nav a{justify-content:center;text-align:center;min-height:78px}.nav-arrow{display:flex;width:100%;height:36px;min-height:36px;flex:none;background:#343434;border:0;border-radius:24px;padding:0}.nav-arrow::before{content:'';width:38px;height:12px;background:#050505;clip-path:polygon(0 0,100% 0,50% 100%)}.nav-arrow.up::before{transform:rotate(180deg)}.nav-arrow.down{margin-top:auto}
 .shell main,.shell main.wrap{padding-top:40px}.section{padding:0}#settings label{min-height:72px;border-radius:40px;font-size:21px;padding:10px 14px 10px 28px}#settings label>span{font-weight:900}select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'%3E%3Cpath fill='%23fff' d='M2 2h16c1.4 0 2.1 1.5 1.3 2.7l-7.5 10c-.9 1.2-2.3 1.2-3.2 0L.7 4.7C-.1 3.5.6 2 2 2Z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 24px center;background-size:18px 15px;padding-right:58px}select:disabled{opacity:.5}.shell-footer{font-size:11px;font-weight:800;letter-spacing:.3px;text-align:right}
 @media(max-width:720px){.shell-nav{display:flex;flex-direction:column;min-height:0;gap:10px}.nav-items{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;overflow:visible}.shell-nav a{min-height:50px}.nav-arrow{height:28px;min-height:28px}.nav-arrow::before{width:30px;height:10px}.shell main,.shell main.wrap{padding-top:24px}#settings label{font-size:18px;padding:16px;border-radius:24px}.shell-footer{text-align:right}}
 
@@ -20,10 +20,10 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 @media(max-width:720px){.brand{font-size:18px;line-height:1.4;max-width:100%}.shell-header{height:auto;min-height:76px}.group-title{font-size:14px}.settings-group{margin-bottom:24px}}
 
 /* Inset checkerboard controls and a two-colour breathing selection ring. */
-:root{--control-checker:repeating-conic-gradient(#131313 0% 25%,#090909 0% 50%) 0 0/5px 5px;--select-yellow:#e7f000;--select-green:#a4ff3c}
-.zzz-select{position:relative;min-width:0;width:100%}.zzz-select-trigger{width:100%;min-height:50px;justify-content:flex-start;padding:10px 54px 10px 24px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);color:#fff;font:900 italic 21px 'Arial Black',Arial,sans-serif;text-align:left;box-shadow:inset 0 0 0 3px #050505;white-space:normal;line-height:1.15;position:relative}.zzz-select-trigger::after{content:'';position:absolute;right:22px;top:50%;transform:translateY(-50%);width:18px;height:15px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);border-radius:3px}.zzz-select-trigger:hover{filter:none;border-color:#666}.zzz-select-trigger:focus-visible,.zzz-select.is-open .zzz-select-trigger{outline:none;animation:select-beat 2.4s ease-in-out infinite}
-@keyframes select-beat{0%,100%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow),0 0 15px 2px #e7f00044}45%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 11px var(--select-green),0 0 21px 4px #a4ff3c55}60%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 10px var(--select-green),0 0 17px 3px #a4ff3c44}}
-.zzz-options{position:fixed;z-index:1000;padding:5px;background:#343434;border-radius:28px;border:2px solid #090909;overflow:auto;box-shadow:0 8px 20px #0008;scrollbar-width:thin;scrollbar-color:#666 #343434}.zzz-options:focus{outline:none}.zzz-option{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:13px 16px;border-radius:999px;color:#fff;font:900 italic 21px 'Arial Black',Arial,sans-serif;cursor:pointer;line-height:1.2}.zzz-option[aria-selected=true]{color:#050505;animation:selection-breathe 2.4s ease-in-out infinite}.zzz-option.is-active:not([aria-selected=true]),.zzz-option:hover:not([aria-selected=true]){background:#4b4b4b;box-shadow:inset 0 0 0 2px var(--select-yellow)}.zzz-option[aria-disabled=true]{opacity:.4;cursor:default}
+:root{--control-checker:repeating-conic-gradient(#131313 0% 25%,#090909 0% 50%) 0 0/5px 5px;--select-yellow:#d8f51b;--select-green:#a4ff3c}
+.zzz-select{position:relative;min-width:0;width:100%}.zzz-select-trigger{width:100%;min-height:50px;justify-content:flex-start;padding:10px 54px 10px 24px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);color:#fff;font:900 italic 21px 'Arial Black',Arial,sans-serif;text-align:left;box-shadow:inset 0 0 0 3px #050505;white-space:normal;line-height:1.15;position:relative}.zzz-select-trigger::after{content:'';position:absolute;right:22px;top:50%;transform:translateY(-50%);width:18px;height:15px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);border-radius:3px}.zzz-select-trigger:focus-visible,.zzz-select.is-open .zzz-select-trigger{outline:none;animation:select-beat 2.4s ease-in-out infinite}
+@keyframes select-beat{0%,100%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow),0 0 15px 2px #d8f51b44}45%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 11px var(--select-green),0 0 21px 4px #a4ff3c55}60%{box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 10px var(--select-green),0 0 17px 3px #a4ff3c44}}
+.zzz-options{position:fixed;z-index:1000;padding:5px;background:#343434;border-radius:28px;border:2px solid #090909;overflow:auto;box-shadow:0 8px 20px #0008;scrollbar-width:thin;scrollbar-color:#666 #343434}.zzz-options:focus{outline:none}.zzz-option{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:13px 16px;border-radius:999px;color:#fff;font:900 italic 21px 'Arial Black',Arial,sans-serif;cursor:pointer;line-height:1.2}.zzz-option[aria-selected=true]{color:#050505;animation:selection-breathe 2.4s ease-in-out infinite}.zzz-option.is-active:not([aria-selected=true]){background:#4b4b4b;box-shadow:inset 0 0 0 2px var(--select-yellow)}.zzz-option[aria-disabled=true]{opacity:.4;cursor:default}
 @keyframes selection-breathe{0%,100%{background-color:var(--select-yellow)}50%{background-color:var(--select-green)}}
 .settings-actions{display:flex;gap:32px;justify-content:flex-end;flex-wrap:wrap;padding:12px 4px 16px}.settings-actions+.status,.settings-actions+#status{display:block;text-align:right;margin:8px 0 0}.zzz-pill[aria-disabled=true]{opacity:.4;cursor:default;animation:none;pointer-events:none}
 .library-columns,.game-row{display:grid;grid-template-columns:minmax(180px,1fr) 125px 125px 100px 95px;align-items:center;gap:8px}.library-columns{padding:0 18px 10px;color:#888;font:800 13px Arial,sans-serif;text-align:center;border-bottom:2px solid #333;margin-bottom:14px}.library-columns span:first-child{text-align:left}.game{border:0;border-radius:32px;padding:0;background:none;margin:12px 0}.game:last-child{border:0}.game-row{background:#232323;border-radius:32px;min-height:64px;padding:7px 10px 7px 24px}.game-row .title{display:flex;align-items:center;gap:10px;min-width:0}.game-row .title b{font:900 19px 'Arial Black',Arial,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;flex:1}.game-row .title small{display:none}.game-row .chip{flex:none;margin:0;font-size:10px}.game-cell button{width:100%;min-height:48px;background:var(--control-checker);border:3px solid #414141;font-size:13px;box-shadow:inset 0 0 0 2px #050505;padding:6px 8px}.game-cell button.primary{background:var(--control-checker);color:#fff;border-color:#414141}.game.is-playing .game-row{box-shadow:inset 4px 0 0 var(--select-yellow)}.game-cell button:focus-visible{animation:select-beat 2.4s ease-in-out infinite;outline:none}.game .saves{margin:10px 12px 18px;border:2px solid #333;background:#111}.game button.shelf.on{color:var(--select-yellow);border-color:#6b7429}
@@ -31,15 +31,283 @@ input,select{font:inherit;color:#fff;background:#0e0e0e;border:3px solid #414141
 .zzz-range{display:flex;align-items:center;gap:12px;padding:10px 18px;border:3px solid #414141;border-radius:999px;background:var(--control-checker)}.zzz-range output{min-width:42px;background:#303030;border-radius:999px;text-align:center;color:#fff;font:900 italic 21px Arial,sans-serif}.zzz-range input[type=range]{appearance:none;min-width:0;width:100%;height:18px;padding:0;border:0;border-radius:999px;background:linear-gradient(to right,#a7a7a7 0 var(--range-fill,50%),#282828 var(--range-fill,50%) 100%)}.zzz-range input[type=range]::-webkit-slider-thumb{appearance:none;width:34px;height:34px;border-radius:50%;border:4px solid #090909;background:radial-gradient(circle at 35% 25%,#a0a0a0,#484848 60%,#222 80%);box-shadow:0 0 0 2px #4a4a4a}.zzz-range input[type=range]::-moz-range-thumb{width:26px;height:26px;border:4px solid #090909;border-radius:50%;background:radial-gradient(circle at 35% 25%,#a0a0a0,#484848 60%,#222 80%)}
 @media(max-width:1100px){.library-columns,.game-row{grid-template-columns:minmax(140px,1fr) 105px 105px 85px 80px}.game-row .chip{display:none}.game-row .title b{font-size:17px}}
 @media(max-width:850px){.library-columns{display:none}.game-row{grid-template-columns:repeat(4,minmax(0,1fr));padding:14px;border-radius:24px;gap:10px}.game-row .title{grid-column:1/-1}.game-row .chip{display:inline-block}.game-row .title b{font-size:19px}.game-cell button{font-size:12px}.settings-actions{gap:20px}.zzz-select-trigger,.zzz-option{font-size:18px}}
-@media(prefers-reduced-motion:reduce){.zzz-select-trigger:focus-visible,.zzz-select.is-open .zzz-select-trigger,.game-cell button:focus-visible{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 6px var(--select-yellow)}.zzz-option[aria-selected=true]{animation:none;background:var(--select-yellow)}.zzz-pill:hover,.zzz-pill:focus-visible{animation:none;box-shadow:0 0 0 3px #050506,0 0 0 6px #d8f51b}}
+@media(prefers-reduced-motion:reduce){.zzz-select-trigger:focus-visible,.zzz-select.is-open .zzz-select-trigger,.game-cell button:focus-visible{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 6px var(--select-yellow)}.zzz-option[aria-selected=true]{animation:none;background:var(--select-yellow)}}
 
 /* The reset variant keeps the approved geometry, with its own colour and icon. */
-.zzz-pill.is-reset .zzz-pill-disc{background:#ff7a00}
+
 .has-settings-dock{padding-bottom:180px}.settings-dock{position:fixed;inset:auto 0 0;z-index:100;background:#080808;border-top:2px solid #242424;padding:14px 4vw 10px;box-shadow:0 -10px 24px #0005}.settings-dock .settings-actions{--zzz-u:clamp(.48px,calc((100vw - 72px)/600),1px);flex-wrap:nowrap;padding:8px 0 10px;gap:32px}.settings-dock #status,.settings-dock .status{display:block;text-align:right;margin:0;min-height:20px;font-size:13px}.settings-dock .shell-footer{padding:4px 0 0;font-size:10px}.settings-dock .zzz-pill{flex-shrink:0}
 @media(max-width:720px){.has-settings-dock{padding-bottom:145px}.settings-dock{padding:10px 18px 8px}.settings-dock .settings-actions{gap:20px;padding:8px 0}.settings-dock #status,.settings-dock .status{font-size:12px}.settings-dock .shell-footer{font-size:9px}}
 
 /* Active game and category share the dropdown's complete selection ring. */
 .game.is-playing .game-row{animation:select-beat 2.4s ease-in-out infinite;box-shadow:none}
-.shell-nav a[aria-current=page]{animation:selection-breathe 2.4s ease-in-out infinite;color:#050505;box-shadow:none}
-@media(prefers-reduced-motion:reduce){.game.is-playing .game-row{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}.shell-nav a[aria-current=page]{animation:none;background:var(--select-yellow);box-shadow:none}}
+
+@media(prefers-reduced-motion:reduce){.game.is-playing .game-row{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 5px #050505,0 0 0 9px var(--select-yellow)}}
 .nav-items{padding:12px;margin:-12px;gap:12px}
+/* Status lines are message bars (the shared UI kit's .zzz-message): a floating notice above the
+   settings dock, or at the bottom of a page that has no dock. They never take clicks. */
+#status,.status{position:fixed;left:0;right:0;bottom:24px;z-index:90;display:flex;justify-content:center;min-height:0;margin:0;padding:0 4vw;color:inherit;font-size:inherit;pointer-events:none}
+#status:empty,.status:empty{display:none}
+.settings-dock #status,.settings-dock .status{position:absolute;bottom:100%;margin:0 0 14px;justify-content:flex-end;font-size:inherit;min-height:0}
+@media(max-width:720px){.settings-dock #status,.settings-dock .status{padding:0 18px}}
+/* Tabs use the kit's selection states (.zzz-sel): the current tab's border breathes lime <-> green
+   and pulses, keyboard focus breathes, a press fills lime. Nothing reacts to the mouse resting on it. */
+.shell-nav a{--zzz-gap:3px;--zzz-ring:3px;--zzz-blur:calc(14 * var(--zzz-u));--zzz-spread:calc(2 * var(--zzz-u));--zzz-rest-bg:#0c0d0f;--zzz-rest-color:#fff;background:#0c0d0f;color:#fff;text-decoration:none}
+.shell-nav a{border-bottom:0}
+/* The current page in the side menu is a steady solid fill with black text, like the game's Move
+   List: no pulse, so only the top tab moves. */
+.shell-nav a.is-selected,.shell-nav a.is-selected:focus-visible{animation:none;background:var(--zzz-lime);box-shadow:none;color:var(--zzz-ink);text-shadow:none;filter:none}
+/* The main tabs, top right like the game's: a dark pill split into tabs by slanted cuts. The tabs
+   fill the pill edge to edge, so a tab's highlight is exactly its piece of the pill: round where it
+   meets the pill's own round end, slanted along the cut wherever it meets another tab (a middle tab
+   is slanted on both sides), every corner rounded. The same shape shows the current tab (filled,
+   lime <-> green, pulsing), a press (filled lime) and keyboard focus (dark, glow breathing). The tabs
+   are not .zzz-sel: the kit's states draw a box, and these need the cut shape. */
+.top-tabs{display:flex;align-items:stretch;height:52px;margin:8px 10px;padding:0;border-radius:999px;background:repeating-linear-gradient(45deg,#0e0f11 0 2px,#08090a 2px 4px);box-shadow:inset 0 0 0 3px #3b3f45,0 0 0 3px #000}
+.top-tabs a{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:150px;padding:0 30px;background:transparent;color:#fff;text-decoration:none;cursor:pointer;user-select:none;outline:none;font:900 italic 21px/1 var(--zzz-font)}
+.top-tabs a>span{position:relative;z-index:1}
+.top-tabs a>.tab-shape{position:absolute;inset:0;pointer-events:none}
+/* The shape. Every slanted piece is skewed about its own centre, so its edge crosses the tab's
+   boundary at mid-height: two neighbours share one cut line. */
+.top-tabs a>.tab-shape::before,.top-tabs a>.tab-shape::after{content:"";position:absolute;top:0;bottom:0;display:none;border-radius:10px;transform:skewX(-20deg)}
+.top-tabs a>.tab-shape::before{left:0;right:0}
+.top-tabs a:not(:first-child):not(:last-child)>.tab-shape::after{content:none}
+.top-tabs a:first-child>.tab-shape::before{right:20px;border-radius:999px 0 0 999px;transform:none}
+.top-tabs a:first-child>.tab-shape::after{right:0;width:40px}
+.top-tabs a:last-child>.tab-shape::before{right:auto;width:40px}
+.top-tabs a:last-child>.tab-shape::after{left:20px;right:0;border-radius:0 999px 999px 0;transform:none}
+.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after,.top-tabs a:active>.tab-shape::before,.top-tabs a:active>.tab-shape::after,.top-tabs a:focus-visible>.tab-shape::before,.top-tabs a:focus-visible>.tab-shape::after{display:block}
+/* Current tab: filled, black text, lime <-> green, pulsing; the glow follows the outline. */
+/* The tab's own pace: a swell every 0.6 s (two per 1.2 s cycle), much quicker than the kit's 3.2 s. */
+.top-tabs a.is-selected>.tab-shape{animation:zzz-tab-pulse 1.2s ease-in-out infinite}
+.top-tabs a.is-selected{color:var(--zzz-ink);filter:drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after{animation:zzz-glow-fill var(--zzz-glow-time) ease-in-out infinite}
+/* Press: the shape fills lime and the text turns black. */
+.top-tabs a:active{color:var(--zzz-ink)}
+.top-tabs a:active>.tab-shape::before,.top-tabs a:active>.tab-shape::after{animation:none;background:var(--zzz-lime)}
+/* Keyboard focus on another tab: its shape shows dark, outlined by a breathing lime <-> green glow. */
+.top-tabs a:not(.is-selected):focus-visible{animation:zzz-tab-breathe var(--zzz-glow-time) ease-in-out infinite}
+.top-tabs a:not(.is-selected):focus-visible:not(:active)>.tab-shape::before,.top-tabs a:not(.is-selected):focus-visible:not(:active)>.tab-shape::after{background:#22252b}
+@keyframes zzz-tab-breathe{
+  0%,100%{filter:drop-shadow(0 0 1.5px var(--zzz-lime)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-lime-rgb),.55))}
+  50%{filter:drop-shadow(0 0 1.5px var(--zzz-green)) drop-shadow(0 0 calc(10 * var(--zzz-u)) rgba(var(--zzz-green-rgb),.55))}}
+/* The pulse: the highlight (not the text) swells and settles back with a small bounce, twice a cycle, like the
+   kit's selected border (expand 700 ms, retract 400 ms, rest 500 ms). */
+@keyframes zzz-tab-pulse{
+  0%{transform:scale(1);animation-timing-function:cubic-bezier(.35,0,.25,1)}
+  21.875%{transform:scale(1.07);animation-timing-function:cubic-bezier(.45,0,.2,1.7)}
+  34.375%{transform:scale(1);animation-timing-function:ease-in-out}
+  50%{transform:scale(1);animation-timing-function:cubic-bezier(.35,0,.25,1)}
+  71.875%{transform:scale(1.07);animation-timing-function:cubic-bezier(.45,0,.2,1.7)}
+  84.375%,100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.top-tabs a,.top-tabs a>.tab-shape,.top-tabs a>.tab-shape::before,.top-tabs a>.tab-shape::after{animation:none!important}.top-tabs a.is-selected>.tab-shape::before,.top-tabs a.is-selected>.tab-shape::after{background:var(--zzz-lime)}.top-tabs a:not(.is-selected):focus-visible{filter:drop-shadow(0 0 2px var(--zzz-lime))}}
+/* A tab with no pages of its own has no side menu, so its page uses the whole width. */
+.shell.no-side{grid-template-columns:minmax(0,1fr)}
+.shell.no-side .shell-nav{display:none}
+@media(max-width:720px){.shell-header{flex-wrap:wrap;gap:10px}.top-tabs{width:100%;margin:6px 0 4px}.top-tabs a{flex:1;min-width:0;padding:0 14px;font-size:17px}.shell.no-side{display:block}}
+/* A tab's sections (General, Game) show one at a time, picked in the side menu. */
+[data-section][hidden]{display:none!important}
+/* Panels, like the game's: a title card (big name, grey caps subtitle), then item cards, each a
+   black title bar (name, tags on the right) over a body (companionTitleCard / companionCard). */
+.zzz-title-card{display:flex;flex-direction:column;gap:6px;margin:0 0 18px;padding:16px 28px;border-radius:30px;background:#1d1e21;box-shadow:inset 0 0 0 2px #2b2d31}
+.zzz-title-card b{font:900 30px/1.1 var(--zzz-font);color:#fff}
+.zzz-title-card small{margin:0;font:900 15px/1 var(--zzz-font);letter-spacing:.04em;text-transform:uppercase;color:#55585e}
+.zzz-item{display:block;margin:0 0 16px;padding:8px;border:0;border-radius:30px;background:#242528;box-shadow:inset 0 0 0 2px #2d2f33;list-style:none}
+.zzz-item-bar{display:flex;align-items:center;gap:12px;min-height:50px;margin:0;padding:6px 10px 6px 22px;border:0;border-radius:24px;background:#050506;color:#fff;font:900 20px/1.2 var(--zzz-font)}
+.zzz-item-title{flex:1;min-width:0;overflow-wrap:anywhere}
+.zzz-item-body{padding:12px 16px 8px;color:#c9ccd1;font:700 15px/1.5 'Segoe UI',Arial,sans-serif}
+.zzz-item-body:empty{display:none}
+.zzz-item-bar .chip{flex:none;margin:0}
+/* Settings: the row is the bar, with its control at the right. */
+#settings .zzz-item>label.zzz-item-bar{display:flex;min-height:60px;margin:0;padding:6px 8px 6px 22px;border:0;border-radius:24px;background:#050506;font-size:20px}
+#settings .zzz-item-bar>span{flex:1;min-width:0}
+#settings .zzz-item-bar>.zzz-select,#settings .zzz-item-bar>input{flex:none;width:240px}
+/* Form rows inside a card's body. */
+#dateForm,#form{display:block;padding:8px}
+.zzz-item-body>label:not(#drop){display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,45%);align-items:center;gap:14px;margin:0 0 10px;padding:8px 10px 8px 20px;border:0;border-radius:22px;background:#17181b}
+.zzz-item-body>label:not(#drop)[hidden]{display:none}
+/* Lists of cards. */
+#dates,#preview{list-style:none;margin:0;padding:0}
+#dates li.zzz-item,#preview li.zzz-item{margin:0 0 16px;padding:8px;border:0;border-radius:30px;background:#242528}
+/* The holiday list: a date, not a slot, so it does not look like the Game shelf. Each holiday is a plain
+   rounded row with a date block (the day over the month) at the left; the next one is tagged NEXT and
+   lit, the ones already past are dimmed and listed last. */
+#preview .group-title{margin:22px 0 10px 6px;list-style:none}
+.holiday-row{display:flex;align-items:center;gap:16px;margin:0 0 10px;padding:8px 18px 8px 8px;border-radius:18px;background:#202124;box-shadow:inset 0 0 0 2px #2d2f33;list-style:none}
+/* The date block is the game's item slot (template 14): a rounded square with a thick grey rim and a
+   thin black outline, a dark panel with the day over the month, and a coloured strip curving along the
+   bottom (the accent). The next holiday carries the game's yellow corner badge, like its "1ST". */
+.date-block{--strip:#10a8ff;position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:66px;height:68px;padding-bottom:10px;border-radius:15px;background:#3b3d42;box-shadow:0 0 0 2px #000}
+.date-block::before{content:"";position:absolute;inset:5px;border-radius:11px;background:var(--strip);box-shadow:inset 0 0 0 1.5px #000}
+.date-block::after{content:"";position:absolute;left:5px;right:5px;top:5px;bottom:16px;border-radius:0 0 10px 10px;background:radial-gradient(ellipse 85% 75% at 50% 35%,#24262b,#0b0c0e 75%);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.date-block b,.date-block i{position:relative;z-index:1}
+.date-block b{font:900 italic 24px/1 var(--zzz-font);color:#fff}
+.date-block i{margin-top:3px;font:900 10px/1 var(--zzz-font);font-style:normal;letter-spacing:.12em;color:#c9cbc4}
+.date-block em{position:absolute;z-index:2;left:2px;bottom:8px;font:italic 900 11px/1 var(--zzz-font);color:#0c0d0f;-webkit-text-stroke:3px #ffd21f;paint-order:stroke fill;text-shadow:0 0 0 #000}
+.holiday-title{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.holiday-title b{font:900 18px/1.3 var(--zzz-font);color:#fff}
+.holiday-title .chip{margin:0}
+.holiday-row.is-next{--strip:#ffae00;background:#26272b}
+.holiday-row.is-next .date-block{--strip:#ffae00}
+.holiday-row.is-past{background:#1a1b1e;box-shadow:inset 0 0 0 2px #25272a}
+.holiday-row.is-past .date-block{--strip:#59625e;opacity:.7}
+.holiday-row.is-past .holiday-title b{color:#8b8f96}
+/* Games: the actions as a row of equal buttons. */
+.game.zzz-item{margin:0 0 16px;padding:8px}
+.game-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.game.is-playing .zzz-item-bar{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+@media(max-width:720px){#settings .zzz-item>label.zzz-item-bar{flex-wrap:wrap;padding:12px 14px}#settings .zzz-item-bar>.zzz-select,#settings .zzz-item-bar>input{width:100%}.zzz-item-body>label:not(#drop){grid-template-columns:1fr}.game-actions{grid-template-columns:1fr 1fr}.zzz-title-card b{font-size:24px}}
+/* Settings rows, like the game's settings screens: one dark pill per setting, name on the left with
+   its help in small grey under it, the control at the right. */
+#settings label.zzz-row{grid-template-columns:minmax(0,1fr) 300px;min-height:66px;margin:0 0 12px;padding:8px 8px 8px 28px;border:0;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33;font:900 21px/1.2 var(--zzz-font)}
+#settings label.zzz-row small{margin-top:3px;font:700 13px/1.4 'Segoe UI',Arial,sans-serif;color:#8b8f96}
+/* Card bodies read like the game's: white, heavy. */
+.zzz-item-body{color:#f4f4f4;font:800 16px/1.5 'Segoe UI',Arial,sans-serif}
+.zzz-item-body small{color:#a9adb3;font-weight:700}
+/* The fold button at the right of a card's bar: a round black button with a down arrow that turns
+   up while the card is open. */
+.zzz-fold{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;cursor:pointer}
+.zzz-fold::before{content:"";width:14px;height:9px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);transition:transform .2s}
+.zzz-fold[aria-expanded=true]::before{transform:rotate(180deg)}
+.zzz-fold:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.zzz-fold:active{background:var(--zzz-lime)}
+.zzz-fold:active::before{background:var(--zzz-ink)}
+.game-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:720px){#settings label.zzz-row{grid-template-columns:1fr;border-radius:28px;padding:14px 16px}.game-actions{grid-template-columns:1fr 1fr}}
+/* A game's line (Game, Library): a dark pill with the title and tags, the actions, and the fold button
+   for the saves. */
+#games .group-title{margin:20px 0 10px 6px}
+.tape-row{display:flex;align-items:center;gap:14px;min-height:60px;margin:0 0 10px;padding:6px 8px;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33}
+.tape-title{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.tape-title b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:900 19px/1.2 var(--zzz-font);color:#fff}
+.tape-title .chip{flex:none;margin:0}
+.tape-actions{flex:none;display:flex;align-items:center;gap:12px}
+.tape-label{font:900 15px/1 var(--zzz-font);color:#9a9ea4}
+.tape-divider{width:2px;height:26px;border-radius:1px;background:#3a3c40}
+/* The game's switch (Skill Info's "Stats"), traced close up: a charcoal outer rim round a black
+   border, an inner fill (dark when off, deep green when on), the state in tall narrow capitals, and
+   a knob in a black socket: a bevelled edge, bright silver on the upper left and dark on the lower
+   right, round a flat grey face set towards the lower right, with an engraved indicator groove.
+   Off: knob left, OFF light on the right. On: the fill turns green, the knob sits right, ON black
+   on the left. */
+.zzz-switch{position:relative;flex:none;width:92px;height:36px;min-height:0;padding:0;border:0;border-radius:18px;background:#0c0d0e;box-shadow:0 0 0 3px #2b2c2f,0 0 0 4px #0b0c0d;color:#c9cbce;font:900 18px/1 var(--zzz-font);cursor:pointer}
+.zzz-switch::before{content:"";position:absolute;inset:4px;border-radius:14px;background:linear-gradient(#1c1d20,#232427)}
+.zzz-switch>span{position:absolute;z-index:1;top:50%;right:14px;transform:translateY(-50%) scaleX(.78);transform-origin:right center}
+.zzz-switch::after{content:"";position:absolute;z-index:2;top:5px;left:5px;width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(#a2a4a8,#a2a4a8) 27% 57%/7px 1.5px no-repeat,
+    linear-gradient(#18191b,#18191b) 27% 50%/7px 1.5px no-repeat,
+    radial-gradient(circle 10.5px at 54% 54%,#606166 0,#55565b 9.8px,rgba(85,86,91,0) 10.5px),
+    linear-gradient(135deg,#eef0f2 0%,#a9abaf 26%,#6b6d71 55%,#2e2f32 100%);
+  box-shadow:0 0 0 3px #0b0c0d;transition:transform .15s}
+.zzz-switch.is-on{color:var(--zzz-ink)}
+.zzz-switch.is-on::before{background:linear-gradient(#66b915,#4c9a09)}
+.zzz-switch.is-on::after{transform:translateX(56px)}
+.zzz-switch.is-on>span{right:auto;left:14px;transform-origin:left center}
+.zzz-switch:focus-visible,.zzz-switch.is-on:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.zzz-switch:active::after{filter:brightness(.75)}
+.zzz-switch:disabled{opacity:.4;cursor:default}
+/* A round action button like the fold button: play, or eject (lime ring) while the game is on the TV. */
+.zzz-round-action{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;cursor:pointer}
+.zzz-round-action::before{content:"";width:13px;height:15px;margin-left:3px;background:#fff;clip-path:polygon(0 0,100% 50%,0 100%)}
+.zzz-round-action.is-eject{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.zzz-round-action.is-eject::before{width:16px;height:15px;margin:0;clip-path:polygon(50% 0,100% 58%,0 58%,0 74%,100% 74%,100% 100%,0 100%)}
+.zzz-round-action:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.zzz-round-action:active{background:var(--zzz-lime)}
+.zzz-round-action:active::before{background:var(--zzz-ink)}
+.zzz-round-action:disabled{opacity:.4;cursor:default}
+.tape-row.is-playing{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+.tape-item{margin:0 0 10px}
+.tape-item>.tape-row{margin:0}
+.tape-item>.saves{margin:8px 24px 0}
+/* A Library game is the game's skill panel: a dark grey card with a thin rim, holding a black title bar.
+   Opening it grows the same card to hold the saves under the bar, on the card's grey, not in a box. */
+.lib-card{padding:5px;border-radius:34px;background:#26272b;box-shadow:inset 0 0 0 2px #303237}
+.lib-card>.tape-row{background:#050506;box-shadow:none}
+.lib-card>.tape-row.is-playing{box-shadow:inset 0 0 0 3px var(--select-yellow)}
+.lib-card.is-open{border-radius:30px;padding-bottom:16px}
+.lib-card>.saves{margin:14px 22px 0;padding:0;border:0;border-radius:0;background:none}
+@media(max-width:900px){.tape-row{flex-wrap:wrap;border-radius:28px;padding:10px}.tape-actions{order:3;width:100%;justify-content:flex-end}}
+/* Tags (ON TV, a holiday's weekday): a slanted tab pressed into the row, dark grey with grey italic
+   capitals, no rim or shadow. A lit tag (ON TV) is a lime fill with dark text, on any page. */
+.chip{display:inline-flex;align-items:center;height:20px;box-sizing:border-box;margin:0 4px 0 0;padding:0 10px;border:0;border-radius:0;background:#2e3035;color:#c9cbc4;font:italic 900 10.5px/1 var(--zzz-font);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transform:skewX(-12deg)}
+.chip.on{background:var(--zzz-lime);color:var(--zzz-ink)}
+/* A game's system at the right of its row, like the game's skill panel "Lv. 1 | Stats": white heavy text,
+   a thin divider, and "Locked" in grey when it can't be played. */
+.tape-meta{flex:none;display:flex;align-items:center;gap:14px;margin-left:auto}
+.tape-sys{font:900 17px/1 var(--zzz-font);color:#fff;white-space:nowrap}
+.tape-div{width:2px;height:24px;border-radius:1px;background:#4a4c52}
+.tape-state{font:900 17px/1 var(--zzz-font);color:#7d8187}
+.tape-row.locked .tape-sys{color:#8b8f96}
+/* The Library: the shelf, packed from tape 01, and the pile of games not on it. The tape number is a
+   plain heavy italic figure (no tile), lime while the game is on the TV; a dotted grip picks a row up,
+   and a lime line shows where it will go in. */
+.lib-shelf,.lib-pile{margin:0 0 22px}
+.lib-pile{padding:4px 12px 2px;border-radius:30px;background:#141517;box-shadow:inset 0 0 0 2px #232427}
+.lib-pile.is-over{box-shadow:inset 0 0 0 3px var(--zzz-lime)}
+.lib-head{display:flex;align-items:baseline;justify-content:space-between;margin:14px 10px 10px 6px}
+#games .lib-head .group-title{margin:0}
+.lib-count{font:900 italic 15px/1 var(--zzz-font);color:#9a9ea4}
+.lib-end{margin:0 0 10px;padding:16px 24px;border-radius:999px;border:2px dashed #34363a;color:#7d8187;font:800 italic 14px/1.3 var(--zzz-font)}
+.tape-no{flex:none;width:44px;text-align:center;font:900 italic 27px/1 var(--zzz-font);letter-spacing:-.03em;color:#8b8f96}
+.tape-row.is-playing .tape-no{color:var(--zzz-lime)}
+.tape-grip{flex:none;width:14px;height:26px;margin-left:10px;border-radius:4px;background:radial-gradient(circle,#6c7076 1.6px,transparent 2px) 0 0/7px 7px;cursor:grab}
+.tape-grip:focus-visible{outline:none;box-shadow:0 0 0 3px var(--zzz-lime)}
+.tape-row.is-dragging{opacity:.4}
+.drop-line{height:4px;margin:-7px 18px 3px;border-radius:2px;background:var(--zzz-lime);box-shadow:0 0 10px rgba(var(--zzz-lime-rgb),.6)}
+.lib-move{flex:none;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0 0 3px;border:0;border-radius:50%;background:#050506;box-shadow:inset 0 0 0 3px #4a4c52;color:#fff;font:900 26px/1 var(--zzz-font);cursor:pointer}
+.lib-move:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.lib-move:active{background:var(--zzz-lime);color:var(--zzz-ink)}
+.lib-move:disabled{opacity:.4;cursor:default}
+.tape-row.locked .tape-title b{color:#8b8f96}
+/* The switch sits at the right end of its row, like the dropdowns did. */
+#settings label.zzz-row .zzz-switch,.zzz-item-body>label .zzz-switch{justify-self:end}
+/* Small buttons are the game's ("Resource Details"): a black pill with a fine checker texture inside a
+   thick dark-grey rim, white heavy italic text in normal case; lime on press or keyboard focus. All of
+   them look the same, like the game's: none is coloured. (button.zzz-chipbtn / a.zzz-chipbtn: the kit's own
+   white .zzz-chipbtn loads after the theme, so these need the extra weight.) */
+button.zzz-chipbtn,a.zzz-chipbtn{display:inline-block;min-height:0;margin:0;padding:7px 20px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);box-shadow:inset 0 0 0 2px #050505;color:#fff;font:900 italic 14px/1.2 var(--zzz-font);letter-spacing:0;text-transform:none;text-decoration:none;text-align:center;cursor:pointer}
+button.zzz-chipbtn:active,a.zzz-chipbtn:active{background:var(--zzz-lime);color:var(--zzz-ink)}
+button.zzz-chipbtn:disabled{opacity:.4;cursor:default}
+button.zzz-chipbtn:focus-visible,a.zzz-chipbtn:focus-visible{outline:none;background:var(--control-checker);box-shadow:inset 0 0 0 2px #050505,0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+/* Buttons sit at the right end of their card, like the saves panel's. A saved date shows its date at
+   the left and Edit / Delete at the right; Clear form is at the right of the form. */
+#dates .zzz-item-body{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px}
+#dates .actions{display:flex;margin-left:auto;gap:10px}
+#cancel{display:block;margin:8px 0 0 auto}
+/* Text, number and date fields are the dropdown's pill (the game's setting control): 50 px high, a thick
+   dark-grey rim, the fine checker texture, white heavy italic text; the same lime / green glow when
+   focused. The number field's spin arrows are hidden and the date's calendar button is drawn white. */
+input:not([type=checkbox]):not([type=range]):not([type=file]):not([type=hidden]){min-height:50px;padding:10px 24px;border:3px solid #414141;border-radius:999px;background:var(--control-checker);box-shadow:inset 0 0 0 3px #050505;color:#fff;font:900 italic 21px/1.15 'Arial Black',Arial,sans-serif;color-scheme:dark;caret-color:var(--zzz-lime)}
+input::placeholder{color:#7d8187;opacity:1}
+input:not([type=checkbox]):not([type=range]):focus-visible{outline:none;animation:select-beat 2.4s ease-in-out infinite}
+input[type=number]{appearance:textfield;-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{appearance:none;margin:0}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.9;cursor:pointer}
+input:disabled{opacity:.5}
+@media(prefers-reduced-motion:reduce){input:not([type=checkbox]):not([type=range]):focus-visible{animation:none;box-shadow:inset 0 0 0 3px #050505,0 0 0 6px var(--select-yellow)}}
+/* The Controller section: keys light up lime while pressed, like a selected item. */
+.pad-status{margin:0 0 14px;font:900 italic 18px/1.2 var(--zzz-font);color:#aeb5b8}
+.pad-status.on{color:var(--zzz-lime)}
+.pad-shape{display:grid;gap:12px 22px;max-width:680px;margin:auto;padding:22px 26px;border-radius:44px 44px 70px 70px;background:#0b0b0b;border:3px solid #2b2b2b;justify-items:center;align-items:center;
+grid-template-columns:repeat(7,1fr);grid-template-areas:"l2 . . . . . r2" "l1 . . . . . r1" ". du . sel . fn ." "dl . dr sta fw . fe" ". dd . . . fs ." ". . ls . rs . ." ". . l3 . r3 . ."}
+.pad-key{min-width:46px;padding:8px 12px;text-align:center;border:3px solid #414141;border-radius:999px;background:var(--control-checker);box-shadow:inset 0 0 0 3px #050505;font:900 italic 14px/1 var(--zzz-font);color:#fff}
+.pad-key.down{background:var(--zzz-lime);border-color:var(--zzz-lime);color:var(--zzz-ink)}
+.pad-stick{position:relative;width:64px;height:64px;border-radius:50%;border:3px solid #414141;background:#050505}
+.pad-stick>i{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--zzz-lime)}
+.pad-note{margin:14px 0 0;font-size:13px;color:#7d8187}
+/* The Keyboard section, traced from the game's Mouse & Keyboard settings: a dark pill per button, its
+   name at the left, its key at the right in a black well holding a white keycap (a struck-out circle
+   when it has none). The column is headed "Keyboard"; groups get small grey labels. */
+.keys-columns{display:flex;justify-content:flex-end;padding:0 0 8px;margin:0 0 4px;border-bottom:2px solid #2b2c2f}
+.keys-columns span{width:280px;text-align:center;font:900 15px/1 var(--zzz-font);color:#b9bcc1}
+.keys-group{margin:14px 0 8px 4px;font:900 14px/1 var(--zzz-font);color:#9a9ea4}
+.keys-row{display:flex;align-items:center;gap:14px;min-height:52px;margin:0 0 8px;padding:4px 4px 4px 22px;border-radius:999px;background:#232427;box-shadow:inset 0 0 0 2px #2d2f33}
+.keys-name{flex:1;min-width:0;font:900 19px/1.2 var(--zzz-font);color:#fff}
+.keys-cell{flex:none;display:grid;place-items:center;width:280px;height:44px;min-height:0;padding:0;border:0;border-radius:999px;background:#050506;box-shadow:inset 0 0 0 3px #2b2c2f;cursor:pointer}
+.keys-cell:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--zzz-lime),0 0 12px rgba(var(--zzz-lime-rgb),.55)}
+.keys-cell.is-waiting{box-shadow:inset 0 0 0 3px var(--zzz-lime);animation:select-beat 2.4s ease-in-out infinite}
+.keys-cap{min-width:30px;padding:6px 9px;border-radius:6px;background:#f4f4ee;box-shadow:inset 0 -3px 0 #b9bbb6;color:#0c0d0f;font:900 17px/1 var(--zzz-font);text-align:center}
+.keys-none{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 2px #4a4c52;background:linear-gradient(135deg,transparent 46%,#4a4c52 46% 54%,transparent 54%)}
+.keys-wait{font:900 italic 15px/1 var(--zzz-font);color:var(--zzz-lime)}
+.keys-foot{display:flex;align-items:center;gap:14px;margin:14px 0 0}
+.keys-foot small{flex:1;color:#7d8187;font-size:13px}
+@media(max-width:720px){.keys-cell,.keys-columns span{width:150px}}
