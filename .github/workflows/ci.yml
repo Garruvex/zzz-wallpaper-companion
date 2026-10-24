@@ -1,0 +1,65 @@
+name: CI
+
+# Tests every push and pull request. Pushing a version tag (v1.4.0) also builds the Windows
+# executables and update manifest and opens a DRAFT release; nothing reaches the companion's
+# auto-updater until the draft is published by hand on GitHub.
+on:
+  push:
+    branches: [main, 'release/**']
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      # The embedded UI assets are hashed byte for byte, so no line-ending conversion.
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Go tests
+        run: go test ./...
+      - name: API contract matches its generated bindings
+        run: node tools/generate-contract.cjs --check
+      - name: Contract tooling tests
+        run: node --test tools/generate-contract.test.cjs tools/browser-client.test.cjs
+
+  draft-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Tag matches the version in the code
+        shell: pwsh
+        run: |
+          $source = Get-Content -LiteralPath internal/companion/app.go -Raw
+          if ($source -notmatch 'version\s*=\s*"([^"]+)"') { throw 'Could not read the version from internal/companion/app.go.' }
+          if ("v$($Matches[1])" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match version $($Matches[1]) in app.go." }
+      - name: Build both Windows executables and the update manifest
+        shell: pwsh
+        run: ./build.ps1 -SkipTests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-${{ github.ref_name }}
+          path: dist/
+      - name: Create the draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = "RELEASE_NOTES_$env:GITHUB_REF_NAME.md"
+          $notesArgs = if (Test-Path $notes) { @('--notes-file', $notes) } else { @('--generate-notes') }
+          $files = Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(exe|json)$' } | ForEach-Object FullName
+          gh release create $env:GITHUB_REF_NAME --draft --verify-tag --title "ZZZ Wallpaper Companion $env:GITHUB_REF_NAME" @notesArgs @files

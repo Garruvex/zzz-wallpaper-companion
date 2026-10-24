@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ZZZ Wallpaper Companion API",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "description": "Contract baseline for Companion fix/game-station-stability-ui at 2bdc079. Existing protocol remains 2–2. This describes wire behavior; handlers retain validation. JSON errors use {error}; middleware rejection and mux failures can be plain text. GET routes also accept HEAD via Go ServeMux; OPTIONS is handled by existing CORS middleware. Read operations can populate caches. Streaming/media operations are documentation-only in the explorer."
   },
   "servers": [
@@ -317,7 +317,7 @@
           "System"
         ],
         "summary": "system.stats",
-        "description": "Latest sample collected once per second. GPU is omitted when unavailable. Percentage usage and byte counters.",
+        "description": "Latest sample collected once per second. GPU and network rates are omitted when unavailable. Percentage usage, byte counters and byte-per-second rates.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -1516,7 +1516,7 @@
           "Games"
         ],
         "summary": "games.carts.add",
-        "description": "Raw supported ROM upload, 1 byte–64 MiB; query name determines extension. Deduplicates by SHA1 (200 existing, 201 new).",
+        "description": "Raw supported ROM upload, streamed to a temporary file and deduplicated by SHA1 (200 existing, 201 new). Cartridge ROMs: 1 byte–64 MiB. Experimental PS1 single images (.bin .img .pbp .chd) and PSP (.iso .cso .elf, only while unlocked; see games.psp.get): 1 byte–2 GiB. PBP is PS1; no loose CUE/BIN sets. PSP playback requires the matching experimental wallpaper build and compatible shared-memory host.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -1595,11 +1595,12 @@
             }
           }
         },
-        "x-body-limit-bytes": 67108864,
+        "x-body-limit-bytes": 2147483648,
         "x-side-effects": [
           "rom-upload",
           "loose-rom-migration"
-        ]
+        ],
+        "x-client-timeout-ms": 300000
       }
     },
     "/api/v1/carts/{id}/{file}": {
@@ -1617,7 +1618,7 @@
         "x-explorer-execution": "disabled",
         "responses": {
           "200": {
-            "description": "File up to 64 MiB; label is image/png, others octet-stream.",
+            "description": "Binary file within per-system limits: cartridge ROMs 64 MiB, PS1 images 2 GiB, PS1 states 256 MiB, PSP save bundles 64 MiB, other saves and labels 8 MiB. Labels are image/png; others octet-stream.",
             "headers": {
               "Last-Modified": {
                 "schema": {
@@ -1758,7 +1759,7 @@
           "Games"
         ],
         "summary": "games.carts.file.save",
-        "description": "Only save/state writable; 1 byte–8 MiB, atomic replacement. Optional X-Cart-Rev rejects stale saves; omitted header remains compatible. Previous save .bak retained; states rotate up to three backups when at least 10 minutes old. Identical data returns 204.",
+        "description": "Only save/state writable; nonempty bytes with per-system limits, atomic replacement. Optional X-Cart-Rev rejects stale saves; omitted header remains compatible. Previous save .bak retained; states rotate up to three backups when at least 10 minutes old. Identical data returns 204. PS1 snapshots allow up to 256 MiB; PSP save bundles (.zzzpsp) allow up to 64 MiB. Other saves retain the 8 MiB limit. PSP save bytes are preserved as opaque versioned memory-stick bundles.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -1860,7 +1861,7 @@
             }
           }
         },
-        "x-body-limit-bytes": 8388608,
+        "x-body-limit-bytes": 268435456,
         "x-side-effects": [
           "save-persistence",
           "save-backups"
@@ -1934,7 +1935,7 @@
           "Games"
         ],
         "summary": "games.carts.action",
-        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry.",
+        "description": "reset/import/restore shelve replaced files in backups and bump revision (200). remove moves cartridge to roms/.removed, clears matching selection (204). shelf controls explicit shelf preference (204, 409 if 14 slots full). No automatic write retry. tape moves a game to shelf tape n (1-14), putting it on the shelf if it was off: the shelf stays packed from tape 1, so the games from n on move along one and a number past the end puts it last (204; 400 for a bad n; 409 if the shelf is full).",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -2025,7 +2026,8 @@
                 "restore",
                 "import",
                 "remove",
-                "shelf"
+                "shelf",
+                "tape"
               ]
             }
           },
@@ -2048,11 +2050,22 @@
               "type": "string"
             },
             "description": "For shelf: 1=true; all other values=false."
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14
+            },
+            "description": "Required for tape: the shelf tape, 1-14."
           }
         ],
         "requestBody": {
           "required": false,
-          "description": "Required only for import: raw 1 byte–8 MiB save.",
+          "description": "Required only for import: raw save, 1 byte–8 MiB; PSP .zzzpsp bundles allow up to 64 MiB.",
           "content": {
             "application/octet-stream": {
               "schema": {
@@ -2066,7 +2079,8 @@
           "save-reset-import-restore",
           "cartridge-removal",
           "shelf-settings"
-        ]
+        ],
+        "x-body-limit-bytes": 67108864
       }
     },
     "/api/v1/games/current": {
@@ -2111,7 +2125,7 @@
           "Games"
         ],
         "summary": "games.selection.save",
-        "description": "Select existing cart or clear with empty ID; increments seq, fresh=false. May migrate loose ROMs while finding a cart.",
+        "description": "Select existing cart or clear with empty ID; increments seq, fresh=false. May migrate loose ROMs while finding a cart. Locked PSP games return 409.",
         "x-protocol-range": {
           "min": 2,
           "max": 2
@@ -2157,6 +2171,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "PSP games are locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Error"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2171,6 +2195,47 @@
         },
         "x-side-effects": [
           "game-selection",
+          "loose-rom-migration"
+        ]
+      }
+    },
+    "/api/v1/games/psp": {
+      "get": {
+        "operationId": "games.psp.get",
+        "tags": [
+          "Games"
+        ],
+        "summary": "games.psp.get",
+        "description": "Whether PSP games are unlocked, and the PSP games kept out of games.carts.list while they are locked. Locked PSP games cannot be added, selected, shelved or have their ROM read; their saves stay readable. May migrate loose ROMs while listing.",
+        "x-protocol-range": {
+          "min": 2,
+          "max": 2
+        },
+        "x-explorer-execution": "read",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/games.PspLock"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Loopback client/origin policy rejected request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-side-effects": [
+          "rom-folder-creation",
           "loose-rom-migration"
         ]
       }
@@ -2549,6 +2614,16 @@
           },
           "gpu": {
             "type": "number"
+          },
+          "netDownBytesPerSec": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Received bytes per second across the physical network adapters, eased over about two seconds. Omitted when unavailable."
+          },
+          "netUpBytesPerSec": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sent bytes per second across the physical network adapters, eased over about two seconds. Omitted when unavailable."
           },
           "uptimeSeconds": {
             "type": "integer",
@@ -2979,6 +3054,16 @@
           },
           "onShelf": {
             "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "A PSP game while PSP is locked. It keeps its tape on the shelf but cannot be played or its game file read. Absent for a playable game."
+          },
+          "tape": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14,
+            "description": "The shelf tape the game is on, 1-14: the number on that tape's tag in the wallpaper. Absent while the game is off the shelf. The shelf is packed from tape 1: games added go on the end and taking one off closes the gap."
           }
         },
         "required": [
@@ -3048,6 +3133,24 @@
           }
         },
         "description": "Empty/omitted id clears selection. Unknown JSON fields are accepted."
+      },
+      "games.PspLock": {
+        "type": "object",
+        "properties": {
+          "unlocked": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/games.Cart"
+            }
+          }
+        },
+        "required": [
+          "unlocked",
+          "locked"
+        ]
       },
       "games.FileInfo": {
         "type": "object",
@@ -3163,6 +3266,30 @@
           "at": {
             "type": "integer",
             "format": "int64"
+          },
+          "digitalButtons": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Positional digital pad mask without legacy stick-to-D-pad or trigger-to-shoulder aliases. Bits 0..11 retain the existing layout; 12/13 are L2/R2 and 14/15 are stick clicks. Optional for older servers."
+          },
+          "axes": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "integer",
+              "minimum": -32767,
+              "maximum": 32767
+            },
+            "description": "LX, LY, RX, RY after dead zone and quantization. Right/down positive. Always zero outside capture. Optional for older servers."
+          },
+          "inputVersion": {
+            "type": "integer",
+            "description": "2 identifies digitalButtons and analog axes support; old servers omit this field.",
+            "minimum": 0
+          },
+          "pspUnlocked": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3170,7 +3297,8 @@
           "playMode",
           "captured",
           "controller",
-          "at"
+          "at",
+          "pspUnlocked"
         ]
       }
     }

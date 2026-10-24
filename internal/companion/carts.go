@@ -38,16 +38,42 @@ var systemsByExt = map[string]system{
 	".sfc": {"snes", ".srm"}, ".smc": {"snes", ".srm"},
 	".md": {"segaMD", ".srm"}, ".gen": {"segaMD", ".srm"}, ".smd": {"segaMD", ".srm"},
 	".sms": {"segaMS", ".srm"}, ".gg": {"segaGG", ".srm"},
+	// Baseline PS1 uses a single image, not a loose CUE/BIN disc set.
+	".bin": {"psx", ".srm"}, ".img": {"psx", ".srm"}, ".pbp": {"psx", ".srm"},
+	".chd": {"psx", ".srm"},
+	".iso": {"psp", ".zzzpsp"}, ".cso": {"psp", ".zzzpsp"}, ".elf": {"psp", ".zzzpsp"},
 }
 
 const (
-	maxROMBytes      = 64 << 20
+	maxROMBytes      = 2 << 30
 	maxCartFileBytes = 8 << 20
 	stateBackups     = 3
 	// A new backup is taken when the current state is at least this old, so
 	// the backups reach back in time instead of all being 30 seconds apart.
 	stateBackupAge = 10 * time.Minute
 )
+
+func romByteLimit(sys string) int64 {
+	if sys == "psp" || sys == "psx" {
+		return maxROMBytes
+	}
+	return 64 << 20
+}
+
+func cartByteLimit(c cart, kind string) int64 {
+	if kind == "rom" {
+		return romByteLimit(c.System)
+	}
+	if c.System == "psp" || c.System == "psx" {
+		if kind == "state" {
+			return 256 << 20
+		}
+		if c.System == "psp" && kind == "save" {
+			return 64 << 20
+		}
+	}
+	return maxCartFileBytes
+}
 
 type cart struct {
 	ID     string `json:"id"`
@@ -61,10 +87,18 @@ type cart struct {
 	// Shelf is the player's choice for the wallpaper's shelf of game tapes:
 	// true puts it on, false keeps it off, unset lets it take a free tape.
 	// OnShelf is the outcome once the shelf's size is taken into account.
+	// Locked is a PSP game while PSP is locked: it keeps its tape on the shelf but cannot be played, and
+	// its game file is not served.
+	Locked  bool  `json:"locked,omitempty"`
 	Shelf   *bool `json:"shelf,omitempty"`
 	OnShelf bool  `json:"onShelf"`
-	dir     string
-	save    string
+	// Tape is the shelf tape the game is on, 1 to shelfSlots: the number on that tape's tag in the
+	// wallpaper. Zero (left out) while it is off the shelf. It is kept in cart.json so a game stays
+	// on its tape when others are added.
+	Tape       int `json:"tape,omitempty"`
+	storedTape int
+	dir        string
+	save       string
 }
 
 func (s *APIServer) romDir() string { return filepath.Join(s.dataDir, "roms") }
@@ -108,6 +142,7 @@ func readCart(root, id string) (cart, bool) {
 			Title, Color, SHA1 string
 			Rev                uint64
 			Shelf              *bool
+			Tape               int
 		}
 		if json.Unmarshal(data, &meta) == nil {
 			if t := strings.TrimSpace(meta.Title); t != "" {
@@ -118,6 +153,7 @@ func readCart(root, id string) (cart, bool) {
 			}
 			c.Rev = meta.Rev
 			c.Shelf = meta.Shelf
+			c.storedTape = meta.Tape
 			if len(meta.SHA1) == 40 {
 				c.SHA1 = meta.SHA1
 			}
@@ -128,15 +164,16 @@ func readCart(root, id string) (cart, bool) {
 
 // wrapLooseROMs gives every ROM file sitting directly in the ROM folder its
 // own cartridge folder, bringing along saves made by earlier versions
-// (Game.sav, Game.sav.bak, Game.state).
-func wrapLooseROMs(root string) {
+// (Game.sav, Game.sav.bak, Game.state). Loose PSP files wait where they are
+// while PSP is locked.
+func wrapLooseROMs(root string, pspUnlocked bool) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return
 	}
 	for _, entry := range entries {
 		sys, ok := romSystem(entry.Name())
-		if !ok || !entry.Type().IsRegular() {
+		if !ok || !entry.Type().IsRegular() || (sys.ID == "psp" && !pspUnlocked) {
 			continue
 		}
 		base := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
@@ -170,9 +207,11 @@ func wrapLooseROMs(root string) {
 	}
 }
 
-func (s *APIServer) cartList() []cart {
+// libraryCarts is every cartridge in the ROM folder, locked PSP games
+// included, in title order.
+func (s *APIServer) libraryCarts() []cart {
 	root := s.ensureROMDir()
-	wrapLooseROMs(root)
+	wrapLooseROMs(root, s.pspUnlocked())
 	entries, _ := os.ReadDir(root)
 	carts := []cart{}
 	for _, entry := range entries {
@@ -183,7 +222,34 @@ func (s *APIServer) cartList() []cart {
 		}
 	}
 	sort.Slice(carts, func(i, j int) bool { return strings.ToLower(carts[i].Title) < strings.ToLower(carts[j].Title) })
+	return carts
+}
+
+// cartList is the library as the wallpaper sees it. A locked PSP game stays in it, marked locked, so
+// its tape keeps its place on the shelf; it just can't be played.
+func (s *APIServer) cartList() []cart {
+	unlocked := s.pspUnlocked()
+	carts := s.libraryCarts()
+	for i := range carts {
+		carts[i].Locked = pspLocked(carts[i], unlocked)
+	}
 	applyShelf(carts)
+	numberTapes(carts)
+	for i := range carts {
+		c := &carts[i]
+		if c.Tape == c.storedTape {
+			continue
+		}
+		meta := cartMeta(c.dir)
+		if c.Tape == 0 {
+			delete(meta, "tape")
+		} else {
+			meta["tape"] = c.Tape
+		}
+		if writeCartMeta(c.dir, meta) == nil {
+			c.storedTape = c.Tape
+		}
+	}
 	return carts
 }
 
@@ -204,6 +270,9 @@ func (s *APIServer) cartFile(r *http.Request) (c cart, path, kind string, ok boo
 	}
 	switch kind = r.PathValue("file"); kind {
 	case "rom":
+		if pspLocked(c, s.pspUnlocked()) {
+			return cart{}, "", "", false
+		}
 		path = c.ROM
 	case "save":
 		path = c.save
@@ -230,7 +299,7 @@ func (s *APIServer) getCartFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > maxROMBytes {
+	if err != nil || !info.Mode().IsRegular() || info.Size() > cartByteLimit(c, kind) {
 		writeError(w, http.StatusNotFound, "not there yet")
 		return
 	}
@@ -255,9 +324,10 @@ func (s *APIServer) putCartFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, err.Error())
 		return
 	}
-	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCartFileBytes))
+	limit := cartByteLimit(c, kind)
+	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 	if err != nil || len(data) == 0 {
-		writeError(w, http.StatusBadRequest, "file must be 1 byte to 8 MB")
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("file must be 1 byte to %d MiB", limit>>20))
 		return
 	}
 	if old, err := os.ReadFile(path); err == nil {

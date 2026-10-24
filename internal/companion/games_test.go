@@ -201,3 +201,101 @@ func TestShelfChoosesWhichGamesGetATape(t *testing.T) {
 		t.Fatalf("full shelf accepted another: %d", r.Code)
 	}
 }
+
+func TestShelfGamesKeepTheirTapeNumbers(t *testing.T) {
+	server := testServer(t)
+	for _, name := range []string{"Castlevania", "Metroid", "Zelda"} {
+		write(t, filepath.Join(server.romDir(), name, "game.gba"), "ROM "+name)
+	}
+	tapes := func() map[string]int {
+		var got struct{ Carts []cart }
+		decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &got)
+		out := map[string]int{}
+		for _, c := range got.Carts {
+			out[c.ID] = c.Tape
+		}
+		return out
+	}
+	want := func(got map[string]int, expected map[string]int) {
+		t.Helper()
+		for id, tape := range expected {
+			if got[id] != tape {
+				t.Fatalf("tapes %v, want %v", got, expected)
+			}
+		}
+	}
+	want(tapes(), map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// A new game that sorts first takes the next free tape; the others stay where they are.
+	write(t, filepath.Join(server.romDir(), "Adventure", "game.gba"), "ROM Adventure")
+	want(tapes(), map[string]int{"Adventure": 4, "Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// Taking a game off closes the gap, and the next game onto the shelf goes on the end.
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=0", nil)
+	want(tapes(), map[string]int{"Metroid": 0, "Castlevania": 1, "Zelda": 2, "Adventure": 3})
+	write(t, filepath.Join(server.romDir(), "Bomberman", "game.gba"), "ROM Bomberman")
+	want(tapes(), map[string]int{"Bomberman": 4})
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=1", nil)
+	want(tapes(), map[string]int{"Metroid": 5})
+
+	// The numbers live in cart.json, so they survive a restart.
+	if meta := cartMeta(filepath.Join(server.romDir(), "Zelda")); meta["tape"] != float64(2) {
+		t.Fatalf("Zelda's cart.json: %v", meta)
+	}
+	cartRequest(t, server, http.MethodPost, "/api/v1/carts/Metroid/do/shelf?on=0", nil)
+	tapes()
+	if _, ok := cartMeta(filepath.Join(server.romDir(), "Metroid"))["tape"]; ok {
+		t.Fatal("a game off the shelf kept a tape in cart.json")
+	}
+}
+
+func TestMovingAGameToAnotherTape(t *testing.T) {
+	server := testServer(t)
+	for _, name := range []string{"Castlevania", "Metroid", "Zelda"} {
+		write(t, filepath.Join(server.romDir(), name, "game.gba"), "ROM "+name)
+	}
+	tapes := func() map[string]int {
+		var got struct{ Carts []cart }
+		decode(t, cartRequest(t, server, http.MethodGet, "/api/v1/carts", nil).Body.Bytes(), &got)
+		out := map[string]int{}
+		for _, c := range got.Carts {
+			out[c.ID] = c.Tape
+		}
+		return out
+	}
+	move := func(id string, n int, want int) {
+		t.Helper()
+		if r := cartRequest(t, server, http.MethodPost, fmt.Sprintf("/api/v1/carts/%s/do/tape?n=%d", id, n), nil); r.Code != want {
+			t.Fatalf("move %s to %d: %d %s", id, n, r.Code, r.Body)
+		}
+	}
+	expect := func(want map[string]int) {
+		t.Helper()
+		got := tapes()
+		for id, tape := range want {
+			if got[id] != tape {
+				t.Fatalf("tapes %v, want %v", got, want)
+			}
+		}
+	}
+	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+
+	// Past the end: it goes last, with no gap.
+	move("Castlevania", 9, http.StatusNoContent)
+	expect(map[string]int{"Metroid": 1, "Zelda": 2, "Castlevania": 3})
+	// Onto a taken tape: it goes in there and the rest move along.
+	move("Castlevania", 1, http.StatusNoContent)
+	expect(map[string]int{"Castlevania": 1, "Metroid": 2, "Zelda": 3})
+	move("Castlevania", 2, http.StatusNoContent)
+	expect(map[string]int{"Metroid": 1, "Castlevania": 2, "Zelda": 3})
+	// An off-shelf game goes onto the shelf at that tape; nobody is bumped off.
+	write(t, filepath.Join(server.romDir(), "Tetris", "game.gb"), "GB")
+	write(t, filepath.Join(server.romDir(), "Tetris", "cart.json"), `{"shelf":false}`)
+	expect(map[string]int{"Tetris": 0})
+	move("Tetris", 2, http.StatusNoContent)
+	expect(map[string]int{"Metroid": 1, "Tetris": 2, "Castlevania": 3, "Zelda": 4})
+	// Bad tapes are refused.
+	move("Zelda", 0, http.StatusBadRequest)
+	move("Zelda", 15, http.StatusBadRequest)
+	move("Nope", 3, http.StatusNotFound)
+}

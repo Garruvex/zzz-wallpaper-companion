@@ -4,8 +4,8 @@ import "sync/atomic"
 
 const vkPause = 0x13
 
-// Windows virtual-key codes for the keyboard controls.
-var keyBindings = map[uint32]uint{
+// Windows virtual-key codes for the keyboard controls, until the player changes them.
+var defaultKeys = map[uint32]uint{
 	0x26: ButtonUp, 0x28: ButtonDown, 0x25: ButtonLeft, 0x27: ButtonRight,
 	0x58: ButtonA,      // X
 	0x5A: ButtonB,      // Z
@@ -15,6 +15,42 @@ var keyBindings = map[uint32]uint{
 	0x44: ButtonX,      // D (SNES X)
 	0x0D: ButtonStart,  // Enter
 	0x08: ButtonSelect, // Backspace
+}
+
+// keyBindings is the keys in use. The hook reads it on every key event, so it is swapped whole.
+var keyBindings atomic.Pointer[map[uint32]uint]
+
+func init() { SetKeyBindings(nil) }
+
+// DefaultKeyBindings returns the default keys: Windows virtual-key code to button.
+func DefaultKeyBindings() map[uint32]uint {
+	keys := make(map[uint32]uint, len(defaultKeys))
+	for vk, button := range defaultKeys {
+		keys[vk] = button
+	}
+	return keys
+}
+
+// KeyBindings returns the keys in use.
+func KeyBindings() map[uint32]uint {
+	keys := map[uint32]uint{}
+	for vk, button := range *keyBindings.Load() {
+		keys[vk] = button
+	}
+	return keys
+}
+
+// SetKeyBindings replaces the keyboard controls (virtual-key code to button); nil restores the
+// defaults. The caller keeps Pause and modifier keys out of it.
+func SetKeyBindings(keys map[uint32]uint) {
+	if keys == nil {
+		keys = DefaultKeyBindings()
+	}
+	copied := make(map[uint32]uint, len(keys))
+	for vk, button := range keys {
+		copied[vk] = button
+	}
+	keyBindings.Store(&copied)
 }
 
 // keyState tracks game keys from key events. It is shared by the hook and the
@@ -48,7 +84,7 @@ func (k *keyState) handle(vk uint32, down, modified bool) (swallow, changed bool
 		}
 		return true, false
 	}
-	bit, ok := keyBindings[vk]
+	bit, ok := (*keyBindings.Load())[vk]
 	if !ok || !k.grab.Load() {
 		return false, false
 	}

@@ -20,6 +20,8 @@ type windowsStatsCollector struct {
 	getTickCount64                           *syscall.LazyProc
 	pdhCollect, pdhValue, pdhArray, pdhClose *syscall.LazyProc
 	pdhQuery, pdhCPUCounter, pdhGPUCounter   uintptr
+	pdhNetRecv, pdhNetSent                   uintptr
+	smoothDown, smoothUp                     *float64
 }
 
 type pdhDoubleValue struct {
@@ -67,7 +69,11 @@ func newSystemStatsCollector() systemStatsCollector {
 		gpuPath, _ := syscall.UTF16PtrFromString(`\GPU Engine(*)\Utilization Percentage`)
 		add.Call(c.pdhQuery, uintptr(unsafe.Pointer(cpuPath)), 0, uintptr(unsafe.Pointer(&c.pdhCPUCounter)))
 		add.Call(c.pdhQuery, uintptr(unsafe.Pointer(gpuPath)), 0, uintptr(unsafe.Pointer(&c.pdhGPUCounter)))
-		if c.pdhCPUCounter == 0 && c.pdhGPUCounter == 0 {
+		recvPath, _ := syscall.UTF16PtrFromString(`\Network Interface(*)\Bytes Received/sec`)
+		sentPath, _ := syscall.UTF16PtrFromString(`\Network Interface(*)\Bytes Sent/sec`)
+		add.Call(c.pdhQuery, uintptr(unsafe.Pointer(recvPath)), 0, uintptr(unsafe.Pointer(&c.pdhNetRecv)))
+		add.Call(c.pdhQuery, uintptr(unsafe.Pointer(sentPath)), 0, uintptr(unsafe.Pointer(&c.pdhNetSent)))
+		if c.pdhCPUCounter == 0 && c.pdhGPUCounter == 0 && c.pdhNetRecv == 0 && c.pdhNetSent == 0 {
 			c.pdhClose.Call(c.pdhQuery)
 			c.pdhQuery = 0
 		} else {
@@ -102,7 +108,56 @@ func (c *windowsStatsCollector) Sample() SystemStatsSnapshot {
 		s.MemoryUsed = m.TotalPhys - m.AvailPhys
 	}
 	s.GPU = c.readGPU()
+	s.NetDown = c.readNetwork(c.pdhNetRecv, &c.smoothDown)
+	s.NetUp = c.readNetwork(c.pdhNetSent, &c.smoothUp)
 	return s
+}
+
+// readNetwork reads one per-adapter rate counter and returns the eased total, or nil when the
+// counter is missing so the field is left out of the sample.
+func (c *windowsStatsCollector) readNetwork(counter uintptr, smoothed **float64) *uint64 {
+	items, ok := c.readCounterArray(counter)
+	if !ok {
+		return nil
+	}
+	samples := make([]networkSample, 0, len(items))
+	for _, item := range items {
+		samples = append(samples, networkSample{name: item.name, value: item.value})
+	}
+	value := smoothRate(*smoothed, aggregateNetwork(samples))
+	*smoothed = &value
+	rate := uint64(value)
+	return &rate
+}
+
+type counterItem struct {
+	name  string
+	value float64
+}
+
+// readCounterArray reads every instance of a wildcard counter.
+func (c *windowsStatsCollector) readCounterArray(counter uintptr) ([]counterItem, bool) {
+	if counter == 0 {
+		return nil, false
+	}
+	var size, count uint32
+	result, _, _ := c.pdhArray.Call(counter, pdhFmtDouble, uintptr(unsafe.Pointer(&size)), uintptr(unsafe.Pointer(&count)), 0)
+	if result != pdhMoreData || size == 0 || count == 0 {
+		return nil, false
+	}
+	buffer := make([]byte, size)
+	result, _, _ = c.pdhArray.Call(counter, pdhFmtDouble, uintptr(unsafe.Pointer(&size)), uintptr(unsafe.Pointer(&count)), uintptr(unsafe.Pointer(&buffer[0])))
+	if result != 0 {
+		return nil, false
+	}
+	items := unsafe.Slice((*pdhDoubleItem)(unsafe.Pointer(&buffer[0])), int(count))
+	out := make([]counterItem, 0, len(items))
+	for _, item := range items {
+		if item.Value.Status == 0 && item.Name != nil {
+			out = append(out, counterItem{name: utf16PtrString(item.Name), value: item.Value.Value})
+		}
+	}
+	return out, true
 }
 
 func (c *windowsStatsCollector) readGPU() *float64 {

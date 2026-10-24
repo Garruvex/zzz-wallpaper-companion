@@ -22,6 +22,10 @@ const (
 	ButtonX      = 9
 	ButtonL      = 10
 	ButtonR      = 11
+	ButtonL2     = 12
+	ButtonR2     = 13
+	ButtonL3     = 14
+	ButtonR3     = 15
 )
 
 // CaptureMode decides when the game takes the keyboard and controller.
@@ -49,10 +53,17 @@ func ParseCaptureMode(value string) (CaptureMode, bool) {
 
 // Snapshot is what a subscriber receives whenever something changes.
 type Snapshot struct {
-	Buttons   uint32 `json:"buttons"`
-	PlayMode  bool   `json:"playMode"`
-	Captured  bool   `json:"captured"`
-	Connected bool   `json:"controller"`
+	Buttons uint32 `json:"buttons"`
+	// New clients use the digital mask without legacy stick/trigger aliases.
+	DigitalButtons uint32 `json:"digitalButtons"`
+	// LX, LY, RX, RY; positive means right/down; -32767..32767.
+	Axes         [4]int16 `json:"axes"`
+	InputVersion int      `json:"inputVersion"`
+	PlayMode     bool     `json:"playMode"`
+	Captured     bool     `json:"captured"`
+	Connected    bool     `json:"controller"`
+	// PSPUnlocked says whether PSP games are unlocked; it changes while the stream is open.
+	PSPUnlocked bool `json:"pspUnlocked"`
 	// At is when this state was read (Unix ms), so the wallpaper can show input lag.
 	At int64 `json:"at"`
 }
@@ -63,6 +74,14 @@ type Source interface {
 	DesktopFocused() bool
 	Keyboard() Keyboard
 }
+
+type ControllerState struct {
+	Buttons, DigitalButtons uint32
+	Axes                    [4]int16
+	Connected               bool
+}
+
+type detailedSource interface{ DetailedController() ControllerState }
 
 // Keyboard is a key hook that exists only while play mode is on.
 type Keyboard interface {
@@ -95,13 +114,16 @@ type Hub struct {
 	// focusKnown is false until the first focus check after play mode starts.
 	focusKnown bool
 	last       Snapshot
-	stop       chan struct{}
-	done       chan struct{}
-	wake       chan struct{}
+	// idle gets the controller's buttons on every poll while play mode is off.
+	idle        func(buttons uint32)
+	pspUnlocked bool
+	stop        chan struct{}
+	done        chan struct{}
+	wake        chan struct{}
 }
 
 func NewHub(source Source) *Hub {
-	return &Hub{source: source, keyboard: source.Keyboard(), mode: CaptureDesktop, subs: make(map[chan Snapshot]struct{}), wake: make(chan struct{}, 1)}
+	return &Hub{source: source, keyboard: source.Keyboard(), mode: CaptureDesktop, subs: make(map[chan Snapshot]struct{}), wake: make(chan struct{}, 1), last: Snapshot{InputVersion: 2}}
 }
 
 // Subscribe registers a listener. The returned channel receives the current
@@ -135,7 +157,7 @@ func (h *Hub) Subscribe() (updates <-chan Snapshot, cancel func()) {
 			// Nobody is watching, so the key hook must not stay installed.
 			h.playMode = false
 			close(h.stop)
-			h.last = Snapshot{}
+			h.last = Snapshot{InputVersion: 2, PSPUnlocked: h.pspUnlocked}
 		}
 	}
 }
@@ -160,6 +182,25 @@ func (h *Hub) SetPlayMode(enabled bool, mode CaptureMode) Snapshot {
 	next := h.last
 	next.PlayMode = enabled
 	return next
+}
+
+// WatchIdle registers a function that gets the controller's digital buttons
+// on every poll while play mode is off, so no game is using them. The
+// keyboard is not included: its hook only exists in play mode.
+func (h *Hub) WatchIdle(watch func(buttons uint32)) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.idle = watch
+}
+
+// SetPSPUnlocked updates the PSP flag every listener sees.
+func (h *Hub) SetPSPUnlocked(on bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.pspUnlocked = on
+	next := h.last
+	next.PSPUnlocked = on
+	h.publishLocked(next)
 }
 
 func (h *Hub) PlayMode() bool {
@@ -207,7 +248,19 @@ func (h *Hub) run(stop <-chan struct{}) {
 
 // step works out whether the game has the input right now and publishes it.
 func (h *Hub) step(stop <-chan struct{}, hooked bool) {
-	pad, connected := h.source.Controller()
+	var state ControllerState
+	if source, ok := h.source.(detailedSource); ok {
+		state = source.DetailedController()
+	} else {
+		state.Buttons, state.Connected = h.source.Controller()
+		state.DigitalButtons = state.Buttons
+	}
+	h.mu.Lock()
+	watch, idle := h.idle, !h.playMode
+	h.mu.Unlock()
+	if watch != nil && idle && state.Connected {
+		watch(state.DigitalButtons)
+	}
 	focused := h.source.DesktopFocused()
 	presses := 0
 	if hooked {
@@ -232,14 +285,17 @@ func (h *Hub) step(stop <-chan struct{}, hooked bool) {
 	if hooked {
 		h.keyboard.SetGrab(captured)
 	}
-	var buttons uint32
+	var buttons, digital uint32
+	var axes [4]int16
 	if captured {
-		buttons = pad
+		buttons, digital, axes = state.Buttons, state.DigitalButtons, state.Axes
 		if hooked {
-			buttons |= h.keyboard.Keys()
+			keys := h.keyboard.Keys()
+			buttons |= keys
+			digital |= keys
 		}
 	}
-	h.publishLocked(Snapshot{Buttons: buttons, PlayMode: h.playMode, Captured: captured, Connected: connected})
+	h.publishLocked(Snapshot{Buttons: buttons, DigitalButtons: digital, Axes: axes, InputVersion: 2, PlayMode: h.playMode, Captured: captured, Connected: state.Connected, PSPUnlocked: h.pspUnlocked})
 }
 
 func (h *Hub) publishLocked(next Snapshot) {
@@ -257,4 +313,15 @@ func (h *Hub) publishLocked(next Snapshot) {
 		}
 		ch <- next
 	}
+}
+
+// Live reads the controller right now, whether or not anyone is playing, for pages that show it.
+func (h *Hub) Live() ControllerState {
+	if source, ok := h.source.(detailedSource); ok {
+		return source.DetailedController()
+	}
+	var state ControllerState
+	state.Buttons, state.Connected = h.source.Controller()
+	state.DigitalButtons = state.Buttons
+	return state
 }
