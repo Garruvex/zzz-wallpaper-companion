@@ -41,7 +41,7 @@
       const groups=[
         ['language','Language',[['language','Language']]],
         ['startup','Startup & Updates',[['startup','Start with Windows'],['autoUpdate','Automatic Updates']]],
-        ['youtube','YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Channel']]],
+        ['youtube','YouTube Playback',[['height','Video Resolution'],['transcodeHeight','Live Stream Resolution'],['channel','YouTube Downloader Update Channel']]],
         ['connection','Connection',[['port','Companion Port']]]
       ];
       for(const [key,title,fields] of groups){

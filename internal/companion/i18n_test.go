@@ -172,8 +172,18 @@ func TestLanguageChoiceIsSavedAndDrivesThePagesAndErrors(t *testing.T) {
 	if err := json.Unmarshal([]byte(strings.TrimSuffix(strings.TrimPrefix(line, "window.companionI18n="), ";")), &table); err != nil {
 		t.Fatalf("api.js does not start with the table: %v", err)
 	}
-	if table.Lang != "zh-TW" || table.Table["Storage"] != "儲存" {
+	if table.Lang != "zh-TW" || table.Table["Storage"] != "儲存空間" {
 		t.Fatalf("table: %+v", table.Lang)
+	}
+
+	// Choosing a language answers with its table, so open pages switch without a reload.
+	var picked struct {
+		Current string            `json:"current"`
+		Table   map[string]string `json:"table"`
+	}
+	decode(t, cartRequest(t, server, http.MethodGet, "/ui/language", nil).Body.Bytes(), &picked)
+	if picked.Current != "zh-TW" || picked.Table["Quit"] != "結束" {
+		t.Fatalf("the language answer lacks its table: %q, %d entries", picked.Current, len(picked.Table))
 	}
 
 	// The errors a page shows come back in the language too.

@@ -83,6 +83,7 @@ function savesPanel(cart) {
   const action = (action, query = {}) => api('games.carts.action', { path: { id: cart.id, action }, query });
   const panel = el('div', { className: 'saves' });
   const save = info.save;
+  panel.append(el('small', { textContent: 'A resume point captures where you stopped, separately from the in-game save.' }));
   panel.append(el('div', { className: 'line' },
     el('span', {}, el('b', { textContent: 'Game save ' }), el('small', { textContent: save ? `${size(save.size)} · ${when(save.modified)}` : 'none yet' })),
     el('span', { className: 'row' },
@@ -93,9 +94,9 @@ function savesPanel(cart) {
   for (const point of info.states) {
     panel.append(el('div', { className: 'line' },
       el('small', { textContent: t('Earlier resume point · {when}', { when: when(point.modified) }) }),
-      button('Go back to this', async () => {
-        if (await companionConfirm({ title: 'Go back to this resume point?', message: t('From {when}. The current one is kept in the game\'s backups folder.', { when: when(point.modified) }), confirmLabel: 'Go back' }))
-          run('Restored. The TV reloads the game if it is playing it.', () => action('restore', { state: point.n }));
+      button('Restore this resume point', async () => {
+        if (await companionConfirm({ title: 'Restore this resume point?', message: t('From {when}. The current one is kept in the game\'s backups folder.', { when: when(point.modified) }), confirmLabel: 'Restore' }))
+          run('Restored. If this game is running on the TV, it will reload.', () => action('restore', { state: point.n }));
       })));
   }
   panel.append(el('div', { className: 'line' },
@@ -105,9 +106,9 @@ function savesPanel(cart) {
         run('Save deleted.', () => action('reset'));
     }, 'danger')));
   panel.append(el('div', { className: 'line' },
-    el('small', { textContent: 'Kept until you clear the cache in Storage.' }),
+    el('small', { textContent: 'Kept until you choose Clean up storage in Storage.' }),
     button('Remove game', async () => {
-      if (await companionConfirm({ title: t('Remove {name}?', { name: cart.title }), message: 'It comes off the shelf. The game and its saves are kept until you clear the cache in Storage.', confirmLabel: 'Remove' }))
+      if (await companionConfirm({ title: t('Remove {name}?', { name: cart.title }), message: 'It comes off the shelf. The game and its saves are kept until you choose Clean up storage in Storage.', confirmLabel: 'Remove' }))
         run(t('{name} removed.', { name: cart.title }), () => api('games.carts.action', { path: { id: cart.id, action: 'remove' } }));
     }, 'danger')));
   return panel;
@@ -262,9 +263,9 @@ function gameRow(cart, full) {
   const shelfButton = el('button', { type: 'button', className: 'lib-move', textContent: tape ? '−' : '+', disabled: busy || (!tape && full),
     title: tape ? 'Take off the shelf' : full ? 'The shelf is full' : 'Add to the end of the shelf', onclick: () => putOnShelf(cart, !tape) });
   shelfButton.setAttribute('aria-label', tape ? t('Take {name} off the shelf', { name: cart.title }) : t('Put {name} on the shelf', { name: cart.title }));
-  const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Close' : 'Saves and Remove', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
+  const fold = el('button', { type: 'button', className: 'zzz-fold', title: shown ? 'Close' : 'Manage game', onclick: () => { shown ? open.delete(cart.id) : open.add(cart.id); refresh(); } });
   fold.setAttribute('aria-expanded', String(shown));
-  fold.setAttribute('aria-label', t(shown ? 'Close saves and Remove for {name}' : 'Open saves and Remove for {name}', { name: cart.title }));
+  fold.setAttribute('aria-label', t(shown ? 'Close game management for {name}' : 'Open game management for {name}', { name: cart.title }));
   const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` },
     grip, tape ? el('span', { className: 'tape-no', textContent: tapeText(tape) }) : '', title, meta,
     el('span', { className: 'tape-actions' }, play, shelfButton), fold);
@@ -399,13 +400,13 @@ async function renderCache() {
   try { use = await companionCacheUse(); } catch { box.replaceChildren(el('p', { className: 'empty', textContent: 'Could not read the storage use.' })); return; }
   const games = n => n === 1 ? t('1 removed game') : t('{n} removed games', { n });
   const nothing = !use.removedGames && !use.removedBytes && !use.mapBytes;
-  const clear = el('button', { type: 'button', className: 'zzz-chipbtn danger', textContent: 'Clear cache', disabled: nothing, onclick: async () => {
+  const clear = el('button', { type: 'button', className: 'zzz-chipbtn danger', textContent: 'Clean up storage', disabled: nothing, onclick: async () => {
     const now = await companionCacheUse();
     if (!await companionConfirm({
-      title: 'Clear the cache for good?',
+      title: 'Permanently delete removed games, their saves and cached maps?',
       message: t('This deletes {games} and their saves ({size}), plus the weather map\'s saved tiles ({mapSize}). It cannot be undone. Games in your Library, their saves and their backups are not touched. The map tiles download again when the weather map needs them.', { games: games(now.removedGames), size: bytes(now.removedBytes), mapSize: bytes(now.mapBytes) }),
-      confirmLabel: 'Clear' })) return;
-    try { await companionClearCache(); say('Cache cleared.'); } catch (error) { say(error.message, 'error'); }
+      confirmLabel: 'Delete permanently' })) return;
+    try { await companionClearCache(); say('Storage cleaned up.'); } catch (error) { say(error.message, 'error'); }
     renderCache();
   } });
   box.replaceChildren(el('div', { className: 'line' },

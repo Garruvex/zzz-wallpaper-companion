@@ -5,26 +5,46 @@
 // pages change. Text with values in it goes through t('… {name} …', { name }). Anything inside
 // translate="no" (game names, your dates, holiday names) is never touched.
 (() => {
-  const { lang = 'en', table = {} } = window.companionI18n || {};
+  let { lang = 'en', table = {} } = window.companionI18n || {};
   window.companionLang = lang;
+  const rendered = new Map();
+  const originals = new WeakMap();
+  const originalAttributes = new WeakMap();
   window.t = (text, values) => {
     const out = table[text] ?? text;
-    return values ? out.replace(/\{(\w+)\}/g, (match, key) => key in values ? values[key] : match) : out;
+    const result = values ? out.replace(/\{(\w+)\}/g, (match, key) => key in values ? values[key] : match) : out;
+    if (values) rendered.set(result, { text, values });
+    return result;
   };
   document.documentElement.lang = lang;
-  if (lang === 'en') return;
+
   const ATTRIBUTES = ['placeholder', 'title', 'aria-label'];
   const kept = node => node.parentElement?.closest('[translate="no"], script, style');
   const text = node => {
-    const raw = node.nodeValue, key = raw.trim();
+    const raw = node.nodeValue;
+    if (kept(node)) return;
+    const prior = originals.get(node);
+    const key = prior && prior.last === raw ? prior.key : raw.trim();
+    const template = rendered.get(key);
+    const next = template ? window.t(template.text, template.values) : (table[key] ?? key);
+    const value = raw.replace(raw.trim(), next);
+    originals.set(node, { key, last: value });
     // Only a real change is written: writing the same text again would wake the observer forever.
-    if (key && table[key] && table[key] !== key && !kept(node)) node.nodeValue = raw.replace(key, table[key]);
+    if (key && value !== raw) node.nodeValue = value;
   };
   const attributes = element => {
     if (element.closest('[translate="no"]')) return;
+    let saved = originalAttributes.get(element);
+    if (!saved) originalAttributes.set(element, saved = {});
     for (const name of ATTRIBUTES) {
-      const value = element.getAttribute(name)?.trim();
-      if (value && table[value] && table[value] !== value) element.setAttribute(name, table[value]);
+      const value = element.getAttribute(name);
+      if (!value) continue;
+      const prior = saved[name];
+      const key = prior && prior.last === value ? prior.key : value.trim();
+      const template = rendered.get(key);
+      const next = template ? window.t(template.text, template.values) : (table[key] ?? key);
+      saved[name] = { key, last: next };
+      if (next !== value) element.setAttribute(name, next);
     }
   };
   const visit = root => {
@@ -34,7 +54,22 @@
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) node.nodeType === Node.TEXT_NODE ? text(node) : attributes(node);
   };
-  const titled = () => { const next = document.title.split(' · ').map(part => table[part] ?? part).join(' · '); if (next !== document.title) document.title = next; };
+  let originalTitle = document.title;
+  let lastTitle = originalTitle;
+  const titled = () => {
+    if (document.title !== lastTitle) originalTitle = document.title;
+    const next = originalTitle.split(' · ').map(part => table[part] ?? part).join(' · ');
+    lastTitle = next;
+    if (next !== document.title) document.title = next;
+  };
+  window.companionApplyLanguage = data => {
+    lang = data.current; table = data.table || {};
+    window.companionLang = lang;
+    window.companionI18n = { lang, table };
+    document.documentElement.lang = lang;
+    if (document.body) visit(document.body);
+    titled();
+  };
   new MutationObserver(records => {
     for (const record of records) {
       if (record.type === 'childList') record.addedNodes.forEach(visit);
@@ -101,11 +136,12 @@ window.companionConfirm = async options => {
   return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
 };
 
-// Saves the language chosen in General ("" follows Windows). The page reloads afterwards to show it.
+// Saves and applies the language without reloading the page.
 window.companionSaveLanguage = async language => {
   const response = await fetch('/ui/language', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language }) });
   const body = await response.json();
   if (!response.ok) throw Error(body.error || t('Could not save the language.'));
+  window.companionApplyLanguage(body);
   return body;
 };
 
@@ -122,7 +158,7 @@ window.companionCacheUse = async () => (await fetch('/games/cache', { cache: 'no
 window.companionClearCache = async () => {
   const response = await fetch('/games/cache/clear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }) });
   const body = await response.json();
-  if (!response.ok) throw Error(body.error || 'Could not clear the cache.');
+  if (!response.ok) throw Error(body.error || t('Could not clean up storage.'));
   return body;
 };
 

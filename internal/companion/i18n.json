@@ -7,9 +7,13 @@
   "zh-CN": "1 个已移除的游戏",
   "zh-TW": "1 個已移除的遊戲"
  },
+ "A resume point captures where you stopped, separately from the in-game save.": {
+  "zh-CN": "续玩点记录停止游玩时的状态，与游戏内存档分开保存。",
+  "zh-TW": "續玩點會記錄停止遊玩時的狀態，與遊戲內存檔分開儲存。"
+ },
  "ADJUSTED WORKDAY": {
-  "zh-CN": "调休上班",
-  "zh-TW": "調休上班"
+  "zh-CN": "调休上班日",
+  "zh-TW": "補班日"
  },
  "Add Games": {
   "zh-CN": "添加游戏",
@@ -45,7 +49,7 @@
  },
  "Another companion is running but not answering. If it stays stuck, end it in Task Manager and start the companion again.": {
   "zh-CN": "另一个配套应用正在运行但没有响应。如果一直卡住，请在任务管理器中结束它，然后重新启动配套应用。",
-  "zh-TW": "另一個配套應用程式正在執行但沒有回應。如果一直卡住，請在工作管理員中結束它，然後重新啟動配套應用程式。"
+  "zh-TW": "另一個輔助程式正在執行但沒有回應。如果一直卡住，請在工作管理員中結束它，然後重新啟動輔助程式。"
  },
  "Automatic Updates": {
   "zh-CN": "自动更新",
@@ -67,10 +71,6 @@
   "zh-CN": "按钮",
   "zh-TW": "按鈕"
  },
- "Cache cleared.": {
-  "zh-CN": "缓存已清除。",
-  "zh-TW": "快取已清除。"
- },
  "Calendar": {
   "zh-CN": "日历",
   "zh-TW": "行事曆"
@@ -87,29 +87,25 @@
   "zh-CN": "请选择…",
   "zh-TW": "請選擇…"
  },
+ "Clean up storage": {
+  "zh-CN": "清理存储空间",
+  "zh-TW": "清理儲存空間"
+ },
  "Clear": {
   "zh-CN": "清除",
   "zh-TW": "清除"
- },
- "Clear cache": {
-  "zh-CN": "清除缓存",
-  "zh-TW": "清除快取"
  },
  "Clear form": {
   "zh-CN": "清空表单",
   "zh-TW": "清除表單"
  },
- "Clear the cache for good?": {
-  "zh-CN": "永久清除缓存？",
-  "zh-TW": "永久清除快取？"
- },
  "Close": {
   "zh-CN": "关闭",
   "zh-TW": "關閉"
  },
- "Close saves and Remove for {name}": {
-  "zh-CN": "关闭 {name} 的存档与移除",
-  "zh-TW": "關閉 {name} 的存檔與移除"
+ "Close game management for {name}": {
+  "zh-CN": "收起 {name} 的管理选项",
+  "zh-TW": "收合 {name} 的管理選項"
  },
  "Coming up": {
   "zh-CN": "即将到来",
@@ -117,43 +113,43 @@
  },
  "Companion Port": {
   "zh-CN": "配套应用端口",
-  "zh-TW": "配套應用程式連接埠"
+  "zh-TW": "輔助程式連接埠"
  },
  "Companion Settings": {
   "zh-CN": "配套应用设置",
-  "zh-TW": "配套應用程式設定"
+  "zh-TW": "輔助程式設定"
  },
  "Companion connection unavailable": {
   "zh-CN": "配套应用连接不可用",
-  "zh-TW": "配套應用程式連線無法使用"
+  "zh-TW": "輔助程式連線無法使用"
  },
  "Companion could not start": {
   "zh-CN": "配套应用无法启动",
-  "zh-TW": "配套應用程式無法啟動"
+  "zh-TW": "輔助程式無法啟動"
  },
  "Companion is up to date": {
   "zh-CN": "配套应用已是最新版本",
-  "zh-TW": "配套應用程式已是最新版本"
+  "zh-TW": "輔助程式已是最新版本"
  },
  "Companion sections": {
   "zh-CN": "配套应用分区",
-  "zh-TW": "配套應用程式分區"
+  "zh-TW": "輔助程式分區"
  },
  "Companion settings unavailable": {
   "zh-CN": "配套应用设置不可用",
-  "zh-TW": "配套應用程式設定無法使用"
+  "zh-TW": "輔助程式設定無法使用"
  },
  "Companion update check failed": {
   "zh-CN": "配套应用检查更新失败",
-  "zh-TW": "配套應用程式檢查更新失敗"
+  "zh-TW": "輔助程式檢查更新失敗"
  },
  "Companion update failed": {
   "zh-CN": "配套应用更新失败",
-  "zh-TW": "配套應用程式更新失敗"
+  "zh-TW": "輔助程式更新失敗"
  },
  "Companion update ready": {
   "zh-CN": "配套应用更新已就绪",
-  "zh-TW": "配套應用程式更新已就緒"
+  "zh-TW": "輔助程式更新已就緒"
  },
  "Confirm": {
   "zh-CN": "确认",
@@ -179,6 +175,10 @@
   "zh-CN": "无法备份当前存档。",
   "zh-TW": "無法備份目前的存檔。"
  },
+ "Could not clean up storage.": {
+  "zh-CN": "无法清理存储空间。",
+  "zh-TW": "無法清理儲存空間。"
+ },
  "Could not clear everything. Is one of its files open?": {
   "zh-CN": "无法全部清除。某个文件是否正被占用？",
   "zh-TW": "無法全部清除。某個檔案是否正被佔用？"
@@ -189,11 +189,11 @@
  },
  "Could not reach the companion.": {
   "zh-CN": "无法连接到配套应用。",
-  "zh-TW": "無法連線到配套應用程式。"
+  "zh-TW": "無法連線到輔助程式。"
  },
  "Could not read the keys.": {
-  "zh-CN": "无法读取按键。",
-  "zh-TW": "無法讀取按鍵。"
+  "zh-CN": "无法读取按键设置。",
+  "zh-TW": "無法讀取按鍵設定。"
  },
  "Could not read the storage use.": {
   "zh-CN": "无法读取存储用量。",
@@ -212,8 +212,8 @@
   "zh-TW": "無法重新命名遊戲。"
  },
  "Could not reset the keys.": {
-  "zh-CN": "无法重置按键。",
-  "zh-TW": "無法重設按鍵。"
+  "zh-CN": "无法重置按键设置。",
+  "zh-TW": "無法重設按鍵設定。"
  },
  "Could not save automatic update setting": {
   "zh-CN": "无法保存自动更新设置",
@@ -228,8 +228,8 @@
   "zh-TW": "無法儲存設定"
  },
  "Could not save the keys.": {
-  "zh-CN": "无法保存按键。",
-  "zh-TW": "無法儲存按鍵。"
+  "zh-CN": "无法保存按键设置。",
+  "zh-TW": "無法儲存按鍵設定。"
  },
  "Could not save the language.": {
   "zh-CN": "无法保存语言。",
@@ -274,6 +274,10 @@
  "Delete": {
   "zh-CN": "删除",
   "zh-TW": "刪除"
+ },
+ "Delete permanently": {
+  "zh-CN": "永久删除",
+  "zh-TW": "永久刪除"
  },
  "Delete save": {
   "zh-CN": "删除存档",
@@ -395,18 +399,6 @@
   "zh-CN": "常规",
   "zh-TW": "一般"
  },
- "Go back": {
-  "zh-CN": "回到这里",
-  "zh-TW": "回到這裡"
- },
- "Go back to this": {
-  "zh-CN": "回到这里",
-  "zh-TW": "回到這裡"
- },
- "Go back to this resume point?": {
-  "zh-CN": "回到这个续玩点？",
-  "zh-TW": "回到這個續玩點？"
- },
  "Higher uses more bandwidth and GPU memory.": {
   "zh-CN": "越高越占用带宽和显存。",
   "zh-TW": "越高越佔用頻寬和顯示記憶體。"
@@ -437,19 +429,19 @@
  },
  "Invalid companion settings": {
   "zh-CN": "配套应用设置无效",
-  "zh-TW": "配套應用程式設定無效"
+  "zh-TW": "輔助程式設定無效"
  },
- "It comes off the shelf. The game and its saves are kept until you clear the cache in Storage.": {
-  "zh-CN": "它会从书架取下。游戏及其存档会保留到你在“存储”中清除缓存为止。",
-  "zh-TW": "它會從書架取下。遊戲及其存檔會保留到你在「儲存」中清除快取為止。"
+ "It comes off the shelf. The game and its saves are kept until you choose Clean up storage in Storage.": {
+  "zh-CN": "它会从书架取下。游戏及其存档会保留到你在“存储空间”中选择“清理存储空间”为止。",
+  "zh-TW": "它會從書架取下。遊戲及其存檔會保留到你在「儲存空間」中選擇「清理儲存空間」為止。"
  },
  "Kept in the game's backups folder.": {
   "zh-CN": "保留在游戏的备份文件夹中。",
   "zh-TW": "保留在遊戲的備份資料夾中。"
  },
- "Kept until you clear the cache in Storage.": {
-  "zh-CN": "保留到你在“存储”中清除缓存为止。",
-  "zh-TW": "保留到你在「儲存」中清除快取為止。"
+ "Kept until you choose Clean up storage in Storage.": {
+  "zh-CN": "保留到你在“存储空间”中选择“清理存储空间”为止。",
+  "zh-TW": "保留到你在「儲存空間」中選擇「清理儲存空間」為止。"
  },
  "Keyboard": {
   "zh-CN": "键盘",
@@ -491,6 +483,10 @@
   "zh-CN": "已锁定",
   "zh-TW": "已鎖定"
  },
+ "Manage game": {
+  "zh-CN": "管理游戏",
+  "zh-TW": "管理遊戲"
+ },
  "Menu": {
   "zh-CN": "菜单",
   "zh-TW": "選單"
@@ -525,7 +521,7 @@
  },
  "New versions install the next time the companion starts.": {
   "zh-CN": "新版本会在配套应用下次启动时安装。",
-  "zh-TW": "新版本會在配套應用程式下次啟動時安裝。"
+  "zh-TW": "新版本會在輔助程式下次啟動時安裝。"
  },
  "Nightly": {
   "zh-CN": "Nightly",
@@ -596,16 +592,16 @@
   "zh-TW": "僅一次"
  },
  "Open data folder": {
-  "zh-CN": "打开数据文件夹",
-  "zh-TW": "開啟資料資料夾"
+  "zh-CN": "打开应用数据文件夹",
+  "zh-TW": "開啟應用程式資料夾"
+ },
+ "Open game management for {name}": {
+  "zh-CN": "展开 {name} 的管理选项",
+  "zh-TW": "展開 {name} 的管理選項"
  },
  "Open games folder": {
   "zh-CN": "打开游戏文件夹",
   "zh-TW": "開啟遊戲資料夾"
- },
- "Open saves and Remove for {name}": {
-  "zh-CN": "打开 {name} 的存档与移除",
-  "zh-TW": "開啟 {name} 的存檔與移除"
  },
  "PS1: single-file games only, no CUE/BIN sets or disc swapping.": {
   "zh-CN": "PS1：仅支持单文件游戏，不支持 CUE/BIN 组合或换盘。",
@@ -626,6 +622,10 @@
  "Pause, Escape, Shift, Ctrl, Alt and the Windows keys can't be game keys.": {
   "zh-CN": "Pause、Esc、Shift、Ctrl、Alt 和 Windows 键不能用作游戏按键。",
   "zh-TW": "Pause、Esc、Shift、Ctrl、Alt 和 Windows 鍵不能用作遊戲按鍵。"
+ },
+ "Permanently delete removed games, their saves and cached maps?": {
+  "zh-CN": "永久删除已移除的游戏、其存档和地图缓存？",
+  "zh-TW": "永久刪除已移除的遊戲、其存檔和地圖快取？"
  },
  "Pick a date.": {
   "zh-CN": "请选择日期。",
@@ -711,9 +711,21 @@
   "zh-CN": "恢复默认",
   "zh-TW": "還原預設"
  },
- "Restored. The TV reloads the game if it is playing it.": {
-  "zh-CN": "已恢复。如果电视正在玩这个游戏，它会重新加载。",
-  "zh-TW": "已還原。如果電視正在玩這個遊戲，它會重新載入。"
+ "Restore": {
+  "zh-CN": "恢复",
+  "zh-TW": "還原"
+ },
+ "Restore this resume point": {
+  "zh-CN": "恢复此续玩点",
+  "zh-TW": "還原此續玩點"
+ },
+ "Restore this resume point?": {
+  "zh-CN": "恢复此续玩点？",
+  "zh-TW": "還原此續玩點？"
+ },
+ "Restored. If this game is running on the TV, it will reload.": {
+  "zh-CN": "已恢复。如果电视正在运行此游戏，将重新加载。",
+  "zh-TW": "已還原。若電視正在執行此遊戲，將重新載入。"
  },
  "Resume point": {
   "zh-CN": "续玩点",
@@ -757,7 +769,7 @@
  },
  "Saved. Restart the companion.": {
   "zh-CN": "已保存。请重启配套应用。",
-  "zh-TW": "已儲存。請重新啟動配套應用程式。"
+  "zh-TW": "已儲存。請重新啟動輔助程式。"
  },
  "Saved. The wallpaper updates within 15 seconds.": {
   "zh-CN": "已保存。壁纸将在 15 秒内更新。",
@@ -766,10 +778,6 @@
  "Saved. The wallpaper updates within a minute.": {
   "zh-CN": "已保存。壁纸将在一分钟内更新。",
   "zh-TW": "已儲存。桌布將在一分鐘內更新。"
- },
- "Saves and Remove": {
-  "zh-CN": "存档与移除",
-  "zh-TW": "存檔與移除"
  },
  "Saving…": {
   "zh-CN": "正在保存…",
@@ -816,8 +824,12 @@
   "zh-TW": "州 / 省"
  },
  "Storage": {
-  "zh-CN": "存储",
-  "zh-TW": "儲存"
+  "zh-CN": "存储空间",
+  "zh-TW": "儲存空間"
+ },
+ "Storage cleaned up.": {
+  "zh-CN": "存储空间已清理。",
+  "zh-TW": "儲存空間已清理。"
  },
  "Take off the shelf": {
   "zh-CN": "从书架取下",
@@ -837,7 +849,7 @@
  },
  "The companion is already running. Open Settings from its tray icon.": {
   "zh-CN": "配套应用已在运行。请从托盘图标打开设置。",
-  "zh-TW": "配套應用程式已在執行。請從系統匣圖示開啟設定。"
+  "zh-TW": "輔助程式已在執行。請從系統匣圖示開啟設定。"
  },
  "The shelf is full": {
   "zh-CN": "书架已满",
@@ -873,7 +885,7 @@
  },
  "Updated weekly. China includes adjusted workdays; Taiwan follows the government office calendar.": {
   "zh-CN": "每周更新。中国包含调休上班日；台湾采用政府行政机关办公日历。",
-  "zh-TW": "每週更新。中國包含調休上班日；台灣採用政府行政機關辦公日曆。"
+  "zh-TW": "每週更新。中國包含補班日；台灣採用政府行政機關辦公日曆。"
  },
  "Use it": {
   "zh-CN": "使用",
@@ -893,7 +905,7 @@
  },
  "Version {version} will install when the companion restarts.": {
   "zh-CN": "版本 {version} 将在配套应用重启时安装。",
-  "zh-TW": "版本 {version} 將在配套應用程式重新啟動時安裝。"
+  "zh-TW": "版本 {version} 將在輔助程式重新啟動時安裝。"
  },
  "Version {version} · Build {build}": {
   "zh-CN": "版本 {version} · 构建 {build}",
@@ -911,9 +923,9 @@
   "zh-CN": "支持 Xbox 和 PlayStation 4 / 5 手柄。蓝牙手柄请先在 Windows 中配对。",
   "zh-TW": "支援 Xbox 和 PlayStation 4 / 5 手把。藍牙手把請先在 Windows 中配對。"
  },
- "YouTube Downloader Channel": {
-  "zh-CN": "YouTube 下载器通道",
-  "zh-TW": "YouTube 下載器通道"
+ "YouTube Downloader Update Channel": {
+  "zh-CN": "YouTube 下载器更新通道",
+  "zh-TW": "YouTube 下載器更新通道"
  },
  "YouTube Playback": {
   "zh-CN": "YouTube 播放",
@@ -921,11 +933,11 @@
  },
  "ZZZ Companion Settings": {
   "zh-CN": "ZZZ 配套应用设置",
-  "zh-TW": "ZZZ 配套應用程式設定"
+  "zh-TW": "ZZZ 輔助程式設定"
  },
  "ZZZ Wallpaper Companion": {
   "zh-CN": "ZZZ 壁纸配套应用",
-  "zh-TW": "ZZZ 桌布配套應用程式"
+  "zh-TW": "ZZZ 桌布輔助程式"
  },
  "clearing the cache must be confirmed": {
   "zh-CN": "清除缓存需要确认。",

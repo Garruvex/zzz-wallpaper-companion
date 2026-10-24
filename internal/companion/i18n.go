@@ -120,7 +120,7 @@ func (s *APIServer) getLanguage(w http.ResponseWriter, _ *http.Request) {
 	languageMu.RLock()
 	choice := languageChoice
 	languageMu.RUnlock()
-	writeJSON(w, http.StatusOK, map[string]any{"language": choice, "current": currentLanguage(), "system": systemLanguage()})
+	writeJSON(w, http.StatusOK, map[string]any{"language": choice, "current": currentLanguage(), "system": systemLanguage(), "table": tableFor(currentLanguage())})
 }
 
 // saveLanguage stores the choice ("" follows Windows again). The page reloads to show it.
