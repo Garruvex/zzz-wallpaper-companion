@@ -16,6 +16,10 @@ button.danger{border-color:#7a3b3b;color:#ffb4b4}
 .title b{display:block;overflow-wrap:anywhere}.title small{color:var(--muted)}
 .saves{margin:12px 0 0;padding:14px;border-radius:6px;background:#181b1d;display:grid;gap:10px}
 .saves .line{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tape-pen{flex:none;display:grid;place-items:center;width:24px;height:24px;margin:0;padding:0;border:0;border-radius:50%;background:none;color:#8b8f96;cursor:pointer}
+.tape-pen svg{width:15px;height:15px}
+.tape-pen:focus-visible,.tape-pen:active{outline:none;color:var(--zzz-lime)}
+.tape-title input.rename-field{flex:1 1 auto;box-sizing:border-box;width:auto;max-width:360px;min-width:0;height:30px!important;min-height:0!important;padding:0 12px!important;border-width:2px!important;font-size:15px!important;line-height:1!important}
 #cache .line{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 4px 10px}
 #cache .line small{flex:1 1 auto;line-height:1.5}
 #cache button.zzz-chipbtn{flex:0 0 auto;padding:4px 14px;font-size:12px;border-width:2px;white-space:nowrap}
@@ -41,6 +45,7 @@ button.shelf.on{background:#1a1d10;border-color:var(--accent);color:var(--accent
 const $ = id => document.getElementById(id);
 const SYSTEMS = { gba: 'GBA', nes: 'NES', snes: 'SNES', segaMD: 'MEGA DRIVE', segaMS: 'MASTER SYSTEM', segaGG: 'GAME GEAR', psx: 'PS1 · EXPERIMENTAL', psp: 'PSP · EXPERIMENTAL' };
 let carts = [], current = { id: '', seq: 0 }, open = new Set(), details = {}, busy = false;
+let renaming = ''; // the game whose name is being edited
 let dragId = ''; // the game being dragged to another tape
 // While PSP is locked its games stay on their tapes, greyed out and unplayable, and PSP files are not offered.
 let psp = { unlocked: false, locked: [] };
@@ -216,8 +221,34 @@ function gameRow(cart, full) {
     const target = tape + (up ? -1 : 1);
     if (target >= 1 && target <= carts.filter(item => item.tape).length) moveTo(cart, target);
   });
+  // The pen renames the game: only its name changes, its saves and tape stay. Enter saves, Escape
+  // cancels, and an empty name goes back to the game file's name.
+  const editing = renaming === cart.id;
+  let nameBox;
+  if (editing) {
+    nameBox = el('input', { type: 'text', className: 'rename-field', value: cart.title, maxLength: 40, placeholder: cart.id });
+    nameBox.setAttribute('aria-label', `New name for ${cart.title}. Enter saves, Escape cancels`);
+    const finish = save => {
+      if (renaming !== cart.id) return;
+      renaming = '';
+      const next = nameBox.value.trim();
+      if (!save || next === cart.title || (!next && cart.title === cart.id)) { render(); return; }
+      run(next ? `Renamed to ${next}.` : 'Name set back to the file name.', () => companionRenameGame(cart.id, next));
+    };
+    nameBox.addEventListener('keydown', event => {
+      event.stopPropagation();
+      if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+      if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+    });
+    nameBox.addEventListener('blur', () => finish(true));
+    requestAnimationFrame(() => { nameBox.focus(); nameBox.select(); });
+  }
+  const pen = editing ? '' : el('button', { type: 'button', className: 'tape-pen', title: 'Rename', disabled: busy,
+    innerHTML: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M11.3 1.3a1.5 1.5 0 0 1 2.1 0l1.3 1.3a1.5 1.5 0 0 1 0 2.1L5.5 13.9 1.5 14.5l.6-4z"/></svg>',
+    onclick: () => { renaming = cart.id; render(); } });
+  if (pen) pen.setAttribute('aria-label', `Rename ${cart.title}`);
   const title = el('span', { className: 'tape-title', title: cart.rom },
-    el('b', { textContent: cart.title }),
+    editing ? nameBox : el('b', { textContent: cart.title }), pen,
     onTV ? el('span', { className: 'chip on', textContent: 'ON TV' }) : '');
   // The system sits at the right like the game's "Lv. 1 | Stats": white heavy text, a thin divider, and
   // "Locked" in grey when it can't be played.
@@ -238,7 +269,7 @@ function gameRow(cart, full) {
   const row = el('div', { className: `tape-row game${onTV ? ' is-playing' : ''}${locked ? ' locked' : ''}` },
     grip, tape ? el('span', { className: 'tape-no', textContent: tapeText(tape) }) : '', title, meta,
     el('span', { className: 'tape-actions' }, play, shelfButton), fold);
-  row.draggable = !busy;
+  row.draggable = !busy && !editing;
   row.addEventListener('dragstart', event => { dragId = cart.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', cart.id); row.classList.add('is-dragging'); });
   row.addEventListener('dragend', () => { dragId = ''; row.classList.remove('is-dragging'); clearDrop(); });
   // Built like the game's skill panel: a grey card holding the black title bar, which grows to hold the

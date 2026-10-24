@@ -116,6 +116,7 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"GET /ui/shell.js":            http.HandlerFunc(companionShell),
 		"GET /ui/zzz/zzz_ui.js":       http.HandlerFunc(companionKit),
 		"GET /games":                  http.HandlerFunc(s.gamesPage),
+		"POST /games/rename":          http.HandlerFunc(s.renameGame),
 		"GET /games/cache":            http.HandlerFunc(s.getCache),
 		"POST /games/cache/clear":     http.HandlerFunc(s.clearCache),
 		"GET /controller/state":       http.HandlerFunc(s.controllerState),

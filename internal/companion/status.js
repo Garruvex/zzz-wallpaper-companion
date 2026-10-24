@@ -53,6 +53,14 @@ window.companionConfirm = async options => {
   return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
 };
 
+// A game's name in the Library and on its tape. An empty name goes back to the game file's name.
+window.companionRenameGame = async (id, title) => {
+  const response = await fetch('/games/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, title }) });
+  const body = await response.json();
+  if (!response.ok) throw Error(body.error || 'Could not rename the game.');
+  return body;
+};
+
 // The Storage section: what the cache holds, and emptying it (removed games with their saves, map tiles).
 window.companionCacheUse = async () => (await fetch('/games/cache', { cache: 'no-store' })).json();
 window.companionClearCache = async () => {
