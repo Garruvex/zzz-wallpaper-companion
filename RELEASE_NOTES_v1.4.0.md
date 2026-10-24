@@ -1,4 +1,4 @@
-﻿ZZZ Wallpaper Companion 1.4.0 brings the companion's settings in line with the game and adds the game station for wallpaper 1.6.0.
+ZZZ Wallpaper Companion 1.4.0 brings the companion's settings in line with the game and adds the game station for wallpaper 1.6.0.
 
 - **New look:** The companion now matches the game's own menus: top tabs with a side menu, title cards, ON/OFF switches, and message bars instead of browser pop-ups. Notices float at the top right, under the tabs.
 - **Languages:** The companion now speaks English, Simplified Chinese (简体中文) and Traditional Chinese (繁體中文). It follows your Windows display language; change it in Settings → General → Language. The tray menu follows too.
