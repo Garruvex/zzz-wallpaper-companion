@@ -1,6 +1,7 @@
 ﻿ZZZ Wallpaper Companion 1.4.0 brings the companion's settings in line with the game and adds the game station for wallpaper 1.6.0.
 
 - **New look:** The companion now matches the game's own menus: top tabs with a side menu, title cards, ON/OFF switches, and message bars instead of browser pop-ups. Notices float at the top right, under the tabs.
+- **Languages:** The companion now speaks English, Simplified Chinese (简体中文) and Traditional Chinese (繁體中文). It follows your Windows display language; change it in Settings → General → Language. The tray menu follows too.
 - **Game station:** The Games page is the Library. Add games, play them on the TV, manage saves, and choose which games get one of the 14 shelf tapes. Drag to reorder, move a game to another tape, or rename it with the pen next to its name. Systems supported are NES, SNES, Sega and Game Boy-family carts.
 - **Controllers:** The Game tab shows your pad live, with Xbox and PlayStation controllers supported.
 - **Keyboard:** Remap the game station's keys in Settings → Game → Keyboard.

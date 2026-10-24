@@ -51,6 +51,7 @@ Open **Settings** from the tray menu, or go to `http://127.0.0.1:8765/settings`.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
+| Language | Windows language | `English`, `简体中文` or `繁體中文`; follows the Windows display language until you choose one (kept in `language.json` in the data folder) |
 | Companion Port | `8765` | Must match what the wallpaper expects. Restart after changing. |
 | Video Resolution | `720` | `360`, `480`, `720`, or `1080` |
 | Live Stream Resolution | `360` | `240`, `360`, `480`, or `720`; higher values use substantially more CPU |

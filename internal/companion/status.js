@@ -1,4 +1,52 @@
 
+// Languages. /ui/api.js starts with window.companionI18n = { lang, table }, the table mapping English
+// text to the current language. Pages are written in English and translate themselves: any text,
+// placeholder, title or aria-label that is exactly an English string in the table is swapped, now and as
+// pages change. Text with values in it goes through t('… {name} …', { name }). Anything inside
+// translate="no" (game names, your dates, holiday names) is never touched.
+(() => {
+  const { lang = 'en', table = {} } = window.companionI18n || {};
+  window.companionLang = lang;
+  window.t = (text, values) => {
+    const out = table[text] ?? text;
+    return values ? out.replace(/\{(\w+)\}/g, (match, key) => key in values ? values[key] : match) : out;
+  };
+  document.documentElement.lang = lang;
+  if (lang === 'en') return;
+  const ATTRIBUTES = ['placeholder', 'title', 'aria-label'];
+  const kept = node => node.parentElement?.closest('[translate="no"], script, style');
+  const text = node => {
+    const raw = node.nodeValue, key = raw.trim();
+    // Only a real change is written: writing the same text again would wake the observer forever.
+    if (key && table[key] && table[key] !== key && !kept(node)) node.nodeValue = raw.replace(key, table[key]);
+  };
+  const attributes = element => {
+    if (element.closest('[translate="no"]')) return;
+    for (const name of ATTRIBUTES) {
+      const value = element.getAttribute(name)?.trim();
+      if (value && table[value] && table[value] !== value) element.setAttribute(name, table[value]);
+    }
+  };
+  const visit = root => {
+    if (root.nodeType === Node.TEXT_NODE) { text(root); return; }
+    if (root.nodeType !== Node.ELEMENT_NODE) return;
+    attributes(root);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) node.nodeType === Node.TEXT_NODE ? text(node) : attributes(node);
+  };
+  const titled = () => { const next = document.title.split(' · ').map(part => table[part] ?? part).join(' · '); if (next !== document.title) document.title = next; };
+  new MutationObserver(records => {
+    for (const record of records) {
+      if (record.type === 'childList') record.addedNodes.forEach(visit);
+      else if (record.type === 'characterData') text(record.target);
+      else attributes(record.target);
+    }
+    titled();
+  }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRIBUTES });
+  if (document.body) visit(document.body);
+  titled();
+})();
+
 // Shows a page's status line as a message bar from the shared UI kit.
 //   companionSay(text, kind)   kind: "info" (default), "caution" or "error"; empty text clears it.
 // The bar goes inside the page's #status element. Without the kit (the port-conflict recovery page
@@ -51,6 +99,14 @@ window.companionCard = (doc, title, { tag = 'div', tools = [], body = [] } = {})
 window.companionConfirm = async options => {
   const module = await import('/ui/zzz/zzz_ui.js').catch(() => null);
   return module ? module.confirmDialog(options) : window.confirm([options.title, options.message].filter(Boolean).join('\n\n'));
+};
+
+// Saves the language chosen in General ("" follows Windows). The page reloads afterwards to show it.
+window.companionSaveLanguage = async language => {
+  const response = await fetch('/ui/language', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language }) });
+  const body = await response.json();
+  if (!response.ok) throw Error(body.error || t('Could not save the language.'));
+  return body;
 };
 
 // A game's name in the Library and on its tape. An empty name goes back to the game file's name.

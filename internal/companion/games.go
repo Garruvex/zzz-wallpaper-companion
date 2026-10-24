@@ -167,7 +167,7 @@ func (s *APIServer) addGame(w http.ResponseWriter, r *http.Request) {
 	hasher := sha1.New()
 	n, err := io.Copy(io.MultiWriter(upload, hasher), http.MaxBytesReader(w, r.Body, limit))
 	if err != nil || n == 0 {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("Game files can be up to %d MB.", limit>>20))
+		writeError(w, http.StatusBadRequest, Tf("Game files can be up to {n} MB.", "n", strconv.Itoa(int(limit>>20))))
 		return
 	}
 	if err := upload.Close(); err != nil {
@@ -333,7 +333,7 @@ func (s *APIServer) gameAction(w http.ResponseWriter, r *http.Request) {
 		limit := cartByteLimit(c, "save")
 		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 		if err != nil || len(data) == 0 {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Save files can be up to %d MB.", limit>>20))
+			writeError(w, http.StatusBadRequest, Tf("Save files can be up to {n} MB.", "n", strconv.Itoa(int(limit>>20))))
 			return
 		}
 		if err := shelve(c, append([]string{c.save}, stateNames()...)...); err != nil {

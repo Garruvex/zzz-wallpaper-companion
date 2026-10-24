@@ -28,6 +28,11 @@ var statusJS string
 func companionBrowserAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-store")
+	// The page's language and its table come first, so status.js can translate from the start.
+	lang := currentLanguage()
+	i18n, _ := json.Marshal(map[string]any{"lang": lang, "table": tableFor(lang)})
+	io.WriteString(w, "window.companionI18n="+string(i18n)+";\n")
 	io.WriteString(w, operationsJS)
 	io.WriteString(w, browserClientJS)
 	io.WriteString(w, statusJS)

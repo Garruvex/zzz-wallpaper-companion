@@ -117,6 +117,8 @@ func newAPIServer(config *ConfigStore, resolver *Resolver, ffmpeg *FFmpegManager
 		"GET /ui/zzz/zzz_ui.js":       http.HandlerFunc(companionKit),
 		"GET /games":                  http.HandlerFunc(s.gamesPage),
 		"POST /games/rename":          http.HandlerFunc(s.renameGame),
+		"GET /ui/language":            http.HandlerFunc(s.getLanguage),
+		"POST /ui/language":           http.HandlerFunc(s.saveLanguage),
 		"GET /games/cache":            http.HandlerFunc(s.getCache),
 		"POST /games/cache/clear":     http.HandlerFunc(s.clearCache),
 		"GET /controller/state":       http.HandlerFunc(s.controllerState),
@@ -652,7 +654,7 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+	writeJSON(w, status, map[string]string{"error": T(message)})
 }
 
 var settingsTemplate = template.Must(template.New("settings").Funcs(template.FuncMap{
@@ -662,11 +664,13 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 	"companionBuild":   func() string { return buildNumber },
 	"apiDocs":          func() bool { return apidocs.Enabled },
 	"protocolRange":    func() string { return fmt.Sprintf("%d-%d", protocolMinVersion, protocolMaxVersion) },
+	"languageChoice":   func() string { languageMu.RLock(); defer languageMu.RUnlock(); return languageChoice },
 }).Parse(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZZZ Wallpaper Companion</title><style>
 :root{color-scheme:dark;font-family:Segoe UI,Arial,sans-serif;background:#111315;color:#f3f4f4}body{margin:0}.bar{height:5px;background:#d8f51b}.wrap{max-width:620px;margin:0 auto;padding:36px 22px}h1{font-size:25px;margin:0 0 7px}.sub{color:#aeb5b8;margin:0 0 30px}.section{border-top:1px solid #34383a;padding:22px 0}label{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;margin:0 0 18px}small{display:block;color:#949b9e;margin-top:4px}.warning{color:#d8f51b}input,select{box-sizing:border-box;width:100%;background:#1c2022;color:#fff;border:1px solid #4a5053;padding:9px;border-radius:4px;font:inherit}input[type=checkbox]{width:auto;justify-self:end}button{background:#d8f51b;color:#171717;border:0;padding:10px 18px;border-radius:4px;font-weight:700;cursor:pointer}.status{margin-left:12px;color:#aeb5b8}@media(max-width:520px){label{grid-template-columns:1fr}}
 </style><link rel="stylesheet" href="/ui/theme.css"><script defer src="/ui/shell.js"></script><script src="/ui/api.js"></script></head><body><div class="bar"></div><main class="wrap"><h1>ZZZ Wallpaper Companion</h1><p class="sub">Version {{companionVersion}} · Build {{companionBuild}} · Protocol {{protocolRange}}</p>{{if .ConnectionWarning}}<p class="warning" role="alert">{{.ConnectionWarning}}</p>{{end}}{{if not .ConnectionWarning}}<p><a href="/dates" style="color:#d8f51b">Important Dates — birthdays and personal events</a></p><p><a href="/holidays" style="color:#d8f51b">Public Holidays — country and region</a></p><p><a href="/games" style="color:#d8f51b">Games — add games, play them on the TV, manage saves</a></p>{{if apiDocs}}<p><a href="/docs" style="color:#d8f51b">API Explorer — local documentation</a></p>{{end}}{{end}}<form id="settings" novalidate><div class="section">
+{{if not .ConnectionWarning}}<label><span>Language</span><select id="language"><option value=""{{if eq languageChoice ""}} selected{{end}}>Windows language</option><option value="en" translate="no"{{if eq languageChoice "en"}} selected{{end}}>English</option><option value="zh-CN" translate="no"{{if eq languageChoice "zh-CN"}} selected{{end}}>简体中文</option><option value="zh-TW" translate="no"{{if eq languageChoice "zh-TW"}} selected{{end}}>繁體中文</option></select></label>{{end}}
 <label><span>Companion port<small>Default 8765. Use the same port in the wallpaper's settings. Takes effect after a restart.</small></span><input id="port" type="number" min="1024" max="65535" value="{{.Port}}"></label>
 <label><span>Maximum resolution<small>Higher uses more bandwidth and GPU memory.</small></span><select id="height">{{range $v := heights}}<option>{{$v}}</option>{{end}}</select></label>
 <label><span>Live-stream resolution<small class="warning">Higher uses much more CPU. 1080p is experimental.</small></span><select id="transcodeHeight">{{range $v := transcodeHeights}}<option>{{$v}}</option>{{end}}</select></label>
@@ -677,5 +681,6 @@ var settingsTemplate = template.Must(template.New("settings").Funcs(template.Fun
 const settings=document.getElementById('settings'),status=document.getElementById('status'),port=document.getElementById('port'),height=document.getElementById('height'),channel=document.getElementById('channel'),startup=document.getElementById('startup'),transcodeHeight=document.getElementById('transcodeHeight'),autoUpdate=document.getElementById('autoUpdate');
 const initial={port:{{.Port}},maxHeight:{{.MaxHeight}},updateChannel:{{.UpdateChannel}},launchOnStartup:{{.LaunchOnStartup}},transcodeHeight:{{.TranscodeHeight}},autoUpdate:{{.AutoUpdate}}};
 height.value=initial.maxHeight;channel.value=initial.updateChannel;transcodeHeight.value=initial.transcodeHeight;
+document.getElementById('language')?.addEventListener('change',async event=>{try{await companionSaveLanguage(event.target.value);location.reload()}catch(error){companionSay(error.message,'error')}});
 let saving=false;settings.addEventListener('submit',async e=>{e.preventDefault();if(saving)return;const number=Number(port.value);if(!Number.isInteger(number)||number<1024||number>65535){companionSay('Port must be a whole number from 1024 to 65535.','error');return}saving=true;const submit=settings.querySelector('button[type=submit]');submit.disabled=true;companionSay('Saving…');try{const j=await CompanionAPI.request('settings.save',{body:{port:Number(port.value),maxHeight:Number(height.value),updateChannel:channel.value,launchOnStartup:startup.checked,transcodeHeight:Number(transcodeHeight.value),autoUpdate:autoUpdate.checked}});companionSay(j.restartRequired?'Saved. Restart the companion.':'Saved.')}catch(e){companionSay(e.message,'error')}finally{saving=false;submit.disabled=false}});
 </script></body></html>`))
