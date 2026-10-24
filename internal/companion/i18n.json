@@ -49,7 +49,7 @@
  },
  "Another companion is running but not answering. If it stays stuck, end it in Task Manager and start the companion again.": {
   "zh-CN": "另一个配套应用正在运行但没有响应。如果一直卡住，请在任务管理器中结束它，然后重新启动配套应用。",
-  "zh-TW": "另一個輔助程式正在執行但沒有回應。如果一直卡住，請在工作管理員中結束它，然後重新啟動輔助程式。"
+  "zh-TW": "另一個配套應用程式正在執行但沒有回應。如果一直卡住，請在工作管理員中結束它，然後重新啟動配套應用程式。"
  },
  "Automatic Updates": {
   "zh-CN": "自动更新",
@@ -113,43 +113,43 @@
  },
  "Companion Port": {
   "zh-CN": "配套应用端口",
-  "zh-TW": "輔助程式連接埠"
+  "zh-TW": "配套應用程式連接埠"
  },
  "Companion Settings": {
   "zh-CN": "配套应用设置",
-  "zh-TW": "輔助程式設定"
+  "zh-TW": "配套應用程式設定"
  },
  "Companion connection unavailable": {
   "zh-CN": "配套应用连接不可用",
-  "zh-TW": "輔助程式連線無法使用"
+  "zh-TW": "配套應用程式連線無法使用"
  },
  "Companion could not start": {
   "zh-CN": "配套应用无法启动",
-  "zh-TW": "輔助程式無法啟動"
+  "zh-TW": "配套應用程式無法啟動"
  },
  "Companion is up to date": {
   "zh-CN": "配套应用已是最新版本",
-  "zh-TW": "輔助程式已是最新版本"
+  "zh-TW": "配套應用程式已是最新版本"
  },
  "Companion sections": {
   "zh-CN": "配套应用分区",
-  "zh-TW": "輔助程式分區"
+  "zh-TW": "配套應用程式分區"
  },
  "Companion settings unavailable": {
   "zh-CN": "配套应用设置不可用",
-  "zh-TW": "輔助程式設定無法使用"
+  "zh-TW": "配套應用程式設定無法使用"
  },
  "Companion update check failed": {
   "zh-CN": "配套应用检查更新失败",
-  "zh-TW": "輔助程式檢查更新失敗"
+  "zh-TW": "配套應用程式檢查更新失敗"
  },
  "Companion update failed": {
   "zh-CN": "配套应用更新失败",
-  "zh-TW": "輔助程式更新失敗"
+  "zh-TW": "配套應用程式更新失敗"
  },
  "Companion update ready": {
   "zh-CN": "配套应用更新已就绪",
-  "zh-TW": "輔助程式更新已就緒"
+  "zh-TW": "配套應用程式更新已就緒"
  },
  "Confirm": {
   "zh-CN": "确认",
@@ -189,7 +189,7 @@
  },
  "Could not reach the companion.": {
   "zh-CN": "无法连接到配套应用。",
-  "zh-TW": "無法連線到輔助程式。"
+  "zh-TW": "無法連線到配套應用程式。"
  },
  "Could not read the keys.": {
   "zh-CN": "无法读取按键设置。",
@@ -429,7 +429,7 @@
  },
  "Invalid companion settings": {
   "zh-CN": "配套应用设置无效",
-  "zh-TW": "輔助程式設定無效"
+  "zh-TW": "配套應用程式設定無效"
  },
  "It comes off the shelf. The game and its saves are kept until you choose Clean up storage in Storage.": {
   "zh-CN": "它会从书架取下。游戏及其存档会保留到你在“存储空间”中选择“清理存储空间”为止。",
@@ -521,7 +521,7 @@
  },
  "New versions install the next time the companion starts.": {
   "zh-CN": "新版本会在配套应用下次启动时安装。",
-  "zh-TW": "新版本會在輔助程式下次啟動時安裝。"
+  "zh-TW": "新版本會在配套應用程式下次啟動時安裝。"
  },
  "Nightly": {
   "zh-CN": "Nightly",
@@ -769,7 +769,7 @@
  },
  "Saved. Restart the companion.": {
   "zh-CN": "已保存。请重启配套应用。",
-  "zh-TW": "已儲存。請重新啟動輔助程式。"
+  "zh-TW": "已儲存。請重新啟動配套應用程式。"
  },
  "Saved. The wallpaper updates within 15 seconds.": {
   "zh-CN": "已保存。壁纸将在 15 秒内更新。",
@@ -849,7 +849,7 @@
  },
  "The companion is already running. Open Settings from its tray icon.": {
   "zh-CN": "配套应用已在运行。请从托盘图标打开设置。",
-  "zh-TW": "輔助程式已在執行。請從系統匣圖示開啟設定。"
+  "zh-TW": "配套應用程式已在執行。請從系統匣圖示開啟設定。"
  },
  "The shelf is full": {
   "zh-CN": "书架已满",
@@ -905,7 +905,7 @@
  },
  "Version {version} will install when the companion restarts.": {
   "zh-CN": "版本 {version} 将在配套应用重启时安装。",
-  "zh-TW": "版本 {version} 將在輔助程式重新啟動時安裝。"
+  "zh-TW": "版本 {version} 將在配套應用程式重新啟動時安裝。"
  },
  "Version {version} · Build {build}": {
   "zh-CN": "版本 {version} · 构建 {build}",
@@ -933,11 +933,11 @@
  },
  "ZZZ Companion Settings": {
   "zh-CN": "ZZZ 配套应用设置",
-  "zh-TW": "ZZZ 輔助程式設定"
+  "zh-TW": "ZZZ 配套應用程式設定"
  },
  "ZZZ Wallpaper Companion": {
   "zh-CN": "ZZZ 壁纸配套应用",
-  "zh-TW": "ZZZ 桌布輔助程式"
+  "zh-TW": "ZZZ 桌布配套應用程式"
  },
  "clearing the cache must be confirmed": {
   "zh-CN": "清除缓存需要确认。",
